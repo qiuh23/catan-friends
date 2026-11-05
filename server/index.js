@@ -3,11 +3,17 @@ import { readFile, writeFile, rename, mkdir, readdir, unlink } from 'node:fs/pro
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { WebSocketServer, WebSocket } from 'ws';
+import { deploymentConfig, requestAddress, originAllowed } from './request-policy.js';
 import { Room, roomCode, fingerprint, ROOM_PATTERN, ROOM_TTL } from '../shared/room.js';
 
 const root=fileURLToPath(new URL('../',import.meta.url));
 const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.svg':'image/svg+xml','.png':'image/png','.woff2':'font/woff2'};
-export async function createServer({port=Number(process.env.PORT)||3005,host='0.0.0.0',dataDir=path.join(root,'.data'),development=false,botDelay=900}={}) {
+export async function createServer({port=Number(process.env.PORT)||3005,host=process.env.HOST||'0.0.0.0',dataDir=process.env.DATA_DIR||path.join(root,'.data'),staticDir=process.env.STATIC_DIR||path.join(root,'dist'),backendId=process.env.BACKEND_ID||'local',publicOrigin=process.env.PUBLIC_ORIGIN||'',trustProxy=process.env.TRUST_PROXY||'',development=false,botDelay=900}={}) {
+  const config=deploymentConfig({backendId,publicOrigin,trustProxy});
+  let revision=process.env.BUILD_SHA||null;
+  try {revision ||= JSON.parse(await readFile(path.join(staticDir,'build-info.json'),'utf8')).revision;}catch{}
+  if(revision&&!/^[a-f0-9]{40}$/.test(revision))throw new Error('Invalid build revision.');
+  const marker={ok:true,game:'catan-friends',backendId:config.backendId,revision};
   await mkdir(dataDir,{recursive:true});
   const rooms=new Map(), loading=new Map(), sockets=new Map(), timers=new Map(), queues=new Map(), rates=new Map();
   let stopping=false;
@@ -36,18 +42,15 @@ export async function createServer({port=Number(process.env.PORT)||3005,host='0.
   }
   const json=(res,status,data)=>{res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'});res.end(JSON.stringify(data));};
   async function body(req) { let data=''; for await(const part of req) {data+=part; if(data.length>8192) throw new Error('请求过大。');} return JSON.parse(data); }
-  function originAllowed(req) {
-    if(!req.headers.origin) return true;
-    try { return new URL(req.headers.origin).host===req.headers.host || (process.env.ALLOWED_ORIGINS||'').split(',').includes(req.headers.origin); } catch {return false;}
-  }
   function rate(key,limit=120) { const now=Date.now(), old=rates.get(key); const v=old && old.until>now ? old : {n:0,until:now+60000}; rates.set(key,v); return ++v.n<=limit; }
   const server=http.createServer(async(req,res)=>{
     try {
       const url=new URL(req.url,'http://localhost');
       if(url.pathname.startsWith('/api/')) {
-        if(!originAllowed(req)) return json(res,403,{error:'不允许的请求来源。'});
-        if(!rate(req.socket.remoteAddress)) return json(res,429,{error:'请求过于频繁，请稍后重试。'});
-        if(url.pathname==='/api/health') return json(res,200,{ok:true,game:'catan-friends',version:'0.1.0'});
+        if(!originAllowed(req,config.publicOrigin)) return json(res,403,{error:'不允许的请求来源。'});
+        if(!rate(requestAddress(req,config.trustProxy))) return json(res,429,{error:'请求过于频繁，请稍后重试。'});
+        if(url.pathname==='/api/health') return json(res,200,marker);
+        if(url.pathname==='/api/deployment') return json(res,200,{...marker,publicOrigin:config.publicOrigin||null});
         if(url.pathname==='/api/rooms' && req.method==='POST') {
           const input=await body(req), hash=await fingerprint(input.token); let code=roomCode();
           for(let tries=0;tries<8;tries++) {
@@ -63,7 +66,7 @@ export async function createServer({port=Number(process.env.PORT)||3005,host='0.
         return json(res,404,{error:'接口不存在。'});
       }
       if(vite) return vite.middlewares(req,res,()=>{res.writeHead(404);res.end();});
-      const dist=path.join(root,'dist'), relative=decodeURIComponent(url.pathname);
+      const dist=path.resolve(staticDir), relative=decodeURIComponent(url.pathname);
       let file=path.resolve(dist,`.${relative}`);
       if(!file.startsWith(dist+path.sep) && file!==dist) {res.writeHead(403);return res.end();}
       if(relative==='/' || !path.extname(relative)) file=path.join(dist,'index.html');
@@ -72,9 +75,13 @@ export async function createServer({port=Number(process.env.PORT)||3005,host='0.
   });
   const wss=new WebSocketServer({noServer:true,maxPayload:8192});
   server.on('upgrade',(req,socket,head)=>{
+    if(new URL(req.url,'http://localhost').pathname==='/api/connectivity/ws'){
+      if(!originAllowed(req,config.publicOrigin)||!rate(`ws:${requestAddress(req,config.trustProxy)}`,60)){socket.write('HTTP/1.1 403 Forbidden\r\n\r\n');socket.destroy();return;}
+      wss.handleUpgrade(req,socket,head,ws=>{ws.send(JSON.stringify(marker));ws.close(1000,'Connectivity checked');});return;
+    }
     const match=/^\/api\/rooms\/([A-HJ-NP-Z2-9]{6})\/ws$/.exec(new URL(req.url,'http://localhost').pathname);
     if(!match) {if(!vite){socket.write('HTTP/1.1 404 Not Found\r\n\r\n');socket.destroy();}return;}
-    if(!originAllowed(req) || !rate(`ws:${req.socket.remoteAddress}`,60)) {socket.write('HTTP/1.1 403 Forbidden\r\n\r\n');socket.destroy();return;}
+    if(!originAllowed(req,config.publicOrigin) || !rate(`ws:${requestAddress(req,config.trustProxy)}`,60)) {socket.write('HTTP/1.1 403 Forbidden\r\n\r\n');socket.destroy();return;}
     wss.handleUpgrade(req,socket,head,ws=>wss.emit('connection',ws,match[1]));
   });
   wss.on('connection',(ws,code)=>{
