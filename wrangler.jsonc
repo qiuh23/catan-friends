@@ -1,0 +1,10 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "catan-friends",
+  "main": "worker/index.js",
+  "compatibility_date": "2026-10-20",
+  "assets": { "directory": "./dist", "binding": "ASSETS", "not_found_handling": "single-page-application", "run_worker_first": ["/api/*"] },
+  "durable_objects": { "bindings": [{ "name": "ROOMS", "class_name": "CatanRoom" }] },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["CatanRoom"] }],
+  "observability": { "enabled": false }
+}

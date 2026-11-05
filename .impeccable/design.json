@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-05T17:23:42.8271221+08:00",
+  "title": "卡坦岛 · 海岸桌面",
+  "extensions": {
+    "shadows": [
+      {
+        "name": "turn-banner",
+        "value": "0 7px 24px #21483b12",
+        "purpose": "棋盘上方状态条"
+      },
+      {
+        "name": "hand",
+        "value": "0 5px 10px #23473a13",
+        "purpose": "手牌与海面之间的层级"
+      }
+    ],
+    "motion": [
+      {
+        "name": "control",
+        "value": "160ms ease",
+        "purpose": "按钮背景与按压位移；减少动态偏好时关闭"
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "phone",
+        "value": "640px"
+      },
+      {
+        "name": "tablet",
+        "value": "950px"
+      },
+      {
+        "name": "compact-desktop",
+        "value": "1190px"
+      }
+    ]
+  },
+  "components": [],
+  "narrative": {
+    "northStar": "海岸桌面",
+    "overview": "海水与低多边形实体棋盘构成主视野，暖白色侧栏承载房间、玩家和操作。",
+    "keyCharacteristics": [
+      "棋盘主导",
+      "资源颜色一致",
+      "同源实时房间"
+    ],
+    "rules": [
+      {
+        "name": "可读棋盘",
+        "body": "数字标记不受光照影响，合法交点优先可见。",
+        "section": "components"
+      }
+    ],
+    "dos": [
+      "保留二维备用与键盘操作",
+      "手机按棋盘、操作、记录顺序排列"
+    ],
+    "donts": [
+      "不把模型当成规则状态来源",
+      "不在公共玩家面板展示隐藏手牌"
+    ]
+  }
+}

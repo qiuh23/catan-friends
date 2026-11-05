@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.data/
+.local/
+.wrangler/
+.impeccable/*
+!.impeccable/design.json
+test-results/
+*.log
+.env*
+!.env.example
