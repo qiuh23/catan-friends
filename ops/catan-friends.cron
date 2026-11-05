@@ -1,0 +1,5 @@
+SHELL=/bin/bash
+PATH=/usr/sbin:/usr/bin:/sbin:/bin
+17 3 * * * root /usr/bin/python3 /usr/local/lib/catan-friends-ops/backup.py >/dev/null || logger -p daemon.err -t catan-friends 'Backup failed; inspect catan storage.'
+*/15 * * * * root /usr/bin/python3 /usr/local/lib/catan-friends-ops/storage.py
+*/15 * * * * root /usr/sbin/logrotate /etc/logrotate.d/catan-friends >/dev/null || logger -p daemon.err -t catan-friends 'Log rotation failed.'

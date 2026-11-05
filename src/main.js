@@ -3,6 +3,7 @@ import { Board, FlatBoard } from './board.js';
 import { Connection } from './connection.js';
 import { icon } from './icons.js';
 import { newId } from './id.js';
+import { readRoom, readInvitation, invitationURL, lobbyOrigins } from './invitation.js';
 import { createBoard, RESOURCES, LABELS, emptyHand, total } from '../shared/board.js';
 import { COSTS, DEV_NAMES, afford } from '../shared/game.js';
 
@@ -10,14 +11,22 @@ const $=s=>document.querySelector(s), esc=v=>String(v??'').replace(/[&<>"']/g,c=
 const storage={get(key){try{return JSON.parse(localStorage.getItem(`catan:${key}`));}catch{return null;}},set(key,value){try{localStorage.setItem(`catan:${key}`,JSON.stringify(value));}catch{}}};
 let state=null,connection=null,code='',status='idle',busy=false,selectedBuild='',panel='',cardId='',flat=false,board;
 let previewSeed=17;const preview={board:createBoard(()=>{previewSeed=(previewSeed*1664525+1013904223)>>>0;return previewSeed/4294967296;}),players:[],robber:null,legal:{}};
-const invite=new URLSearchParams(location.search).get('room')?.toUpperCase()||'';
+let backendId='local',invite='',entryError='';
+try {
+  const response=await fetch('/api/deployment',{cache:'no-store',redirect:'error',signal:AbortSignal.timeout(8000)});
+  if(!response.ok)throw new Error('暂时无法确认当前服务器，请刷新后重试。');
+  const deployment=await response.json();
+  if(deployment.game!=='catan-friends'||!['local','aliyun','cloudflare'].includes(deployment.backendId)||deployment.publicOrigin&&deployment.publicOrigin!==location.origin)throw new Error('服务器配置与当前入口不一致，请联系维护者。');
+  backendId=deployment.backendId;invite=readInvitation(location.search,backendId);
+}catch(error){entryError=error.message;}
+const displayCode=value=>backendId==='aliyun'?`A-${value}`:backendId==='cloudflare'?`C-${value}`:value;
 const mine=()=>state?.players.find(p=>p.id===state.me);
 const myTurn=()=>state && state.players[state.turn]?.id===state.me;
 const ownRatio=r=>{const ports=state.board.ports.filter(p=>p.vertices.some(v=>state.board.vertices[v].owner===state.me));return ports.some(p=>p.resource===r)?2:ports.some(p=>p.resource==='any')?3:4;};
 const resCost=cost=>Object.entries(cost).map(([r,n])=>`<span class="mini-resource ${r}" title="${LABELS[r]} ${n}">${icon(r)}${n}</span>`).join('');
 const button=(text,action,disabled=false,cls='')=>`<button type="button" class="${cls}" data-action="${action}" ${disabled?'disabled':''}>${text}</button>`;
 document.querySelector('#app').innerHTML=`
-  <header class="topbar"><a class="brand" href="/" aria-label="卡坦岛好友桌首页"><span class="brand-mark">${icon('island')}</span><span>卡坦岛 <small>好友桌</small></span></a><div id="room-meta"></div><nav>${button(`${icon('book')}<span>玩法指南</span>`,'rules',false,'text-button')}</nav></header>
+  <header class="topbar"><a class="brand" href="/" aria-label="卡坦岛好友桌首页"><span class="brand-mark">${icon('island')}</span><span>卡坦岛 <small>好友桌</small></span></a><div id="room-meta"></div><nav>${lobbyOrigins[backendId]?`<a class="text-button" href="${lobbyOrigins[backendId]}" aria-label="返回当前服务器游戏大厅">大厅</a>`:''}${button(`${icon('book')}<span>玩法指南</span>`,'rules',false,'text-button')}</nav></header>
   <main id="table" class="table home"><aside id="left-panel"></aside><section class="board-area" aria-label="游戏棋盘"><div id="board"></div><div class="board-top" id="turn-banner"></div><div class="board-controls">${button(icon('reset'),'reset',false,'square')}<button class="square" id="flat-toggle" type="button" aria-label="切换二维棋盘">2D</button></div><div id="tile-hint" class="tile-hint">拖动旋转 · 滚轮缩放</div><div id="hand"></div><div id="island-caption"></div></section><aside id="right-panel"></aside></main>
   <div id="toast" role="status" aria-live="polite"></div><dialog id="rules-dialog"><div class="dialog-heading"><h2>在岛上，建立你的世界。</h2>${button(icon('close'),'closeRules',false,'square')}</div><div class="rules-copy"><p>3–4 人经典基础版。轮到你时达到 <strong>10 个胜利点</strong>，即可获胜。</p><h3>先为自己找个好位置</h3><p>每人放置两座村庄与两条道路：第一轮顺序放置，第二轮反向放置。第二座村庄会收取相邻地块各 1 张资源。任意两座村庄之间必须至少隔一个空交叉点。</p><h3>掷骰、收获、交易、建造</h3><p>掷出两枚骰子，数字对应的地块向相邻村庄生产 1 张资源，向城市生产 2 张。所有玩家都可能收获。随后可多次交易、建造或购买发展卡，完成后结束回合。</p><div class="rules-costs">${Object.entries(COSTS).map(([k,c])=>`<div>${icon(k)}<b>${({road:'道路',settlement:'村庄',city:'城市',development:'发展卡'})[k]}</b>${resCost(c)}</div>`).join('')}</div><h3>强盗与七点</h3><p>掷出 7 时不生产资源。手牌超过 7 张的玩家须弃掉一半（向下取整）；当前玩家移动强盗，并从相邻的一名对手处随机抽一张资源。强盗所在格停止生产。</p><h3>把资源换成机会</h3><p>可向其他玩家提出交易，由对方接受。银行默认 4:1；拥有普通港口时 3:1，对应专属港口为 2:1。只能在自己的行动阶段主动发起交易。</p><h3>发展卡与额外得分</h3><p>每回合最多使用一张非胜利点发展卡，当回合购买的不能使用。骑士移动强盗；道路建设免费建造最多两条路；丰收从银行取两张资源；垄断收取所有对手的一种资源。胜利点卡私下自动计分。</p><p>村庄 1 分，城市 2 分。最长道路至少 5 段、最大骑士军队至少 3 张，各值 2 分；平手时原持有者保留。对手建筑会截断道路。</p><p class="muted">刷新页面会恢复原座位。断线时保留牌局，全部离线后电脑暂停行动。房间保留至最后活动后的 48 小时。</p></div></dialog>`;
 document.querySelector('[data-action="rules"]').setAttribute('aria-label','玩法指南');
@@ -39,21 +48,24 @@ async function send(action){
   try{await connection.action(action);if(['buildRoad','buildCity','buildSettlement','playDevelopment'].includes(action.type)){selectedBuild='';panel='';cardId='';}}catch(error){toast(error.message);}finally{busy=false;render();}
 }
 function connect(room,token,name){
+  if(entryError)return toast(entryError);
+  try {room=readRoom(room,backendId);}catch(error){return toast(error.message);}
   connection?.close();code=room;state=null;status='connecting';
-  storage.set('last',{code,token,name});storage.set(`token:${code}`,token);storage.set('name',name);history.replaceState(null,'',`?room=${code}`);
+  storage.set('last',{code,token,name});storage.set(`token:${code}`,token);storage.set('name',name);history.replaceState(null,'',invitationURL(location.origin,code,backendId));
   connection=new Connection(code,token,name,(next)=>{const old=state;state=next;if(old?.turnNo!==next.turnNo||old?.phase!==next.phase){selectedBuild='';panel='';cardId='';}render();},s=>{status=s;render();},toast);
   render();
 }
 async function create(practice=false){
+  if(entryError)return toast(entryError);
   const name=$('#nickname')?.value.trim();if(!name)return toast('先给自己起个昵称。');
   busy=true;render();const token=newId();
   try{const response=await fetch('/api/rooms',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,token,practice})});const data=await response.json();if(!response.ok)throw new Error(data.error);connect(data.code,token,name);}catch(error){toast(error.message);}finally{busy=false;render();}
 }
-function join(){const name=$('#nickname').value.trim(),room=$('#join-code').value.trim().toUpperCase();if(!name)return toast('先给自己起个昵称。');if(!/^[A-HJ-NP-Z2-9]{6}$/.test(room))return toast('请输入 6 位房间码。');connect(room,storage.get(`token:${room}`)||newId(),name);}
+function join(){if(entryError)return toast(entryError);const name=$('#nickname').value.trim();if(!name)return toast('先给自己起个昵称。');let room;try{room=readRoom($('#join-code').value,backendId);}catch(error){return toast(error.message);}connect(room,storage.get(`token:${room}`)||newId(),name);}
 const statusText=()=>({idle:'',connecting:'正在连接',connected:'已连接',reconnecting:'正在重连',failed:'连接失败',replaced:'座位已在其他页面打开'})[status];
 function playerList(){return `<div class="players">${state.players.map((p,i)=>`<div class="player ${state.phase!=='lobby'&&i===state.turn?'active':''} ${p.id===state.me?'self':''}"><span class="avatar" style="--player:${p.color}">${p.bot?icon('bot'):esc(p.name.slice(0,1))}</span><div class="player-info"><strong>${esc(p.name)}${p.id===state.me?'<small>你</small>':''}</strong><span>${state.phase==='lobby'?(i===0?'房主':p.ready?'已准备':'未准备'):`${p.cards} 张资源 · ${p.developmentCount} 张发展卡`}${!p.online?' · 离线':''}</span></div>${state.phase==='lobby'?(p.bot && state.players[0].id===state.me?`<button class="remove-bot" data-remove-bot="${p.id}" aria-label="移除 ${p.name}">×</button>`:`<span class="presence ${p.online?'online':''}"></span>`):`<div class="score"><b>${p.points}</b><small>分</small></div>`}</div>`).join('')}</div>`;}
-function homePanel(){const last=storage.get('last');return `<div class="home-intro"><h1>一座岛屿，<br>无限可能。</h1><p>收获一片麦田，铺下一条新路。<br>和朋友们，一起从这里启程。</p></div><div class="game-facts"><span>${icon('users')}3–4 人</span><span>${icon('flag')}10 分获胜</span></div><form id="entry-form"><label for="nickname">你的昵称</label><input id="nickname" data-persist autocomplete="nickname" maxlength="16" placeholder="岛上的朋友怎么称呼你" value="${esc(storage.get('name')||'')}" required><button type="button" id="create-room" class="primary large" ${busy?'disabled':''}>${busy?'正在准备岛屿…':'创建好友房间'}${icon('arrow')}</button><div class="join-row"><input id="join-code" data-persist aria-label="6 位房间码" autocomplete="off" maxlength="6" placeholder="输入 6 位房间码" value="${esc(invite)}"><button type="submit" ${busy?'disabled':''}>加入房间</button></div></form><div class="practice-entry">${button(`${icon('bot')}先和电脑练一局`,'practice',busy,'text-button')}<p>无需等人，完整体验一场对局。</p></div>${last?button(`返回房间 ${esc(last.code)} ${icon('arrow')}`,'resume',busy,'resume-button'):''}<div class="home-bottom"><span>经典基础版</span><span>让朋友，坐得更近一点。</span></div>`;}
-function lobbyPanel(){const host=state.players[0].id===state.me;return `<div class="panel-title"><h2>等朋友入座</h2><p>分享邀请链接，凑齐就开桌。</p></div><div class="invite-block"><span>房间码</span><strong>${code}</strong>${button(`${icon('link')}复制邀请链接`,'invite',false,'text-button')}</div>${playerList()}${state.players.length<4?`<div class="empty-seat">${icon('users')}还有 ${4-state.players.length} 个空位</div>`:''}<div class="lobby-actions">${host?button(`${icon('bot')}添加电脑玩家`,'addBot',busy||state.players.length>=4,'secondary'):button(mine().ready?`${icon('check')}已准备 · 取消`:'我准备好了','ready',busy,'primary')}${host?button(`开始探索 ${icon('arrow')}`,'start',busy||state.players.length<3||state.players.some((p,i)=>i>0&&!p.ready),'primary'):''}</div><p class="muted small">至少 3 人开局，电脑玩家也可以占位。其他真人玩家准备后，由房主开始。</p>${button(`${icon('back')}返回首页`,'home',false,'text-button')}`;}
+function homePanel(){const last=storage.get('last'),disabled=busy||Boolean(entryError);return `${entryError?`<p class="entry-error" role="alert">${esc(entryError)} <a href="/">返回当前服务器首页</a></p>`:''}<div class="home-intro"><h1>一座岛屿，<br>无限可能。</h1><p>收获一片麦田，铺下一条新路。<br>和朋友们，一起从这里启程。</p></div><div class="game-facts"><span>${icon('users')}3–4 人</span><span>${icon('flag')}10 分获胜</span></div><form id="entry-form"><label for="nickname">你的昵称</label><input id="nickname" data-persist autocomplete="nickname" maxlength="16" placeholder="岛上的朋友怎么称呼你" value="${esc(storage.get('name')||'')}" required><button type="button" id="create-room" class="primary large" ${disabled?'disabled':''}>${busy?'正在准备岛屿…':'创建好友房间'}${icon('arrow')}</button><div class="join-row"><input id="join-code" data-persist aria-label="6 位房间码或带服务器前缀的邀请码" autocomplete="off" maxlength="8" placeholder="6 位房间码 / A-或C-前缀" value="${esc(invite?displayCode(invite):'')}"><button type="submit" ${disabled?'disabled':''}>加入房间</button></div></form><div class="practice-entry">${button(`${icon('bot')}先和电脑练一局`,'practice',disabled,'text-button')}<p>无需等人，完整体验一场对局。</p></div>${last?button(`返回房间 ${esc(last.code)} ${icon('arrow')}`,'resume',disabled,'resume-button'):''}<div class="home-bottom"><span>经典基础版</span><a href="https://github.com/Jack15678/catan-friends" target="_blank" rel="noopener noreferrer">原作 Jack15678 · 个人非商业娱乐</a></div>`;}
+function lobbyPanel(){const host=state.players[0].id===state.me;return `<div class="panel-title"><h2>等朋友入座</h2><p>分享邀请链接，凑齐就开桌。</p></div><div class="invite-block"><span>房间码</span><strong>${displayCode(code)}</strong>${button(`${icon('link')}复制邀请链接`,'invite',false,'text-button')}</div>${playerList()}${state.players.length<4?`<div class="empty-seat">${icon('users')}还有 ${4-state.players.length} 个空位</div>`:''}<div class="lobby-actions">${host?button(`${icon('bot')}添加电脑玩家`,'addBot',busy||state.players.length>=4,'secondary'):button(mine().ready?`${icon('check')}已准备 · 取消`:'我准备好了','ready',busy,'primary')}${host?button(`开始探索 ${icon('arrow')}`,'start',busy||state.players.length<3||state.players.some((p,i)=>i>0&&!p.ready),'primary'):''}</div><p class="muted small">至少 3 人开局，电脑玩家也可以占位。其他真人玩家准备后，由房主开始。</p>${button(`${icon('back')}返回首页`,'home',false,'text-button')}`;}
 function gamePanel(){
   const me=mine(),active=myTurn(),disabled=busy||status!=='connected';
   return `<div class="panel-heading"><h2>岛上的朋友</h2><span>目标 10 分</span></div>${playerList()}<div class="awards"><span>${icon('road')}最长道路 <b>${state.longest?esc(state.players.find(p=>p.id===state.longest).name):'待争夺'}</b></span><span>${icon('flag')}最大军队 <b>${state.army?esc(state.players.find(p=>p.id===state.army).name):'待争夺'}</b></span></div><section class="build-section"><div class="panel-heading"><h2>建设你的版图</h2></div>${['road','settlement','city','development'].map(k=>{
@@ -86,7 +98,7 @@ function hand(){if(!state?.board)return '';return `<div class="hand-tray"><div c
 function render(){
   const inputs=new Map([...document.querySelectorAll('[data-persist]')].map(el=>[el.id,el.value])),active=document.activeElement?.id,start=document.activeElement?.selectionStart;
   $('#table').className=`table ${state?'in-room':'home'} ${state?.board?'playing':''}`;
-  $('#room-meta').innerHTML=code?`<span class="connection ${status}"><i></i>${statusText()}</span><span class="room-code">房间 ${code}</span>${button(`${icon('link')}<span>邀请好友</span>`,'invite',false,'text-button')}${state?.board?button(icon('back'),'home',false,'square'):''}`:'<span class="header-note">把朋友聚在一张桌上</span>';
+  $('#room-meta').innerHTML=code?`<span class="connection ${status}"><i></i>${statusText()}</span><span class="room-code">房间 ${displayCode(code)}</span>${button(`${icon('link')}<span>邀请好友</span>`,'invite',false,'text-button')}${state?.board?button(icon('back'),'home',false,'square'):''}`:'<span class="header-note">把朋友聚在一张桌上</span>';
   $('#left-panel').innerHTML=state?(state.phase==='lobby'?lobbyPanel():gamePanel()):homePanel();
   $('#right-panel').innerHTML=rightPanel();$('#turn-banner').innerHTML=banner();$('#hand').innerHTML=hand();
   document.querySelector('#room-meta [data-action="home"]')?.setAttribute('aria-label','返回首页');
@@ -124,9 +136,9 @@ document.addEventListener('click',async e=>{
   if(action==='closePanel'){panel='';return render();}
   if(action==='resume'){const last=storage.get('last');if(last)connect(last.code,last.token,last.name);return;}
   if(action==='home'){connection?.close();connection=null;state=null;code='';status='idle';selectedBuild='';panel='';history.replaceState(null,'','/');render();return;}
-  if(action==='invite'){const link=`${location.origin}/?room=${code}`;try{await navigator.clipboard.writeText(link);toast('邀请链接已复制，发给朋友即可加入。');}catch{toast(`房间码：${code}。将当前页面地址发给朋友即可。`);}return;}
+  if(action==='invite'){const link=invitationURL(location.origin,code,backendId);try{await navigator.clipboard.writeText(link);toast('邀请链接已复制，发给朋友即可加入。');}catch{toast(`房间码：${displayCode(code)}。将当前页面地址发给朋友即可。`);}return;}
   if(b.id==='flat-toggle'){flat=!flat;makeBoard();}
 });
 makeBoard();render();
-const last=storage.get('last');if(invite&&last?.code===invite)connect(last.code,last.token,last.name);
+const last=storage.get('last');if(!entryError&&invite&&last?.code===invite)connect(last.code,last.token,last.name);
 window.addEventListener('online',()=>{if(connection&&!connection.stopped&&connection.ws.readyState>1){clearTimeout(connection.reconnectTimer);connection.connect();}});

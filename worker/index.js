@@ -3,8 +3,30 @@ const json=(data,status=200)=>Response.json(data,{status,headers:{'Cache-Control
 export default {
   async fetch(request,env) {
     const url=new URL(request.url), origin=request.headers.get('Origin');
-    if(url.pathname.startsWith('/api/') && origin && origin!==url.origin) return json({error:'不允许的请求来源。'},403);
-    if(url.pathname==='/api/health') return json({ok:true,game:'catan-friends',version:'0.1.0'});
+    const backendId=env.BACKEND_ID||'local',publicOrigin=env.PUBLIC_ORIGIN||'';
+    if(!['local','cloudflare'].includes(backendId)||backendId==='cloudflare'&&!publicOrigin)return json({error:'服务器入口配置不完整。'},503);
+    if(publicOrigin){
+      try {const expected=new URL(publicOrigin);if(expected.origin!==publicOrigin||expected.protocol!=='https:'||expected.username||expected.password||publicOrigin!==url.origin)throw Error();}
+      catch{return json({error:'服务器入口配置与当前来源不一致。'},503);}
+    }
+    if(url.pathname.startsWith('/api/') && origin && origin!==(publicOrigin||url.origin)) return json({error:'不允许的请求来源。'},403);
+    const revision=env.BUILD_SHA||null;
+    if(revision&&!/^[a-f0-9]{40}$/.test(revision))return json({error:'发布版本配置无效。'},503);
+    const marker={ok:true,game:'catan-friends',backendId,revision};
+    if(url.pathname==='/api/health') return json(marker);
+    if(url.pathname==='/api/deployment') return json({...marker,publicOrigin:publicOrigin||null});
+    if(url.pathname.startsWith('/api/')){
+      if(!env.CATAN_RATE_LIMITER && backendId==='cloudflare')return json({error:'请求限流配置尚未就绪。'},503);
+      if(env.CATAN_RATE_LIMITER){
+        try {const result=await env.CATAN_RATE_LIMITER.limit({key:request.headers.get('CF-Connecting-IP')||'unknown'});if(!result.success)return json({error:'请求过于频繁，请稍后重试。'},429);}
+        catch{return json({error:'限流服务暂不可用。'},503);}
+      }
+    }
+    if(url.pathname==='/api/connectivity/ws'){
+      if(request.headers.get('Upgrade')?.toLowerCase()!=='websocket')return json({error:'需要 WebSocket 连接。'},426);
+      const [client,server]=Object.values(new WebSocketPair());server.accept();server.send(JSON.stringify(marker));server.close(1000,'Connectivity checked');
+      return new Response(null,{status:101,webSocket:client});
+    }
     if(url.pathname==='/api/rooms' && request.method==='POST') {
       const code=roomCode(), stub=env.ROOMS.get(env.ROOMS.idFromName(code));
       return stub.fetch(new Request(`${url.origin}/create?code=${code}`,request));

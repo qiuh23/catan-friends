@@ -1,5 +1,18 @@
 # 卡坦岛 · 好友桌
 
+> 原作者：[Jack15678](https://github.com/Jack15678)，上游：[Jack15678/catan-friends](https://github.com/Jack15678/catan-friends)。本 Fork 保留原提交历史与 upstream 关联，由 qiuh23 为现有好友游戏大厅适配双部署。用户确认已获朋友授权并明确跳过邮件核对；本次未新增或宣称开源许可证，仍按原项目个人非商业娱乐说明使用。
+>
+> **当前状态：未上线。** 两个大厅入口均关闭。Node/Worker 的本地验证不等于生产验收；生产配置、部署、合并和入口启用均待用户确认。
+
+本地目录为 `C:\Game\CatanFriends`，与 `MagicalAthlete-catan`、`WizardFriends-catan` 并排，后两者为最新 main 的独立工作区，原工作区保留。
+
+接入与运维文档：
+
+- [自动发布、密钥与门禁](docs/automatic-deployment.md)
+- [阿里云首次配置、空间轮转与回滚](docs/aliyun-deployment.md)
+- [集成验收与生产待办](docs/integration-verification.md)
+
+
 可在浏览器游玩的 3–4 人卡坦岛基础版。中文界面、低多边形 3D 岛屿、房间码联机、电脑练习与断线恢复。
 
 ## 本地启动
@@ -7,7 +20,7 @@
 需要 Node.js 22 或更新版本。
 
 ```powershell
-cd 'D:\Desktop\Code\强兼各种桌游\catan-friends'
+cd 'C:\Game\CatanFriends'
 npm install
 npm run dev
 ```
@@ -75,7 +88,7 @@ npm run worker:dev
 npm run worker:check
 ```
 
-需要发布时，登录自己的 Cloudflare 账号后执行 `npm run deploy`。当前交付只运行本地服务和本地模拟，未执行公网部署。云端房间状态写入 Durable Object 存储，电脑回合由 alarm 驱动，WebSocket 使用休眠接口。
+Fork 的生产发布使用上述检查产物链，并默认关闭生产门禁；请勿同时启用 Native Builds 或运行手动 `npm run deploy` 覆盖生产。保留原手动命令仅供上游参考和明确授权的独立环境使用。当前交付只运行本地服务和本地模拟，未执行公网部署。云端房间状态写入 Durable Object 存储，电脑回合由 alarm 驱动，WebSocket 使用休眠接口。
 
 ## 验证
 

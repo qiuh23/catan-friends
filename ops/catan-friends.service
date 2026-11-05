@@ -1,0 +1,35 @@
+[Unit]
+Description=Catan Friends independent Node service
+After=network.target
+
+[Service]
+Type=simple
+User=catan-friends
+Group=catan-friends
+WorkingDirectory=/opt/catan-friends/current
+EnvironmentFile=/etc/catan-friends/server.env
+ExecStart=/opt/node/bin/node server/index.js
+Restart=on-failure
+RestartSec=3
+TimeoutStopSec=30
+KillSignal=SIGTERM
+UMask=0077
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+CapabilityBoundingSet=
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+ReadWritePaths=/var/lib/catan-friends
+StandardOutput=append:/var/log/catan-friends/app.log
+StandardError=append:/var/log/catan-friends/app.log
+MemoryMax=384M
+TasksMax=64
+
+[Install]
+WantedBy=multi-user.target

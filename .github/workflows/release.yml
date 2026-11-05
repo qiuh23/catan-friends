@@ -1,0 +1,125 @@
+name: Deploy checked Catan backends
+on:
+  workflow_run:
+    workflows: [Checks]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      checks_run_id:
+        description: Successful push Checks run of the exact current main
+        type: string
+        required: true
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: catan-friends-production
+  cancel-in-progress: false
+jobs:
+  release:
+    if: vars.CATAN_PRODUCTION_ENABLED == 'true' && github.repository == 'qiuh23/catan-friends' && (github.event_name == 'workflow_run' || github.ref == 'refs/heads/main')
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    environment: production
+    permissions:
+      contents: read
+      actions: read
+      id-token: write
+    env:
+      ALIYUN_REGION_ID: ${{ vars.ALIYUN_REGION_ID }}
+      ALIYUN_INSTANCE_ID: ${{ vars.ALIYUN_INSTANCE_ID }}
+    steps:
+      # Always run trusted main control code. PR artifacts never get credentials.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: main
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+      - name: Initialize trusted release record
+        run: printf 'RELEASE_RECORD=%s/catan-release.json\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
+      - name: Recheck exact current successful main after the release queue
+        id: gate
+        run: node scripts/deploy/gate.mjs
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          CHECKS_RUN_ID: ${{ inputs.checks_run_id }}
+      - name: Verify artifact digest and prepare prebuilt Worker as data
+        if: steps.gate.outputs.deploy == 'true'
+        run: node scripts/deploy/release.mjs prepare
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - name: Record previous Catan Worker version
+        if: steps.gate.outputs.deploy == 'true'
+        id: previous
+        run: node scripts/deploy/release.mjs previous
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      - name: Recheck current main and control checkout before Worker publication
+        if: steps.gate.outputs.deploy == 'true'
+        run: node scripts/deploy/release.mjs assert-current
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - name: Set up fixed Alibaba Cloud Assistant delivery
+        if: steps.gate.outputs.deploy == 'true'
+        uses: aliyun/setup-aliyun-cli-action@09a5f86915bb556e27bf050e9a5e339aeb073df5 # v1
+        with:
+          version: 3.5.2
+      - name: Obtain Catan-only temporary deployment credentials
+        if: steps.gate.outputs.deploy == 'true'
+        id: credentials
+        uses: aliyun/configure-aliyun-credentials-action@1e5248c8d5d93a8781ac344a68e19a43341e79e6 # v1
+        with:
+          role-to-assume: ${{ vars.ALIYUN_ROLE_ARN }}
+          oidc-provider-arn: ${{ vars.ALIYUN_OIDC_PROVIDER_ARN }}
+          audience: sts.aliyuncs.com
+          role-session-name: catan-production-${{ github.run_id }}
+          role-session-expiration: 3600
+      - name: Publish the checked Worker without rebuilding application code
+        if: steps.gate.outputs.deploy == 'true'
+        id: worker
+        uses: cloudflare/wrangler-action@953926a2e2182532811c01a25e53647d93bf07c0 # v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: 4.157.0
+          packageManager: npm
+          workingDirectory: ${{ runner.temp }}/catan-deployer
+          command: deploy --no-bundle --config ${{ runner.temp }}/catan-wrangler.json
+      - name: Record only this immutable Worker version for guarded rollback
+        if: steps.gate.outputs.deploy == 'true'
+        id: record_worker
+        run: node scripts/deploy/release.mjs record-worker
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      - name: Recheck current main again before Node installation
+        if: steps.gate.outputs.deploy == 'true'
+        id: before_node
+        run: node scripts/deploy/release.mjs assert-current
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - name: Install checked Node bundle through Catan-only Cloud Assistant identity
+        if: steps.gate.outputs.deploy == 'true'
+        id: aliyun
+        run: node scripts/deploy/release.mjs install
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - name: Verify both public revisions, HTTPS assets and non-room WSS probes
+        if: steps.gate.outputs.deploy == 'true'
+        id: verify
+        run: node scripts/deploy/release.mjs verify
+        env:
+          CATAN_ALIYUN_ORIGIN: ${{ vars.CATAN_ALIYUN_ORIGIN }}
+          CATAN_CLOUDFLARE_ORIGIN: ${{ vars.CATAN_CLOUDFLARE_ORIGIN }}
+      - name: Restore only this exact Node attempt after partial failure
+        if: always() && steps.credentials.outcome == 'success' && (steps.aliyun.outcome == 'failure' || steps.verify.outcome == 'failure')
+        run: node scripts/deploy/release.mjs rollback
+      - name: Restore previous Catan Worker version after partial failure
+        if: always() && steps.previous.outcome == 'success' && (steps.worker.outcome == 'failure' || steps.record_worker.outcome == 'failure' || steps.before_node.outcome == 'failure' || steps.aliyun.outcome == 'failure' || steps.verify.outcome == 'failure')
+        run: node scripts/deploy/release.mjs rollback-worker
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
