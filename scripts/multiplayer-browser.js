@@ -16,14 +16,15 @@ try{
   await a.wait(s=>s.players.length===3&&s.players.slice(1).every(p=>p.ready));await a.page.getByRole('button',{name:'开始探索'}).click();await a.wait(s=>s.phase==='setup-settlement');
   // Project a legal intersection into the real 3D canvas, then click through the raycaster.
   const bounds=await a.page.locator('#board canvas').boundingBox(),v=a.state.board.vertices[a.state.legal.settlement[0]];
-  const camera=new PerspectiveCamera(34,bounds.width/bounds.height,.1,100);camera.position.set(7,10,12);camera.lookAt(0,0,0);camera.updateMatrixWorld();
+  const cameraPosition=JSON.parse(await a.page.locator('#board canvas').getAttribute('data-camera'));
+  const camera=new PerspectiveCamera(34,bounds.width/bounds.height,.1,100);camera.position.fromArray(cameraPosition);camera.lookAt(0,0,0);camera.updateMatrixWorld();
   const point=new Vector3(v.x,.39,v.z).project(camera);await a.page.mouse.click(bounds.x+(point.x+1)*bounds.width/2,bounds.y+(1-point.y)*bounds.height/2);await a.wait(s=>s.phase==='setup-road');
   for(const client of clients)await client.page.getByRole('button',{name:'切换二维棋盘'}).click();
   for(let i=0;i<11;i++){
     const current=clients.find(cl=>cl.state.me===a.state.players[a.state.turn].id),phase=a.state.phase,setup=a.state.setupIndex;
     await current.wait(s=>s.phase===phase&&s.setupIndex===setup);await current.page.locator('#board [data-id]').first().click();await a.wait(s=>s.phase!==phase||s.setupIndex!==setup);
   }
-  await a.wait(s=>s.phase==='roll');await a.page.locator('#chat-message').fill('今晚一起开拓！');await a.page.getByRole('button',{name:'发送消息'}).click();await b.page.getByText('今晚一起开拓！',{exact:false}).waitFor();
+  await a.wait(s=>s.phase==='roll');await a.page.locator('#chat-details').evaluate(el=>el.open=true);await b.page.locator('#chat-details').evaluate(el=>el.open=true);await a.page.locator('#chat-message').fill('今晚一起开拓！');await a.page.getByRole('button',{name:'发送消息'}).click();await b.page.getByText('今晚一起开拓！',{exact:false}).waitFor();
   const id=a.state.me,revisionBoard=a.state.board;await a.page.close();const restored=await open(contexts[0]);await restored.page.goto(`${url}/?room=${room}`);await restored.wait(s=>s.phase==='roll');assert.equal(restored.state.me,id);assert.deepEqual(restored.state.board,revisionBoard);assert.equal(restored.state.players.length,3);
   for(const cl of [b,c])assert.ok(cl.state.players.filter(p=>p.id!==cl.state.me).every(p=>p.hand===undefined&&p.dev===undefined));
   assert.deepEqual(errors,[]);console.log('Multiplayer browser passed: 3 isolated browsers, lobby readiness, 3D raycast placement, full setup, chat, refresh identity and hand privacy.');

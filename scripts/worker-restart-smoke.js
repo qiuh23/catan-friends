@@ -10,6 +10,8 @@ import { WebSocket } from 'ws';
 const root=fileURLToPath(new URL('../',import.meta.url));
 const persistence=await mkdtemp(path.join(os.tmpdir(),'catan-worker-restart-'));
 const port=Number(process.env.LOCAL_RESTART_PORT)||8791,origin=`http://127.0.0.1:${port}`;
+const count=Number(process.env.TEST_PLAYERS)||3;
+assert.ok([3,4,5,6].includes(count),'TEST_PLAYERS must be 3, 4, 5 or 6');
 let processHandle,output='';const clients=[];
 const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 async function start(){
@@ -41,13 +43,12 @@ async function join(code,token,name){
 }
 try {
   await start();
-  const tokens=[crypto.randomUUID(),crypto.randomUUID(),crypto.randomUUID()];
-  const response=await fetch(origin+'/api/rooms',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:tokens[0],name:'本地恢复房主'})});assert.equal(response.status,201);
-  const {code}=await response.json(),names=['本地恢复房主','本地恢复朋友乙','本地恢复朋友丙'];
-  const players=[];for(let i=0;i<3;i++)players.push(await join(code,tokens[i],names[i]));
-  const [a,b,c]=players;await a.wait(message=>message.type==='state'&&message.state.players.length===3);
-  await b.act({type:'ready'});await c.wait(message=>message.type==='state'&&message.state.players[1].ready);
-  await c.act({type:'ready'});await a.wait(message=>message.type==='state'&&message.state.players.slice(1).every(player=>player.ready));
+  const tokens=Array.from({length:count},()=>crypto.randomUUID());
+  const response=await fetch(origin+'/api/rooms',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:tokens[0],name:'本地恢复房主',options:{playerExpansion:count>=5?'five-six-2025':'base'}})});assert.equal(response.status,201);
+  const {code}=await response.json(),names=Array.from({length:count},(_,i)=>`恢复玩家${i+1}`);
+  const players=[];for(let i=0;i<count;i++)players.push(await join(code,tokens[i],names[i]));
+  const [a]=players;await a.wait(message=>message.type==='state'&&message.state.players.length===count);
+  for(let i=1;i<count;i++){await players[i].wait(message=>message.type==='state'&&message.revision===a.state.revision);await players[i].act({type:'ready',ready:true});await a.wait(message=>message.type==='state'&&message.state.players[i]?.ready);}
   await a.act({type:'start'});
   while(a.state.state.phase.startsWith('setup')){
     const active=players[a.state.state.turn],revision=a.state.revision;
@@ -56,15 +57,23 @@ try {
     await a.wait(message=>message.type==='state'&&message.revision>revision);
   }
   for(const player of players)await player.wait(message=>message.type==='state'&&message.state.phase==='roll');
-  assert.ok(players.every(player=>Object.values(player.state.state.players.find(p=>p.id===player.state.state.me).hand).some(amount=>amount>0)));
+  if(count>=5){
+    await a.act({type:'roll'});
+    while(['robber','steal'].includes(a.state.state.phase))await a.act(a.state.state.phase==='robber'?{type:'moveRobber',tile:a.state.state.legal.robber[0]}:{type:'steal',victim:a.state.state.legal.victims[0]});
+    await a.act({type:'endTurn'});
+    for(const player of players)await player.wait(message=>message.type==='state'&&message.state.pairStep==='secondary');
+  }
+  // A legal coast/desert placement (or the first robber steal) can leave an
+  // individual with zero cards. Still compare every private hand after restart.
+  assert.ok(players.some(player=>Object.values(player.state.state.players.find(p=>p.id===player.state.state.me).hand).some(amount=>amount>0)));
   const before=players.map(player=>structuredClone(player.state.state));
   await stop();await start();
-  for(let i=0;i<3;i++){
+  for(let i=0;i<count;i++){
     const restored=(await join(code,tokens[i],names[i])).state.state;
-    assert.equal(restored.me,before[i].me);assert.equal(restored.phase,before[i].phase);assert.equal(restored.turn,before[i].turn);assert.deepEqual(restored.board,before[i].board);
+    assert.equal(restored.me,before[i].me);assert.equal(restored.phase,before[i].phase);assert.equal(restored.turn,before[i].turn);assert.equal(restored.pairStep,before[i].pairStep);assert.equal(restored.primaryTurn,before[i].primaryTurn);assert.deepEqual(restored.options,before[i].options);assert.deepEqual(restored.board,before[i].board);
     const mine=restored.players.find(player=>player.id===restored.me),previous=before[i].players.find(player=>player.id===before[i].me);
     assert.deepEqual(mine.hand,previous.hand);assert.deepEqual(mine.dev,previous.dev);
     assert.ok(restored.players.filter(player=>player.id!==restored.me).every(player=>player.hand===undefined&&player.dev===undefined));assert.equal(restored.deck,undefined);
   }
-  console.log('Local Worker restart passed: three identities, in-progress board/turn, private hands and persisted Durable Object state restored after process replacement.');
+  console.log(`Local Worker restart passed: ${count} identities, profile, in-progress board/turn, private hands and persisted Durable Object state restored after process replacement.`);
 }finally{await stop();await rm(persistence,{recursive:true,force:true,maxRetries:20,retryDelay:100});}
