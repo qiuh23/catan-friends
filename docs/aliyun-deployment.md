@@ -1,8 +1,10 @@
 # 卡坦岛独立部署与生产审批手册
 
-本 PR 只准备代码、工作流与主机模板。未合并、未改变生产、未签发新证书、未创建线上房间，卡坦岛入口默认关闭。以下主机步骤须用户批准后由管理员执行；Fork、PR 和本地测试不代表生产授权。
+**2026-11-05 首次生产配置已按用户授权完成。** Catan 独立用户/目录/端口、固定接收器、备份/轮转/空间监测、DNS/HTTPS/Nginx、GitHub production 与专用 RAM role 已配置；受检查 main `1cebfe1cd7fbd328131f72acb488c3621554c0bd` 已从同一 [发布 42037701133](https://github.com/qiuh23/catan-friends/actions/runs/42037701133) 成功部署两端。国内服务 active 且 enabled，监听 `127.0.0.1:3005`，数据位于独立 `/var/lib/catan-friends`；卡坦岛证书有效至北京时间 **2027-02-03 20:31:43**。大厅入口仍关闭，完整联机/恢复/回滚验收进行中；后续 main 自动触发尚待实证。详见 [生产记录](production-rollout-2026-11-05.md)。
 
-## 2026-11-05 21:10–21:12（北京时间）实际只读核查
+下面的初查表是配置前的历史快照，不能当作当前缺失项。操作清单保留为新环境/重建和维护说明；进一步生产变更仍按授权范围执行，不能从本记录推定其他环境已经准备完成。
+
+## 2026-11-05 21:10–21:12（北京时间）配置前只读快照
 
 | 范围 | 实际结果 |
 | --- | --- |
@@ -44,22 +46,22 @@ Node 仅绑定回环，`TRUST_PROXY=loopback` 只在直接对端为回环地址�
 
 需要批准的具体事项是：新增 `catan` DNS A 记录、申请该子域的免费 Let's Encrypt 证书、创建上述用户/目录/服务/备份/限权安装器、启用卡坦岛独立 Nginx 站点、添加卡坦岛专属 RAM/OIDC 发布 role 和 GitHub `production` environment 与独立发布 secrets/vars、创建 Cloudflare `catan-friends` Worker/专属 Durable Object 命名空间，最后发布已合并的受检查 main。现有实例与域名可复用，不需购买服务器。
 
-生产准备顺序如下。所有命令是待批准步骤，不由 PR、检查或本地脚本自动执行：
+新环境或重建的准备顺序如下。当前 qiuh23 的已完成项以本页顶部和生产记录为准；清单并非重复执行指令，首次主机/云设置不会由工作流自动猜测或重装：
 
 1. 重新检查 `df -B1 /`、`free -b`、`ss -ltnp`、`nginx -t`、80/443 安全组和当前三个服务。确认 `3005` 空闲，当前数据/配置/指针备份可读。已有 80/443 放行，无需开放 3005 或新增公网游戏端口。
 2. 在阿里云 DNS 添加 `catan A 115.29.188.62`，TTL 600，直连 ECS；不要把国内入口代理到 Cloudflare。用权威 DNS 查询验证生效，不用本机代理的合成地址判定 DNS。
-3. 复用现有 GitHub OIDC provider，新增卡坦岛专属 role，信任的 audience 为 `sts.aliyuncs.com`、subject 精确限定 `repo:qiuh23/catan-friends:environment:production`；不复用运动会或巫师牌 role。权限只给固定实例的 `ecs:RunCommand`、部署用户 `catan-friends-deploy`，及所需的调用结果只读查询。按阿里云当前支持的 condition key 验证实例/用户名限制，不支持的条件不能假装生效；若平台只能授权任意该用户命令，要明确这是受限非 root 用户的权限边界，sudo 仍只准固定安装器。提交并审核实际 RAM policy/正反拒绝测试后才启用，不存长期 AccessKey。
+3. 复用现有 GitHub OIDC provider，新增卡坦岛专属 role，信任的 audience 为 `sts.aliyuncs.com`、subject 精确限定 `repo:qiuh23@145330254/catan-friends@1447016080:environment:production`；不复用运动会或巫师牌 role。权限只给固定实例的 `ecs:RunCommand`、部署用户 `catan-friends-deploy`，及所需的调用结果只读查询。按阿里云当前支持的 condition key 验证实例/用户名限制，不支持的条件不能假装生效；若平台只能授权任意该用户命令，要明确这是受限非 root 用户的权限边界，sudo 仍只准固定安装器。提交并审核实际 RAM policy/正反拒绝测试后才启用，不存长期 AccessKey。
 4. 审查精确提交的 `ops/` 文件，作为 root 执行 `bash ops/bootstrap.sh`。脚本只准备主机，不启动/启用服务、不启用 Nginx、不改 DNS/云权限、不下载依赖。依赖现有 `/opt/node/bin/node` 24、Python3、Nginx、logrotate、OpenSSH、sudo；缺项停止，不自动装软件或扩大权限。已有 env/站点文件保留。仅在另行批准应急 SSH 时才追加公钥路径参数；默认不写 authorized_keys。
 5. 临时将 `ops/nginx-acme.conf` 复制到 `/etc/nginx/sites-available/catan-friends-acme`，只为本子域启用其 `sites-enabled` 链接；取现有 `/run/lock/game-sites.configure.lock`，先 `nginx -t` 再 reload。访问挑战路径自检后执行 `certbot certonly --webroot -w /var/www/catan-friends-acme -d catan.magical-athlete-online.cn`，使用已确认的运维邮箱与 ACME 同意项。该临时站只返回 ACME/503，不公开游戏。
 6. 检查新证书、续期 webroot 和现有 renewal hook，使用 `certbot renew --cert-name catan.magical-athlete-online.cn --dry-run` 验证。确认成功后撤掉本次 ACME 链接，启用审查后的 `/etc/nginx/sites-available/catan-friends`；同一配置锁内 `nginx -t` 后 reload。保留其他站点、老 HTTP/IP/8080/8081 和全部预览。不直接重启 Nginx。
 7. 填好 env，核对 `DATA_DIR`、`PUBLIC_ORIGIN`、`BACKEND_ID=aliyun`、`HOST=127.0.0.1`、`TRUST_PROXY=loopback`。GitHub environment 仅允许 main，按下表添加专用变量/密钥；不在仓库写私钥或把长期云凭据传给 ECS。
-8. Cloudflare 管理员检查卡坦岛没有 Native Builds、Deploy Hook 或第二条直推发布链；如存在，先记录并禁用。当前 token 对 Builds 403，必须在有权限的控制台/API核实，不能把“查询失败”当作“没有”。Worker 使用独立 `ROOMS`/CatanRoom DO，保留 `v1` 迁移标签，不删 namespace、不复用运动会/巫师牌 DO。
+8. Cloudflare 管理员检查卡坦岛没有 Native Builds、Deploy Hook 或第二条直推发布链；如存在，先记录并禁用。当前控制台已核实 Catan 无 Git 仓库连接/Native Builds；初查 token 的 Builds 403 仅是历史读取限制，不能单独证明是否存在发布者。Worker 使用独立 `ROOMS`/CatanRoom DO，保留 `v1` 迁移标签，不删 namespace、不复用运动会/巫师牌 DO。
 9. 用户合并 PR 后，等待精确当前 main 的 `Checks` 成功并产生有效产物。经生产发布授权后才设 `CATAN_PRODUCTION_ENABLED=true`，执行一次该成功 Checks run 的受控发布；后续 main 的成功 Checks 自然触发唯一 release 工作流。产物过期或 main 前进时重新检查最新 main，不发布旧包。
 10. 先通过完整游戏验收，最后单独批准大厅开关与插图白名单更新。`systemctl enable catan-friends` 是验收后的显式步骤，确保实例重启后恢复；bootstrap 不自行设置。操作前后检查已有两游戏与预览的 SHA/连接保持正常。
 
 | GitHub production 名称 | 类型与含义 |
 | --- | --- |
-| `CATAN_PRODUCTION_ENABLED` | **仓库级**发布 gate（job 开始前使用），默认未设置/false，获授权后才 true |
+| `CATAN_PRODUCTION_ENABLED` | **仓库级**发布 gate（job 开始前使用），新环境默认未设置/false；当前仓库已获授权为 true |
 | `ALIYUN_ROLE_ARN` | environment 变量，卡坦岛独立 OIDC role ARN |
 | `ALIYUN_OIDC_PROVIDER_ARN` | environment 变量，已核实的现有 provider ARN |
 | `ALIYUN_REGION_ID` | environment 变量，`cn-hangzhou` |
@@ -87,7 +89,7 @@ art/(athlete|wizard)\.svg
 art/(athlete|wizard|catan)\.svg
 ```
 
-改前另存该文件及 root-only 配置备份，取 `game-sites.configure.lock`，运行 `nginx -t` 成功后 `systemctl reload nginx`。若失败恢复原文件并重新检查，不动其他站点。此增量只允许一张公开 SVG，不开放任意目录或游戏/API路径。未安装时卡坦岛插图可能 404，应在验收时发现。入口开关仍保持关闭，待两环境验收后由独立 PR/配置批准开启。
+改前另存该文件及 root-only 配置备份，取 `game-sites.configure.lock`，运行 `nginx -t` 成功后 `systemctl reload nginx`。若失败恢复原文件并重新检查，不动其他站点。此增量只允许一张公开 SVG，不开放任意目录或游戏/API路径。未安装时卡坦岛插图可能 404，应在验收时发现。该一行白名单增量已在本次授权配置中应用，并通过 Nginx 检查与 reload；入口开关仍保持关闭，待两环境验收后由独立 PR/配置批准开启。
 
 ## 自动发布校验、失败与数据安全
 
@@ -119,6 +121,6 @@ Node 每房间原子写入 JSON；每日和发布前备份逐文件读取并验�
 
 本地已执行 `ops/test_deploy.py` 10 项离线安全检查（Linux WSL 全通过）：包含恶意包/来源拒绝、精确回滚、发布目录允许运行用户遍历、发布状态写失败不停止旧服务/切换指针、失败发布切回代码仍保留最新房间文件、同一 SHA/run 安全重试/幂等及篡改目录拒绝、私有房间备份在独立临时目录恢复。它们使用模拟网络/服务和临时文件，未接触生产状态。`bash -n ops/bootstrap.sh` 通过。
 
-另在本地 WSL Linux 用官方 SHA256 核验过的 Node24.22.2，执行新工作区的 `npm ci`、前端构建、Worker dry-run、Linux package，再将实际 4,790,989 字节 tar 的 ZIP交给本机接收器解包校验；通过后从解包产物以外置 DATA_DIR 启动 Node，health/资源 revision、HTML200、无房间 WSS marker 均通过。该开发包取自未提交工作树，标记为当时 HEAD `b0db91f99be03bd5f30b66d32ba0afc7addc80cd`/测试 run123，仅验证打包/接收/启动契约，不是检查通过的正式 main 产物。本地没有真实 Nginx/certbot/production 云助手权限环境，不能声称主机模板已通过实际生产安装。
+另在本地 WSL Linux 用官方 SHA256 核验过的 Node24.22.2，执行新工作区的 `npm ci`、前端构建、Worker dry-run、Linux package，再将实际 4,790,989 字节 tar 的 ZIP交给本机接收器解包校验；通过后从解包产物以外置 DATA_DIR 启动 Node，health/资源 revision、HTML200、无房间 WSS marker 均通过。该开发包取自未提交工作树，标记为当时 HEAD `b0db91f99be03bd5f30b66d32ba0afc7addc80cd`/测试 run123，仅验证打包/接收/启动契约，不是检查通过的正式 main 产物。这段仅描述当时本地烟测边界；后续已通过真正 production OIDC/云助手发布与主机安装，相关完整 SHA、服务与公网结果见生产记录，不把本地 smoke 当作线上证据。
 
-生产仍须逐端实测建房/加入/邀请、至少多个真人同步与隐藏信息、断线/刷新、进程重启后原身份/原存档、合法动作与错误配置、伪造转发头/Origin 拒绝、HTTPS/资源/WSS、发布失败回滚；两服独立房间与 token 不跨 origin，邀请指向原服务器且错误服提示不能静默入另一房。再检查大厅两服切换、三个游戏桌面/手机、旧链接/预览/两旧游戏不受影响。真实设备/运营商网络与线上存档恢复未做时明确待验，入口继续“未上线”。
+生产完整验收正在进行，仍须逐端实测建房/加入/邀请、至少多个真人同步与隐藏信息、断线/刷新、进程重启后原身份/原存档、合法动作与错误配置、伪造转发头/Origin 拒绝、HTTPS/资源/WSS、发布失败回滚；两服独立房间与 token 不跨 origin，邀请指向原服务器且错误服提示不能静默入另一房。再检查大厅两服切换、三个游戏桌面/手机、旧链接/预览/两旧游戏不受影响。真实设备/运营商网络与线上存档恢复未做时明确待验，入口继续“未上线”。

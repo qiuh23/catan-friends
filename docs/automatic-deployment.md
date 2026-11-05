@@ -1,6 +1,8 @@
 # 卡坦岛自动发布与一次性配置
 
-**准备完成不等于上线。** 工作流和脚本只在 PR 内，`CATAN_PRODUCTION_ENABLED` 未设置、production 环境不存在，默认不发布。用户尚未批准合并、云配置、生产部署或入口启用。本次没有创建云权限、密钥、DNS、证书或服务。
+**2026-11-05 21:41 首次发布快照（北京时间）：** [PR #1](https://github.com/qiuh23/catan-friends/pull/1) 已按用户授权合并，main `1cebfe1cd7fbd328131f72acb488c3621554c0bd` 的 [Checks 42036916669](https://github.com/qiuh23/catan-friends/actions/runs/42036916669) 与 [首次双端发布 42037701133](https://github.com/qiuh23/catan-friends/actions/runs/42037701133) 成功；两端公网 SHA/HTTPS/资源/WSS 已回读。production environment、专用 RAM role/policy 与加密 CF secret 已配置；仓库 `CATAN_PRODUCTION_ENABLED=true`。首次发布为手动选择当前 main 的成功 push Checks；后续 main 的自动 `workflow_run` 尚待下一次发布实证。大厅卡坦岛入口仍关闭，完整验收进行中。详见 [生产记录](production-rollout-2026-11-05.md)。
+
+新 Fork/新环境的安全默认值仍是不设置门禁或 `false`；本仓库的实际 true 是完成用户审批和配置后的状态，不代表其他环境已获准发布。下文保留新环境准备与维护规则。
 
 ## 唯一发布链
 
@@ -19,8 +21,10 @@ Checks 仅运行针对性的网络/部署/入口契约、Vite 构建和 Worker d
 沿用现有阿里云 GitHub OIDC Provider（先核实 ARN 与 audience，不创建重复 Provider），新增**卡坦岛专用 RAM role/policy**，不能复用运动会/巫师牌角色。信任条件必须固定：
 
 ```json
-{"oidc:iss":"https://token.actions.githubusercontent.com","oidc:aud":"sts.aliyuncs.com","oidc:sub":"repo:qiuh23/catan-friends:environment:production"}
+{"oidc:iss":"https://token.actions.githubusercontent.com","oidc:aud":"sts.aliyuncs.com","oidc:sub":"repo:qiuh23@145330254/catan-friends@1447016080:environment:production"}
 ```
+
+当前仓库启用了 GitHub immutable OIDC subject：账号与仓库均带数字 ID。上例是本仓库实际回读值；新 Fork 必须读取自己的 subject customization 与真实 token 声明，不能照抄 ID、退回旧的裸仓库名示例或使用通配符。当前专用角色为 `catan-friends-production-deploy`，仅附加 `CatanFriendsProductionDeploy`，信任及权限已回读匹配，最大会话 3600 秒且控制台登录关闭。
 
 权限只允许现有 ECS 的 `ecs:RunCommand`，且 `ecs:CommandRunAs` 精确为 `catan-friends-deploy`，以及同实例 `ecs:DescribeInvocationResults`。不授予 root 运行、其他实例、RAM 修改、云密钥读取或其他游戏发布权。主机该用户仅 sudo 固定 catan-friends 接收器；接收器将请求作为数据核验，不执行请求提供的命令。GitHub 使用 OIDC/STS 短期凭证经现有 Cloud Assistant 送达，**无需开放 SSH 入站或给 GitHub runner 放宽 22 端口**。
 
@@ -28,7 +32,7 @@ Checks 仅运行针对性的网络/部署/入口契约、Vite 构建和 Worker d
 
 | 变量 | 用途 / 拟定值 |
 | --- | --- |
-| `CATAN_PRODUCTION_ENABLED` | 首先不设置或 `false`；完成审批及首次配置后才设 `true` |
+| `CATAN_PRODUCTION_ENABLED` | 新环境不设置或 `false`；当前 qiuh23 仓库经批准已为 `true` |
 | `ALIYUN_REGION_ID` | 现有 ECS 实际地域（本次核查杭州，仍应以实例配置为准） |
 | `ALIYUN_INSTANCE_ID` | 现有实例 ID |
 | `ALIYUN_ROLE_ARN` | 新卡坦岛专用角色 ARN |
@@ -36,6 +40,8 @@ Checks 仅运行针对性的网络/部署/入口契约、Vite 构建和 Worker d
 | `CLOUDFLARE_ACCOUNT_ID` | 已核验账号 ID |
 | `CATAN_ALIYUN_ORIGIN` | `https://catan.magical-athlete-online.cn`，无尾斜杠 |
 | `CATAN_CLOUDFLARE_ORIGIN` | `https://catan-friends.qiuh23.workers.dev`，无尾斜杠 |
+
+当前专用 CF token `catan-friends-production-ci` 已通过 active/account Scripts 读取核验，加密保存于 production environment，有效至北京时间 **2027-11-05 23:59:59**。它只有所选账号的 Workers Scripts Edit，仍属于账号级权限边界，未声称仅能写 Catan 一个脚本。
 
 唯一新增的生产发布 secret 为专用 `CLOUDFLARE_API_TOKEN`；阿里云不使用长期 AccessKey 或 CI SSH 私钥。主机 bootstrap 可保留管理员批准的可选应急受限 SSH 公钥，但自动链不依赖它。
 
@@ -47,7 +53,7 @@ Checks 仅运行针对性的网络/部署/入口契约、Vite 构建和 Worker d
 
 `wrangler.jsonc` 固定正式 origin/服务器标记，`CATAN_RATE_LIMITER` 使用独立 namespace `3005`（120 请求/60秒），配置时再确认没有其他服务复用它。Cloudflare 原生限流按边缘位置计数，是尽力限流，不是全球精确配额；绑定缺失、错误或调用失败时生产游戏 API 关闭。参考 [Cloudflare Rate Limiting](https://developers.cloudflare.com/workers/runtime-apis/bindings/rate-limit/)。本地使用 `wrangler.local.jsonc`、不同 namespace，避免正式 origin 被 localhost 冒用。
 
-**不要为卡坦岛连接 Native Builds、Pages 或第二个生产发布 workflow。** 本次 token 对 Builds 查询返回 403，不能声称已核实所有 Builds 配置；启用门禁前必须在控制台检查卡坦岛未连接 Native Builds，已有两游戏保持其当前发布分工。GitHub source 对 `workflow_run` 的安全边界见 [GitHub 官方说明](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#workflow_run)。
+**不要为卡坦岛连接 Native Builds、Pages 或第二个生产发布 workflow。** 初查 token 对 Builds 查询返回 403；后续已在实际控制台核实：Catan 的 Git 存储库显示“连接”，没有连接仓库或 Native Builds，唯一发布者是上述 GitHub 链。运动会的“禁用构建”已勾选，沿用 GitHub 成对发布；巫师牌连接自己的 main 且“禁用构建”未勾选，CF Native Builds 与其独立 GitHub 阿里云流程各自只负责一个目标。不要为验证 Catan 改动这些既有分工。GitHub source 对 `workflow_run` 的安全边界见 [GitHub 官方说明](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#workflow_run)。
 
 ## 首次发布与验收顺序
 
