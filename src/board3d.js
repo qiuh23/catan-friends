@@ -3,6 +3,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { LABELS } from '../shared/board.js';
 import { resourceIllustration } from './icons.js';
 import { BoardAssets, Batches, buildTerrain, clearLayer } from './terrain.js';
+import { boardFrame } from './board-frame.js';
 
 export class Board {
   constructor(container,onSelect,onHover) {
@@ -64,6 +65,7 @@ export class Board {
       const {calls,triangles}=this.renderer.info.render;
       this.renderer.domElement.dataset.renderStats=JSON.stringify({...this.metrics,calls,triangles,...this.renderer.info.memory,dpr:this.renderer.getPixelRatio(),shadows:this.renderer.shadowMap.enabled});
       this.renderer.domElement.dataset.camera=JSON.stringify(this.camera.position.toArray());
+      this.renderer.domElement.dataset.cameraView=JSON.stringify(this.camera.view);
     });
   }
   resize() {
@@ -73,22 +75,56 @@ export class Board {
     const changed=w!==this.width||h!==this.height;
     this.width=w;this.height=h;this.renderer.setPixelRatio(dpr);this.renderer.setSize(w,h,false);
     this.renderer.shadowMap.enabled=!mobile;this.sun.castShadow=!mobile;this.renderer.shadowMap.needsUpdate=true;
-    this.camera.aspect=w/h;this.camera.updateProjectionMatrix();
-    if(changed&&this.board)this.reset();else this.invalidate();
+    if(changed){this.updateProjection();if(this.board)this.fit(true);else this.invalidate();}
+    else this.invalidate();
+  }
+  setViewportPadding(padding={}) {
+    const key=JSON.stringify([padding.top||0,padding.right||0,padding.bottom||0,padding.left||0]);
+    if(key===this.paddingKey)return;
+    this.paddingKey=key;this.padding=padding;this.updateProjection();
+    if(this.board)this.fit(true);else this.invalidate();
+  }
+  updateProjection() {
+    if(!this.width||!this.height)return;
+    this.viewportFrame=boardFrame(this.width,this.height,this.padding);
+    const f=this.viewportFrame;
+    // Off-axis projection centers the island in the unobscured play area while
+    // rendering the sea to every edge of the full viewport.
+    this.camera.setViewOffset(f.width,f.height,-f.left,-f.top,this.width,this.height);
+    this.camera.updateProjectionMatrix();
   }
   reset() {
     const scale=this.boardScale||1;
-    this.camera.position.set(...(this.mobile&&innerHeight>innerWidth?[3.8*scale,14*scale,9*scale]:[6.5*scale,11*scale,12*scale]));this.controls.target.set(0,0,0);
+    const portrait=(this.container?.clientWidth||this.width)<(this.container?.clientHeight||this.height);
+    this.camera.position.set(...(portrait?[.3*scale,16*scale,3*scale]:[14*scale,8*scale,.3*scale]));this.controls.target.set(0,0,0);
+    this.fit(false);
+  }
+  zoomBy(factor) {
+    if(!Number.isFinite(factor)||factor<=0)return;
+    const distance=Math.max(this.controls.minDistance,Math.min(this.controls.maxDistance,this.camera.position.length()/factor));
+    this.camera.position.setLength(distance);this.controls.update();this.invalidate();
+  }
+  fit(preserveZoom=false) {
+    const scale=this.boardScale||1,f=this.viewportFrame||boardFrame(this.width,this.height);
+    const relativeZoom=preserveZoom&&this.fitDistance?this.camera.position.length()/this.fitDistance:1;
     for(let i=0;i<14;i++) {
       this.camera.lookAt(this.controls.target);this.camera.updateMatrixWorld();
       const points=(this.fitPoints||[]).map(p=>new THREE.Vector3(p.x,p.y,p.z));
       const right=new THREE.Vector3().setFromMatrixColumn(this.camera.matrixWorld,0),up=new THREE.Vector3().setFromMatrixColumn(this.camera.matrixWorld,1);
       for(const p of this.portBounds||[])for(const dx of [-.46,.46])for(const dy of [-.23,.23])points.push(new THREE.Vector3(p.x,p.y,p.z).addScaledVector(right,dx).addScaledVector(up,dy));
       const projected=points.map(p=>p.project(this.camera));
-      const factor=Math.max(.1,...projected.map(p=>Math.max(Math.abs(p.x)/.92,Math.abs(p.y)/.88)));
+      const minX=Math.min(...projected.map(p=>p.x)),maxX=Math.max(...projected.map(p=>p.x)),minY=Math.min(...projected.map(p=>p.y)),maxY=Math.max(...projected.map(p=>p.y));
+      // Perspective makes the near coast larger. Center its actual projected
+      // bounds rather than leaving unused space above the island's origin.
+      this.camera.view.offsetX+=((minX+maxX)/2-f.centerX)*this.width/2;
+      this.camera.view.offsetY-=((minY+maxY)/2-f.centerY)*this.height/2;
+      this.camera.updateProjectionMatrix();
+      const factor=Math.max(.1,(maxX-minX)/2/f.halfWidth,(maxY-minY)/2/f.halfHeight);
       if(Math.abs(factor-1)<.006)break;
       this.camera.position.multiplyScalar(Math.max(.7,Math.min(1.35,factor)));
     }
+    this.fitDistance=this.camera.position.length();
+    this.camera.position.multiplyScalar(relativeZoom);
     this.controls.maxDistance=Math.max(24*scale,this.camera.position.length()*1.4);
     this.controls.minDistance=5*scale;this.controls.update();this.invalidate();
   }

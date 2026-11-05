@@ -16,7 +16,8 @@ let state=null,connection=null,code='',status='idle',busy=false,selectedBuild=''
 let seenChatIds=new Set();
 let roomList={status:'loading',rooms:[],error:'',nextCursor:null,moreStatus:'idle',moreError:''},listRequest=0,terminalMessage='',receivedAt=Date.now(),confirmation=null;
 let previewSeed=17;const preview={board:createBoard(()=>{previewSeed=(previewSeed*1664525+1013904223)>>>0;return previewSeed/4294967296;}),players:[],robber:null,legal:{}};
-const compactTable=matchMedia('(max-width:900px), (max-height:600px) and (max-width:1200px)');
+let stagePanel='';
+const inputDrafts=new Map(), panelScroll=new Map();
 let lastTaskKey='';
 let backendId='local',invite='',entryError='';
 try {
@@ -34,16 +35,16 @@ const resCost=cost=>Object.entries(cost).map(([r,n])=>`<span class="mini-resourc
 const button=(text,action,disabled=false,cls='')=>`<button type="button" class="${cls}" data-action="${action}" ${disabled?'disabled':''}>${text}</button>`;
 document.querySelector('#app').innerHTML=`
   <header class="topbar"><a class="brand" data-home-link href="/" aria-label="卡坦岛好友桌首页"><span class="brand-mark">${icon('island')}</span><span>卡坦岛 <small>好友桌</small></span></a><div id="room-meta"></div><nav>${lobbyOrigins[backendId]?`<a class="text-button" data-lobby-link href="${lobbyOrigins[backendId]}" aria-label="返回当前服务器游戏大厅">返回游戏大厅</a>`:''}${button(`${icon('book')}<span>玩法指南</span>`,'rules',false,'text-button')}</nav></header>
-  <main id="table" class="table home"><aside id="left-panel"></aside><section class="board-area" aria-label="游戏棋盘"><div id="board"></div><div class="board-top" id="turn-banner" aria-live="polite"></div><div class="board-controls">${button(icon('reset'),'reset',false,'square')}<button class="square" id="flat-toggle" type="button" aria-label="切换二维棋盘">2D</button></div><div id="tile-hint" class="tile-hint">拖动旋转 · 双指或滚轮缩放</div><div id="hand"></div><div id="island-caption"></div></section><div id="rail-status"></div><section id="play-dock" aria-label="建设与回合操作"></section><aside id="right-panel"></aside></main>
-  <dialog id="room-dialog" aria-labelledby="room-dialog-title"><div class="dialog-heading"><h2 id="room-dialog-title"></h2>${button(icon('close'),'cancelRoomDialog',false,'square')}</div><p id="room-dialog-copy"></p><div class="dialog-actions">${button('取消','cancelRoomDialog',false,'secondary')}${button('确认','confirmRoomDialog',false,'primary')}</div></dialog><div id="toast" role="status" aria-live="polite"></div><dialog id="rules-dialog"><div class="dialog-heading"><h2>在岛上，建立你的世界。</h2>${button(icon('close'),'closeRules',false,'square')}</div><div class="rules-copy"><p>经典基础版为 3–4 人；5–6 人扩充采用大岛屿与 2025 配对回合。基础版默认达到 <strong>10 个胜利点</strong>获胜。可选拓展在建房时选择，开局前由房主调整，规则对所有人公开。</p><h3>先为自己找个好位置</h3><p>每人放置两座村庄与两条道路：第一轮顺序放置，第二轮反向放置。第二座村庄会收取相邻地块各 1 张资源。任意两座村庄之间必须至少隔一个空交叉点。</p><h3>掷骰、收获、交易、建造</h3><p>掷出两枚骰子，数字对应的地块向相邻村庄生产 1 张资源，向城市生产 2 张。所有玩家都可能收获。随后可多次交易、建造或购买发展卡，完成后结束回合。</p><div class="rules-costs">${Object.entries(COSTS).map(([k,c])=>`<div>${icon(k)}<b>${({road:'道路',settlement:'村庄',city:'城市',development:'发展卡'})[k]}</b>${resCost(c)}</div>`).join('')}</div><h3>强盗与七点</h3><p>掷出 7 时不生产资源。手牌超过 7 张的玩家须弃掉一半（向下取整）；当前玩家移动强盗，并从相邻的一名对手处随机抽一张资源。强盗所在格停止生产。</p><h3>把资源换成机会</h3><p>可向其他玩家提出交易，由对方接受。银行默认 4:1；拥有普通港口时 3:1，对应专属港口为 2:1。只能在自己的行动阶段主动发起交易。</p><h3>发展卡与额外得分</h3><p>每回合最多使用一张非胜利点发展卡，当回合购买的不能使用。骑士移动强盗；道路建设免费建造最多两条路；丰收从银行取两张资源；垄断收取所有对手的一种资源。胜利点卡私下自动计分。</p><p>村庄 1 分，城市 2 分。最长道路至少 5 段、最大骑士军队至少 3 张，各值 2 分；平手时原持有者保留。对手建筑会截断道路。</p><h3>可选拓展（2025 规则）</h3><p><strong>友善强盗：</strong>公开分不超过 2 分的玩家，其建筑相邻地块不能放置强盗；掷出 7 仍正常弃牌。<strong>卡坦港口：</strong>港口村庄计 1 港口分、城市计 2 分，首达 3 港口分取得 2 胜利分奖励，严格超过现持有者时转交。启用后目标为 11 胜利分。两项变体均可组合，人数由所选基础版或 5–6 人扩充决定。</p><h3>5–6 人扩充 · 2025 配对回合</h3><p>每个常规回合由主玩家掷骰并行动，之后由相隔三席的配对伙伴进行一次建设阶段。伙伴可以银行与港口交易、建设、购买和使用发展卡并获胜，不能再次掷骰或与其他玩家交易。伙伴结束后轮到下一位主玩家掷骰。本模式使用扩大的岛屿、资源与发展卡供应。</p><h3>暂离、暂停与房间保留</h3><p class="muted">普通真人房从房主最后一个有效连接离线起保留 30 分钟。房主主动暂停的真人房，从本次暂停首次离线起固定保留最多 4 小时，短暂重连不延长截止时间。练习房离开后保留 10 分钟。房主在线时不会因普通闲置关闭。对局中暂离保留身份；等待阶段非房主主动退座释放席位。解散由房主单独确认。</p></div></dialog>`;
+  <main id="table" class="table home"><aside id="left-panel"></aside><section class="board-area" aria-label="游戏棋盘"><div id="board"></div><div class="board-top" id="turn-banner" aria-live="polite"></div><div class="board-controls">${button(icon('reset'),'reset',false,'square')}<button class="square" id="flat-toggle" type="button" aria-label="切换二维棋盘">2D</button></div><div id="tile-hint" class="tile-hint">拖动旋转 · 双指或滚轮缩放</div><div id="hand"></div><div id="island-caption"></div></section><nav id="stage-tools" aria-label="对局工具"></nav><section id="play-dock" aria-label="建设与回合操作"></section><aside id="right-panel"></aside></main>
+  <dialog id="stage-dialog" aria-labelledby="stage-dialog-title"><div class="dialog-heading"><h2 id="stage-dialog-title"></h2>${button(icon('close'),'closeStagePanel',false,'square')}</div><p id="stage-feedback" role="status" aria-live="polite"></p><div id="stage-dialog-content"></div></dialog><dialog id="room-dialog" aria-labelledby="room-dialog-title"><div class="dialog-heading"><h2 id="room-dialog-title"></h2>${button(icon('close'),'cancelRoomDialog',false,'square')}</div><p id="room-dialog-copy"></p><div class="dialog-actions">${button('取消','cancelRoomDialog',false,'secondary')}${button('确认','confirmRoomDialog',false,'primary')}</div></dialog><div id="toast" role="status" aria-live="polite"></div><dialog id="rules-dialog"><div class="dialog-heading"><h2>在岛上，建立你的世界。</h2>${button(icon('close'),'closeRules',false,'square')}</div><div class="rules-copy"><p>经典基础版为 3–4 人；5–6 人扩充采用大岛屿与 2025 配对回合。基础版默认达到 <strong>10 个胜利点</strong>获胜。可选拓展在建房时选择，开局前由房主调整，规则对所有人公开。</p><h3>先为自己找个好位置</h3><p>每人放置两座村庄与两条道路：第一轮顺序放置，第二轮反向放置。第二座村庄会收取相邻地块各 1 张资源。任意两座村庄之间必须至少隔一个空交叉点。</p><h3>掷骰、收获、交易、建造</h3><p>掷出两枚骰子，数字对应的地块向相邻村庄生产 1 张资源，向城市生产 2 张。所有玩家都可能收获。随后可多次交易、建造或购买发展卡，完成后结束回合。</p><div class="rules-costs">${Object.entries(COSTS).map(([k,c])=>`<div>${icon(k)}<b>${({road:'道路',settlement:'村庄',city:'城市',development:'发展卡'})[k]}</b>${resCost(c)}</div>`).join('')}</div><h3>强盗与七点</h3><p>掷出 7 时不生产资源。手牌超过 7 张的玩家须弃掉一半（向下取整）；当前玩家移动强盗，并从相邻的一名对手处随机抽一张资源。强盗所在格停止生产。</p><h3>把资源换成机会</h3><p>可向其他玩家提出交易，由对方接受。银行默认 4:1；拥有普通港口时 3:1，对应专属港口为 2:1。只能在自己的行动阶段主动发起交易。</p><h3>发展卡与额外得分</h3><p>每回合最多使用一张非胜利点发展卡，当回合购买的不能使用。骑士移动强盗；道路建设免费建造最多两条路；丰收从银行取两张资源；垄断收取所有对手的一种资源。胜利点卡私下自动计分。</p><p>村庄 1 分，城市 2 分。最长道路至少 5 段、最大骑士军队至少 3 张，各值 2 分；平手时原持有者保留。对手建筑会截断道路。</p><h3>可选拓展（2025 规则）</h3><p><strong>友善强盗：</strong>公开分不超过 2 分的玩家，其建筑相邻地块不能放置强盗；掷出 7 仍正常弃牌。<strong>卡坦港口：</strong>港口村庄计 1 港口分、城市计 2 分，首达 3 港口分取得 2 胜利分奖励，严格超过现持有者时转交。启用后目标为 11 胜利分。两项变体均可组合，人数由所选基础版或 5–6 人扩充决定。</p><h3>5–6 人扩充 · 2025 配对回合</h3><p>每个常规回合由主玩家掷骰并行动，之后由相隔三席的配对伙伴进行一次建设阶段。伙伴可以银行与港口交易、建设、购买和使用发展卡并获胜，不能再次掷骰或与其他玩家交易。伙伴结束后轮到下一位主玩家掷骰。本模式使用扩大的岛屿、资源与发展卡供应。</p><h3>暂离、暂停与房间保留</h3><p class="muted">普通真人房从房主最后一个有效连接离线起保留 30 分钟。房主主动暂停的真人房，从本次暂停首次离线起固定保留最多 4 小时，短暂重连不延长截止时间。练习房离开后保留 10 分钟。房主在线时不会因普通闲置关闭。对局中暂离保留身份；等待阶段非房主主动退座释放席位。解散由房主单独确认。</p></div></dialog>`;
 document.querySelector('[data-action="rules"]').setAttribute('aria-label','玩法指南');
 document.querySelector('[data-action="cancelRoomDialog"]').setAttribute('aria-label','关闭房间确认');
 document.querySelector('[data-action="closeRules"]').setAttribute('aria-label','关闭玩法指南');
 const resetButton=document.querySelector('[data-action="reset"]');resetButton.setAttribute('aria-label','复位棋盘视角');
-function toast(text){const el=$('#toast');el.textContent=text;el.classList.add('show');clearTimeout(toast.timer);toast.timer=setTimeout(()=>el.classList.remove('show'),4500);}
+function toast(text){if($('#stage-dialog').open){$('#stage-feedback').textContent=text;return;}const el=$('#toast');el.textContent=text;el.classList.add('show');clearTimeout(toast.timer);toast.timer=setTimeout(()=>el.classList.remove('show'),4500);}
 function mode(){if(!state||!myTurn()||state.room?.paused)return '';if(state.phase==='setup-settlement')return 'settlement';if(['setup-road','road-building'].includes(state.phase))return 'road';if(state.phase==='robber')return 'robber';return state.phase==='action'?selectedBuild:'';}
 function makeBoard(){board?.dispose();$('#board').innerHTML='';try{board=flat?new FlatBoard($('#board'),select,hover):new Board($('#board'),select,hover);}catch(error){flat=true;board=new FlatBoard($('#board'),select,hover);toast('当前设备无法开启 3D，已切换到二维棋盘。');}$('#flat-toggle').textContent=flat?'3D':'2D';$('#flat-toggle').setAttribute('aria-label',flat?'切换三维棋盘':'切换二维棋盘');board.set(state?.board?state:preview,mode());}
-function hover(text){$('#tile-hint').textContent=text|| (flat?'点击亮色标记落子':'拖动旋转 · 双指或滚轮缩放');if(text?.startsWith('相邻落点较近'))toast(text);}
+function hover(text){$('#tile-hint').textContent=text|| (flat?'拖动平移 · 双指或加减键缩放':'拖动旋转 · 双指或滚轮缩放');if(text?.startsWith('相邻落点较近'))toast(text);}
 async function select(target){
   if(busy||status!=='connected')return;
   const m=mode();
@@ -52,13 +53,13 @@ async function select(target){
   if(target.kind==='vertex'&&['settlement','city'].includes(m))return send({type:m==='city'?'buildCity':'buildSettlement',vertex:target.id});
 }
 async function send(action){
-  if(busy)return;busy=true;render();
-  try{await connection.action(action);if(['buildRoad','buildCity','buildSettlement','playDevelopment'].includes(action.type)){selectedBuild='';panel='';cardId='';}return true;}catch(error){toast(error.message);return false;}finally{busy=false;render();}
+  if(busy)return;$('#stage-feedback').textContent='';busy=true;render();
+  try{await connection.action(action);if(['buildRoad','buildCity','buildSettlement','playDevelopment'].includes(action.type)){selectedBuild='';panel='';cardId='';stagePanel='';$('#stage-dialog').close();}if(['discard','offerTrade','playDevelopment'].includes(action.type)){const prefix={discard:'discard',offerTrade:'give',playDevelopment:'plenty'}[action.type];for(const key of inputDrafts.keys())if(key.startsWith(prefix+'-')||action.type==='offerTrade'&&key.startsWith('want-'))inputDrafts.delete(key);for(const el of document.querySelectorAll(`[id^="${prefix}-"]${action.type==='offerTrade'?', [id^="want-"]':''}`))if(el.matches('input'))el.value='0';}return true;}catch(error){toast(error.message);return false;}finally{busy=false;render();}
 }
 function connect(room,token,name){
   if(entryError)return toast(entryError);
   try {room=readRoom(room,backendId);}catch(error){return toast(error.message);}
-  connection?.close();code=room;state=null;seenChatIds=new Set();status='connecting';
+  connection?.close();code=room;state=null;seenChatIds=new Set();inputDrafts.clear();stagePanel='';lastTaskKey='';status='connecting';
   terminalMessage='';storage.set('name',name);history.replaceState(null,'',invitationURL(location.origin,code,backendId));
   connection=new Connection(code,token,name,(next)=>{const old=state;receivedAt=Date.now();if(next.room?.closed)return terminal({type:'closed',message:next.room.closeReason||'房间已关闭。'});state=next;storage.set('last',{code,token,name});storage.set(`token:${code}`,token);if(old?.turnNo!==next.turnNo||old?.phase!==next.phase){selectedBuild='';panel='';cardId='';}render();},s=>{status=s;render();},toast,terminal);
   render();
@@ -100,14 +101,16 @@ function retention(){const room=state?.room;if(!room)return '';const remaining=r
 function roomNavigation(){return `<div class="room-navigation">${isHost()&&state.phase!=='lobby'&&state.phase!=='finished'&&!state.room?.practice&&!state.room?.paused?button('暂停对局','pauseGame',busy||status!=='connected','secondary'):''}${isHost()&&state.phase!=='lobby'&&!state.room?.practice&&state.players.some(p=>p.id!==state.me&&!p.bot&&p.online)?button('转交房主','transferMenu',busy,'text-button'):''}${button(state.phase==='lobby'&&!isHost()?'退出座位':'暂离房间','home',busy,'text-button')}${isHost()?button('解散房间','dissolve',busy||status!=='connected','danger-button'):''}</div>`;}
 function lobbyPanel(){const host=isHost();return `<div class="panel-title"><h2>等朋友入座</h2><p>分享邀请链接，凑齐就开桌。</p></div><div class="invite-block"><span>房间码 · ${state.room?.visibility==='private'?'私密':'公开'}</span><strong>${displayCode(code)}</strong>${button(`${icon('link')}复制邀请链接`,'invite',false,'text-button')}</div>${retention()}${playerList()}${state.players.length<maxPlayers()?`<div class="empty-seat">${icon('users')}还有 ${maxPlayers()-state.players.length} 个空位</div>`:''}${roomSettings()}<div class="lobby-actions">${host?button(`${icon('bot')}添加电脑玩家`,'addBot',busy||state.players.length>=maxPlayers(),'secondary'):button(mine().ready?`${icon('check')}已准备 · 取消`:'我准备好了','ready',busy,'primary')}${host?button(`开始探索 ${icon('arrow')}`,'start',busy||state.players.length<minPlayers()||state.players.some(p=>!p.bot&&p.id!==state.me&&(!p.ready||!p.online)),'primary'):''}</div><p class="muted small">${minPlayers()}–${maxPlayers()} 人开局。其他真人在线并准备后，由房主开始；电脑可补位。修改规则会取消准备。</p>${roomNavigation()}`;}
 function gamePanel(){
-  return `<details id="players-details" class="table-info" ${compactTable.matches?'':'open'}><summary>本桌玩家 · ${state.players.length} 人 <small>目标 ${state.targetPoints||10} 分</small></summary><div class="panel-heading"><h2>岛上的朋友</h2><span>目标 ${state.targetPoints||10} 分</span></div>${retention()}<p class="rules-summary">${esc(rulesLabel(state.options))}</p>${playerList()}<div class="awards"><span>${icon('road')}最长道路 <b>${state.longest?esc(state.players.find(p=>p.id===state.longest).name):'待争夺'}</b></span><span>${icon('flag')}最大军队 <b>${state.army?esc(state.players.find(p=>p.id===state.army).name):'待争夺'}</b></span>${state.options?.harbormaster?`<span>${icon('settlement')}卡坦港口 <b>${state.harbormaster?esc(state.players.find(p=>p.id===state.harbormaster)?.name):'待争夺'}</b></span>`:''}</div>${roomNavigation()}</details>`;
+  return `<p class="rules-summary">${esc(rulesLabel(state.options))} · ${state.targetPoints||10} 分获胜</p>${playerList()}<div class="awards"><span>${icon('road')}最长道路 <b>${state.longest?esc(state.players.find(p=>p.id===state.longest).name):'待争夺'}</b></span><span>${icon('flag')}最大军队 <b>${state.army?esc(state.players.find(p=>p.id===state.army).name):'待争夺'}</b></span>${state.options?.harbormaster?`<span>${icon('settlement')}卡坦港口 <b>${state.harbormaster?esc(state.players.find(p=>p.id===state.harbormaster)?.name):'待争夺'}</b></span>`:''}</div>`;
 }
 function gameControls(){
   const me=mine(),active=myTurn(),disabled=busy||status!=='connected'||state.room?.paused;
-  return `<section class="build-section"><div class="panel-heading"><h2>建设你的版图</h2></div>${['road','settlement','city','development'].map(k=>{
+  return `<section class="build-section" aria-label="建造">${['road','settlement','city','development'].map(k=>{
+    const name=({road:'道路',settlement:'村庄',city:'城市',development:'发展卡'})[k];
+    const cost=Object.entries(COSTS[k]).map(([r,n])=>`${LABELS[r]} ${n}`).join('，');
     const can=active&&state.phase==='action'&&afford(me.hand,COSTS[k])&&(k==='development'?state.deckCount>0:state.legal[k].length>0);
-    return `<button type="button" class="build-button ${selectedBuild===k?'selected':''}" data-build="${k}" ${!can||disabled?'disabled':''}><span class="build-icon">${icon(k)}</span><span><b>${({road:'道路',settlement:'村庄',city:'城市',development:'发展卡'})[k]}</b><span class="cost">${resCost(COSTS[k])}</span></span>${k==='development'?`<small>${state.deckCount}</small>`:icon('arrow')}</button>`;
-  }).join('')}</section><div class="turn-actions">${button(`${icon('trade')}资源交易`,'trade',disabled||!active||state.phase!=='action','secondary')}${state.phase==='roll'&&active?button(`${icon('dice')}掷出骰子`,'roll',disabled,'primary'):button(`结束回合 ${icon('arrow')}`,'endTurn',disabled||!active||state.phase!=='action','primary')}</div><div class="supply"><span>剩余棋子</span><b>${15-state.board.edges.filter(e=>e.owner===me.id).length} 路 · ${5-state.board.vertices.filter(v=>v.owner===me.id&&v.level===1).length} 村 · ${4-state.board.vertices.filter(v=>v.owner===me.id&&v.level===2).length} 城</b></div>`;
+    return `<button type="button" class="build-button ${selectedBuild===k?'selected':''}" data-build="${k}" aria-label="建造${name}，${cost}" aria-pressed="${selectedBuild===k}" title="${name} · ${cost}" ${!can||disabled?'disabled':''}>${icon(k)}<span>${name}</span></button>`;
+  }).join('')}</section><div class="turn-actions">${button(`${icon('trade')}<span>交易</span>`,'trade',disabled||!active||state.phase!=='action','secondary')}${state.phase==='roll'&&active?button(`${icon('dice')}<span>掷骰</span>`,'roll',disabled,'primary'):button(`${icon('arrow')}<span>${state.pairStep==='secondary'?'结束阶段':'结束回合'}</span>`,'endTurn',disabled||!active||state.phase!=='action','primary')}</div>`;
 }
 function field(r,prefix,max=state?.profile?.resourceCount||19){return `<label class="resource-input ${r}" for="${prefix}-${r}"><span>${icon(r)}${LABELS[r]}</span><input data-persist id="${prefix}-${r}" type="number" inputmode="numeric" min="0" max="${max}" value="0" aria-label="${prefix==='discard'?'弃掉':prefix==='give'?'提供':prefix==='want'?'需要':'获取'}${LABELS[r]}数量"></label>`;}
 function formBundle(prefix){return Object.fromEntries(RESOURCES.map(r=>[r,Number($(`#${prefix}-${r}`)?.value||0)]));}
@@ -125,49 +128,88 @@ function unreadChat(){return state?.chat.filter(c=>!seenChatIds.has(c.id)).lengt
 function rightPanel(){
   if(!state)return publicRooms();
   if(state.phase==='lobby')return `<div class="island-guide"><span class="guide-mark">${icon('island')}</span><h2>从一座村庄开始</h2><div class="resource-legend">${RESOURCES.map(r=>`<span class="${r}" aria-label="${LABELS[r]}" title="${LABELS[r]}">${resourceIllustration(r)}</span>`).join('')}</div><p class="guide-note">收获 · 交易 · 建设</p></div>`;
-  return `${state.phase==='finished'?`<section class="winner"><span>${icon('flag')}</span><h2>${esc(state.players.find(p=>p.id===state.winner).name)}<br>赢得了这座岛！</h2><p>${state.players.find(p=>p.id===state.winner).points} 个胜利点</p>${isHost()?button('再来一局','rematch',busy,'primary'):''}${button('返回首页','home',false,'secondary')}</section>`:''}<section id="decision-panel" tabindex="-1" aria-label="当前操作">${actionPanel()}${offer()}</section><details id="activity-details" class="secondary-panel" ${compactTable.matches?'':'open'}><summary>岛屿记事 <small>回合 ${state.turnNo||'准备'}</small></summary><section class="log-section"><div class="activity-log" aria-live="polite">${state.log.slice(-18).map(l=>`<p>${esc(l.text)}</p>`).join('')}</div></section></details><details id="chat-details" class="secondary-panel" ${compactTable.matches?'':'open'}><summary>围桌聊聊 <small class="chat-unread">${unreadChat()?unreadChat()+' 条新消息':''}</small></summary><section class="chat-section"><div class="chat-log">${state.chat.length?state.chat.slice(-12).map(c=>`<p><strong>${esc(c.name)}</strong> ${esc(c.text)}</p>`).join(''):'<p class="muted">和朋友打声招呼，或聊聊交易。</p>'}</div><form id="chat-form"><input id="chat-message" data-persist maxlength="200" placeholder="说点什么…" aria-label="聊天消息"><button class="square" aria-label="发送消息" ${busy?'disabled':''}>${icon('arrow')}</button></form></section></details>`;
+  return '';
 }
 function banner(){
-  if(!state||state.phase==='lobby')return '';
-  if(state.room?.paused)return '<div class="turn-banner paused-banner"><div><strong>房主已暂停对局</strong><span>暂停期间不能交易或操作棋盘，等待房主恢复。</span></div></div>';
+  if(!state?.board)return '';
   const p=state.players[state.turn],self=myTurn(),task=requiredTask(state);
-  const descriptions={ 'setup-settlement':'选择一个亮色交叉点，建造村庄','setup-road':'选择与新村庄相连的道路',roll:'掷出骰子，看看岛屿的收获',action:selectedBuild?`点击亮色标记，建造${{road:'道路',settlement:'村庄',city:'城市'}[selectedBuild]}`:'交易、建设，让你的版图更进一步',discard:'等待手牌超过 7 张的玩家弃牌',robber:'点击一块新的土地，移动强盗',steal:'选择一位相邻对手，抽取资源','road-building':`还可以免费铺设 ${state.freeRoads} 条道路`,finished:'对局已结束，感谢这一次相聚'};
-  return `<div class="turn-banner ${self?'your-turn':''} ${task?'needs-attention':''}"><span class="turn-dot" style="background:${p.color}"></span><div><strong>${task?task.title:state.phase==='finished'?'岛屿已迎来胜者':self?'轮到你了':`等待 ${esc(p.name)}`}</strong><span>${task?task.description:state.pairStep==='secondary'&&state.phase==='action'?'配对伙伴建设：可银行交易、建设与使用发展卡，然后结束阶段':descriptions[state.phase]||''}</span></div>${task?button('去处理','focusTask',false,'task-shortcut'):state.dice?`<div class="dice-pair" aria-label="骰子 ${state.dice.join(' 加 ')}">${state.dice.map(n=>`<span>${n}</span>`).join('')}</div>`:icon(self?'flag':'users')}</div>`;
+  const descriptions={'setup-settlement':'放置村庄','setup-road':'铺设起始道路',roll:'等待掷骰',action:selectedBuild?`选择${{road:'道路',settlement:'村庄',city:'城市'}[selectedBuild]}位置`:state.pairStep==='secondary'?'配对建设阶段':'交易 · 建造',discard:'等待弃牌',robber:'选择强盗地块',steal:'选择偷取对象','road-building':`免费道路 · 还可建 ${state.freeRoads} 条`,finished:'对局结束'};
+  return `<div class="turn-banner ${self?'your-turn':''} ${task?'needs-attention':''}"><span class="turn-dot" style="background:${p.color}"></span><div><strong>${task?task.title:state.phase==='finished'?'对局结束':self?'你的回合':esc(p.name)}</strong><span class="${status!=='connected'?'connection-warning':''}">${status!=='connected'?statusText():task?'需要处理':descriptions[state.phase]||''}</span></div>${task?button('去处理','focusTask',false,'task-shortcut'):state.phase==='finished'?button('结算','openResult',false,'task-shortcut'):state.dice?`<div class="dice-pair" aria-label="骰子 ${state.dice.join(' 加 ')}">${state.dice.map(n=>`<span>${n}</span>`).join('')}</div>`:''}</div>`;
 }
-function hand(){if(!state?.board)return '';return `<div class="hand-tray"><div class="hand-label"><strong>你的资源</strong><span>${total(mine().hand)} 张手牌</span></div><div class="resource-hand">${RESOURCES.map(r=>`<div class="resource-card ${r}" aria-label="${LABELS[r]} ${mine().hand[r]} 张" title="${LABELS[r]}：${mine().hand[r]} 张，银行剩余 ${state.bank[r]} 张"><span class="resource-art">${resourceIllustration(r)}</span><strong>${mine().hand[r]}</strong></div>`).join('')}</div><div class="development-hand">${mine().dev.map(c=>`<button data-card="${c.id}" ${busy||state.room?.paused||!myTurn()||!['roll','action'].includes(state.phase)||state.playedDev||c.type==='victory'||c.bought>=state.turnNo?'disabled':''} title="${c.type==='victory'?'私下自动计入胜利点':c.bought>=state.turnNo?'本回合购入，下回合可用':'打出这张发展卡'}">${icon(c.type==='knight'?'flag':'development')}${DEV_NAMES[c.type]}${c.bought>=state.turnNo&&c.type!=='victory'?'<small>新</small>':''}</button>`).join('')}</div></div>`;}
+function hand(){if(!state?.board)return '';return `<div class="hand-tray" aria-label="你的资源与手牌"><div class="resource-hand">${RESOURCES.map(r=>`<div class="resource-card ${r}" role="img" aria-label="${LABELS[r]} ${mine().hand[r]} 张" title="${LABELS[r]}：${mine().hand[r]} 张，银行剩余 ${state.bank[r]} 张"><span class="resource-art">${resourceIllustration(r)}</span><strong>${mine().hand[r]}</strong></div>`).join('')}${button(`${icon('development')}<b>${mine().dev.length}</b>`,'openHand',false,'hand-entry')}</div></div>`;}
+function tools(){return `<a class="stage-brand" data-home-link href="/" aria-label="卡坦岛好友桌首页" title="卡坦岛">${icon('island')}</a><div class="stage-utilities">${[['chat','openChat','聊天'],['users','openPlayers','玩家'],['log','openLog','记录'],['settings','openSettings','设置']].map(([glyph,action,label])=>`<button type="button" data-action="${action}" aria-label="${label}" title="${label}" aria-haspopup="dialog">${icon(glyph)}${action==='openChat'&&unreadChat()?`<span class="chat-unread badge">${unreadChat()}</span>`:''}</button>`).join('')}</div>`;}
+function chatMessages(){return state.chat.length?state.chat.slice(-80).map(c=>`<p><strong>${esc(c.name)}</strong> ${esc(c.text)}</p>`).join(''):'<p class="muted">和朋友打声招呼。</p>'; }
+function chatPanel(){return `<section class="chat-section"><div id="chat-messages" class="chat-log" role="log" aria-label="聊天记录">${chatMessages()}</div><form id="chat-form"><input id="chat-message" data-persist maxlength="200" placeholder="说点什么…" aria-label="聊天消息"><button class="square" aria-label="发送消息" ${busy?'disabled':''}>${icon('arrow')}</button></form></section>`;}
+function developmentPanel(){return `<div class="development-hand">${mine().dev.length?mine().dev.map(c=>`<button data-card="${c.id}" ${busy||state.room?.paused||!myTurn()||!['roll','action'].includes(state.phase)||state.playedDev||c.type==='victory'||c.bought>=state.turnNo?'disabled':''} title="${c.type==='victory'?'私下自动计入胜利点':c.bought>=state.turnNo?'本回合购入，下回合可用':'打出这张发展卡'}">${icon(c.type==='knight'?'flag':'development')}${DEV_NAMES[c.type]}${c.bought>=state.turnNo&&c.type!=='victory'?'<small>新</small>':''}</button>`).join(''):'<p class="muted">暂无发展卡</p>'}</div><p class="small muted">资源 ${total(mine().hand)} 张 · 胜利点卡私下计分</p><div class="supply"><span>剩余棋子</span><b>${15-state.board.edges.filter(e=>e.owner===state.me).length} 路 · ${5-state.board.vertices.filter(v=>v.owner===state.me&&v.level===1).length} 村 · ${4-state.board.vertices.filter(v=>v.owner===state.me&&v.level===2).length} 城</b></div><div class="bank-stock" aria-label="银行资源">${RESOURCES.map(r=>`<span class="${r}" title="银行${LABELS[r]}">${icon(r)} ${state.bank[r]}</span>`).join('')}</div>`;}
+function resultPanel(){const winner=state.players.find(p=>p.id===state.winner);return `<section class="winner">${icon('flag')}<h2>${esc(winner?.name)} 获胜</h2><p>${winner?.points} 个胜利点</p>${isHost()?button('再来一局','rematch',busy,'primary'):''}${button('返回首页','home',false,'secondary')}</section>`;}
+function stageContent(){
+  if(stagePanel==='chat')return chatPanel();
+  if(stagePanel==='players')return gamePanel();
+  if(stagePanel==='log')return `<div class="activity-log" aria-label="岛屿记事">${state.log.map(l=>`<p>${esc(l.text)}</p>`).join('')}</div>`;
+  if(stagePanel==='settings')return `<p class="settings-meta"><span class="connection ${status}"><i></i>${statusText()}</span>房间 ${displayCode(code)}</p>${retention()}<p class="rules-summary">${esc(rulesLabel(state.options))} · ${state.targetPoints||10} 分获胜</p><div class="settings-grid">${button(`${icon('zoom')}放大地图`,'zoomIn')}${button('− 缩小地图','zoomOut')}${button(`${icon('reset')}复位视角`,'reset')}${button(flat?'3D 三维棋盘':'2D 备用棋盘','toggleFlat')}${button(`${icon('book')}玩法指南`,'rules')}${button(`${icon('link')}邀请好友`,'invite')}</div>${roomNavigation()}${lobbyOrigins[backendId]?`<a class="settings-lobby" data-lobby-link href="${lobbyOrigins[backendId]}">返回游戏大厅 ${icon('arrow')}</a>`:''}`;
+  if(stagePanel==='hand')return developmentPanel();
+  if(stagePanel==='result')return resultPanel();
+  const task=requiredTask(state);
+  return `<section id="decision-panel" tabindex="-1" aria-label="当前操作">${task?.key.startsWith('offer:')?'':actionPanel()}${offer()}</section>`;
+}
+function saveDrafts(){for(const el of document.querySelectorAll('[data-persist]'))inputDrafts.set(el.id,el.type==='checkbox'?el.checked:el.value);}
+function openStagePanel(next){saveDrafts();if(stagePanel)panelScroll.set(stagePanel,$('#stage-dialog-content').scrollTop);stagePanel=next;$('#stage-feedback').textContent='';render();}
+function closeStagePanel(){saveDrafts();if(stagePanel)panelScroll.set(stagePanel,$('#stage-dialog-content').scrollTop);stagePanel='';$('#stage-dialog').close();}
+function renderStage(task){
+  const dialog=$('#stage-dialog');
+  if(!state?.board){stagePanel='';dialog.close();lastTaskKey='';return;}
+  const taskKey=task?.key||'';
+  if(taskKey!==lastTaskKey){lastTaskKey=taskKey;if(task){saveDrafts();stagePanel='decision';$('#stage-feedback').textContent='';panelScroll.set('decision',0);}else if(stagePanel==='decision'){stagePanel='';}}
+  if(state.phase==='finished'&&renderStage.phase!=='finished')stagePanel='result';
+  renderStage.phase=state.phase;
+  if(!stagePanel){dialog.close();return;}
+  $('#stage-dialog-title').textContent=({chat:'围桌聊聊',players:`本桌玩家 · ${state.players.length} 人`,log:'岛屿记事',settings:'对局设置',hand:'你的手牌',result:'本局结算',decision:task?.title||'交换与行动'})[stagePanel];
+  const scroller=$('#stage-dialog-content'),scroll=scroller.scrollTop,changed=scroller.dataset.panel!==stagePanel;
+  if(!changed&&stagePanel==='chat'&&$('#chat-form')){paint('#chat-messages',chatMessages());$('#chat-form button').disabled=busy;}else paint('#stage-dialog-content',stageContent());
+  scroller.dataset.panel=stagePanel;
+  scroller.scrollTop=changed?panelScroll.get(stagePanel)||0:scroll;
+  if(stagePanel==='chat')for(const chat of state.chat)seenChatIds.add(chat.id);
+  if(!dialog.open&&!$('#room-dialog').open&&!$('#rules-dialog').open){$('#toast').classList.remove('show');dialog.showModal();}
+}
 function render(){
   const detailsState=new Map([...document.querySelectorAll('details[id]')].map(el=>[el.id,el.open]));
-  const inputs=new Map([...document.querySelectorAll('[data-persist]')].map(el=>[el.id,el.type==='checkbox'?el.checked:el.value])),active=document.activeElement?.id,start=document.activeElement?.selectionStart;
+  saveDrafts();
+  const activeElement=document.activeElement,active=activeElement?.id,start=activeElement?.selectionStart;
   const task=requiredTask(state);
   $('#table').className=`table ${state?'in-room':'home'} ${state?.board?'playing':''} ${task?'has-required-task':''} ${panel?'has-open-panel':''}`;
   document.body.classList.toggle('at-table',Boolean(state?.board));
   paint('#room-meta',code?`<span class="connection ${status}"><i></i>${statusText()}</span><span class="room-code">房间 ${displayCode(code)}</span>${button(`${icon('link')}<span>邀请好友</span>`,'invite',false,'text-button')}${state?button(icon('back'),'home',false,'square'):button('取消连接','home',false,'text-button')}`:'<span class="header-note">把朋友聚在一张桌上</span>');
-  paint('#left-panel',state?(state.phase==='lobby'?lobbyPanel():gamePanel()):homePanel());
+  paint('#left-panel',state?(state.phase==='lobby'?lobbyPanel():''):homePanel());
   paint('#play-dock',state?.board?gameControls():'');
-  paint('#right-panel',rightPanel());paint('#turn-banner',banner());paint('#hand',hand());placeBanner();
+  paint('#right-panel',rightPanel());paint('#turn-banner',banner());paint('#hand',hand());renderStage(task);paint('#stage-tools',state?.board?tools():'');
+  document.querySelector('[data-action=closeStagePanel]').setAttribute('aria-label','关闭面板');
+  document.querySelector('[data-action=trade]')?.setAttribute('aria-label','资源交易');
+  document.querySelector('[data-action=roll]')?.setAttribute('aria-label','掷出骰子');
+  document.querySelector('[data-action=toggleFlat]')?.setAttribute('aria-label',flat?'切换三维棋盘':'切换二维棋盘');
+  for(const el of document.querySelectorAll('[data-action=reset]'))el.setAttribute('aria-label','复位棋盘视角');
+  document.querySelector('[data-action=openHand]')?.setAttribute('aria-label',`你的手牌，${mine()?.dev.length||0} 张发展卡`);
   document.querySelector('#room-meta [data-action="home"]')?.setAttribute('aria-label','返回首页');
   document.querySelector('[data-action="closePanel"]')?.setAttribute('aria-label','关闭操作面板');
   paint('#island-caption',state?.board?'':`<span>一场新的冒险，正等着你。</span><strong>卡坦岛</strong><span>探索 · 交易 · 建设</span>`);
-  for(const [id,value] of inputs){const el=document.getElementById(id);if(el){if(el.type==='checkbox')el.checked=value;else el.value=value;}}
+  for(const [id,value] of inputDrafts){const el=document.getElementById(id);if(el&&el!==activeElement){if(el.type==='checkbox')el.checked=value;else el.value=value;}}
   for(const [id,open] of detailsState){const el=document.getElementById(id);if(el)el.open=open;}
-  if(active){const el=document.getElementById(active);if(el){el.focus({preventScroll:true});if(start!=null && ['text','search'].includes(el.type))try{el.setSelectionRange(start,start);}catch{}}}
+  if(active){const el=document.getElementById(active);if(el&&el!==activeElement){el.focus({preventScroll:true});if(start!=null && ['text','search'].includes(el.type))try{el.setSelectionRange(start,start);}catch{}}}
   board?.set(state?.board?state:preview,mode());
   for(const el of document.querySelectorAll('.activity-log,.chat-log'))el.scrollTop=el.scrollHeight;
   bindForms();updateRatio();
   document.querySelector('[data-action="confirmRoomDialog"]').disabled=busy;
-  if(task?.key!==lastTaskKey){lastTaskKey=task?.key||'';if(task)$('#right-panel').scrollTop=0;}
+  syncViewport();
 }
 function paint(selector,markup){const el=$(selector);if(el._markup!==markup){el.innerHTML=markup;el._markup=markup;}}
 function updateRatio(){if($('#bank-ratio'))$('#bank-ratio').textContent=`${ownRatio($('#bank-give').value)} : 1`;}
 function bindForms(){
-  if($('#chat-details'))$('#chat-details').ontoggle=()=>{if($('#chat-details')?.open&&state){for(const chat of state.chat)seenChatIds.add(chat.id);const badge=$('.chat-unread');if(badge)badge.textContent='';}};
   if($('#room-settings-form'))$('#room-settings-form').onsubmit=e=>{e.preventDefault();send({type:'configure',visibility:$('#room-visibility').value,options:readOptions('room')});};
   if($('#entry-form'))$('#entry-form').onsubmit=e=>{e.preventDefault();join();};if($('#create-room'))$('#create-room').onclick=()=>create();
   if($('#discard-form'))$('#discard-form').onsubmit=e=>{e.preventDefault();send({type:'discard',cards:formBundle('discard')});};
   if($('#bank-form'))$('#bank-form').onsubmit=e=>{e.preventDefault();send({type:'bankTrade',give:$('#bank-give').value,want:$('#bank-want').value});};
   if($('#bank-give'))$('#bank-give').onchange=updateRatio;
   if($('#trade-form'))$('#trade-form').onsubmit=e=>{e.preventDefault();send({type:'offerTrade',give:formBundle('give'),want:formBundle('want')});};
-  if($('#chat-form'))$('#chat-form').onsubmit=e=>{e.preventDefault();const el=$('#chat-message'),text=el.value.trim();if(text){el.value='';send({type:'chat',text});}};
+  if($('#chat-form'))$('#chat-form').onsubmit=async e=>{e.preventDefault();const el=$('#chat-message'),text=el.value.trim();if(text){el.value='';if(!await send({type:'chat',text})){const current=$('#chat-message');if(current&&!current.value)current.value=text;inputDrafts.set('chat-message',current?.value||text);}}};
   if($('#development-form'))$('#development-form').onsubmit=e=>{e.preventDefault();send({type:'playDevelopment',cardId,cards:formBundle('plenty'),resource:$('#monopoly-resource')?.value});};
 }
 document.addEventListener('click',async e=>{
@@ -179,9 +221,12 @@ document.addEventListener('click',async e=>{
   if(b.dataset.transfer)return openConfirmation({type:'transferHost',playerId:b.dataset.transfer},'转交房主',`将房主权限交给 ${state.players.find(p=>p.id===b.dataset.transfer)?.name||'该玩家'}？你的座位保留，解散与房间设置权限会立即转移。`,'确认转交');
   if(b.dataset.removeBot)return send({type:'removeBot',playerId:b.dataset.removeBot});
   if(b.dataset.victim)return send({type:'steal',victim:b.dataset.victim});
-  if(b.dataset.card){cardId=b.dataset.card;panel='development';return render();}
+  if(b.dataset.card){cardId=b.dataset.card;panel='development';return openStagePanel('decision');}
   const action=b.dataset.action;
-  if(action==='focusTask'){const target=$('#decision-panel');target?.scrollIntoView({block:'nearest'});target?.focus({preventScroll:true});return;}
+  if(action==='focusTask'){openStagePanel('decision');$('#decision-panel')?.focus({preventScroll:true});return;}
+  const stageActions={openChat:'chat',openPlayers:'players',openLog:'log',openSettings:'settings',openHand:'hand',openResult:'result'};
+  if(stageActions[action])return openStagePanel(stageActions[action]);
+  if(action==='closeStagePanel')return closeStagePanel();
   if(action==='ready')return send({type:'ready',ready:!mine().ready});
   if(action==='refreshRooms')return refreshRooms();
   if(action==='loadMoreRooms')return refreshRooms(true);
@@ -189,19 +234,20 @@ document.addEventListener('click',async e=>{
   if(action==='pauseGame')return openConfirmation({type:'pause'},'暂停对局','暂停后所有棋盘操作停止。你在本次暂停中首次离线时开始固定 4 小时保留，短暂重连不会延长截止时间。','确认暂停');
   if(action==='resumeGame')return send({type:'resume'});
   if(action==='dissolve')return openConfirmation({type:'close'},'解散房间','解散会结束所有成员的房间，旧邀请、存档与重连都不能恢复。此操作与暂离不同。','确认解散');
-  if(action==='cancelRoomDialog'){confirmation=null;return $('#room-dialog').close();}
+  if(action==='cancelRoomDialog'){confirmation=null;$('#room-dialog').close();return render();}
   if(action==='confirmRoomDialog')return confirmRoomDialog();
   if(['start','addBot','roll','endTurn','cancelTrade','rematch'].includes(action))return send({type:action});
   if(action==='acceptTrade')return send({type:'acceptTrade',offerId:state.offer.id});
-  if(action==='rules')return $('#rules-dialog').showModal();if(action==='closeRules')return $('#rules-dialog').close();
+  if(action==='rules'){closeStagePanel();return $('#rules-dialog').showModal();}if(action==='closeRules'){ $('#rules-dialog').close();return render();}
   if(action==='reset')return board.reset();
+  if(action==='zoomIn'||action==='zoomOut')return board.zoomBy(action==='zoomIn'?1.25:.8);
   if(action==='practice')return create(true);
-  if(action==='trade'){panel=panel==='trade'?'':'trade';selectedBuild='';render();if(panel&&compactTable.matches)$('#decision-panel')?.scrollIntoView({block:'nearest'});return;}
-  if(action==='closePanel'){panel='';return render();}
+  if(action==='trade'){panel='trade';selectedBuild='';return openStagePanel('decision');}
+  if(action==='closePanel')return closeStagePanel();
   if(action==='resume'){const last=storage.get('last');if(last)connect(last.code,last.token,last.name);return;}
   if(action==='home')return openLeave('home');
   if(action==='invite'){const link=invitationURL(location.origin,code,backendId);try{await navigator.clipboard.writeText(link);toast('邀请链接已复制，发给朋友即可加入。');}catch{toast(`房间码：${displayCode(code)}。将当前页面地址发给朋友即可。`);}return;}
-  if(b.id==='flat-toggle'){flat=!flat;makeBoard();}
+  if(b.id==='flat-toggle'||action==='toggleFlat'){flat=!flat;makeBoard();render();}
 });
 function forgetIdentity(room){storage.set(`token:${room}`,null);if(storage.get('last')?.code===room)storage.set('last',null);}
 function terminal(message){const current=code;forgetIdentity(current);terminalMessage=message.message||(message.type==='removed'?'你已被移出房间，原身份已失效。':'房间已关闭，旧链接不能恢复。');connection?.close();connection=null;state=null;code='';status='idle';invite='';history.replaceState(null,'','/');$('#room-dialog').close();confirmation=null;render();refreshRooms();}
@@ -210,23 +256,23 @@ function openConfirmation(task,title,description,confirmText='确认'){confirmat
 function openLeave(destination){if(!code)return exitView(destination);const description=state?leaveDescription({lobby:state.phase==='lobby',host:isHost(),practice:state.room?.practice,paused:state.room?.paused,target:destination==='lobby'?'游戏大厅':'首页'}):`取消连接并返回${destination==='lobby'?'当前服务器游戏大厅':'首页'}。`;openConfirmation({type:'navigate',destination},state?.phase==='lobby'&&!isHost()?'退出座位':'暂离房间',description,state?.phase==='lobby'&&!isHost()?'退出并返回':'暂离并返回');}
 async function confirmRoomDialog(){let task=confirmation;if(task?.type==='chooseTransfer')task={type:'transferHost',playerId:$('#transfer-choice')?.value};if(!task||busy)return;$('#room-dialog').close();confirmation=null;if(task.type==='navigate'){const release=state?.phase==='lobby'&&!isHost(),current=code;if(state&&!(state.phase==='lobby'&&isHost())&&!(await send({type:'leave'})))return;if(release)forgetIdentity(current);return exitView(task.destination);}await send(task);}
 setInterval(()=>{const el=$('#room-retention'),room=state?.room;if(el&&Number.isFinite(room?.expiresAt)){const remaining=remainingTime(room.expiresAt,room.serverNow,receivedAt);el.textContent=`${room.retentionReason==='paused'||room.paused?'本次暂停固定期限':'房主离线保留'} · 剩余 ${remaining}，到期后房间关闭并清理。`;}},1000);
-function placeBanner(){
-  const rail=matchMedia('(orientation:landscape) and (max-height:600px) and (max-width:1200px)').matches;
-  const parent=rail&&state?.board?$('#rail-status'):$('.board-area'),banner=$('#turn-banner');
-  if(banner.parentElement!==parent)parent.append(banner);
-}
 function syncViewport(){
-  placeBanner();
   const viewport=window.visualViewport;
-  document.documentElement.style.setProperty('--app-height',`${viewport?.height||innerHeight}px`);
-  document.documentElement.style.setProperty('--header-height',`${$('.topbar').getBoundingClientRect().height}px`);
-  const editing=document.activeElement?.matches('input,select,textarea');
-  document.body.classList.toggle('keyboard-open',Boolean(editing&&viewport&&innerHeight-viewport.height>100));
-  if(editing&&compactTable.matches)requestAnimationFrame(()=>document.activeElement?.scrollIntoView({block:'nearest'}));
+  document.documentElement.style.setProperty('--visual-height',`${viewport?.height||innerHeight}px`);
+  document.documentElement.style.setProperty('--visual-top',`${viewport?.offsetTop||0}px`);
+  document.documentElement.style.setProperty('--app-height',`${innerHeight}px`);
+  if(state?.board){
+    const table=$('#table'),css=getComputedStyle(table),usableWidth=innerWidth-(parseFloat(css.paddingLeft)||0)-(parseFloat(css.paddingRight)||0);
+    table.classList.toggle('compact-hud',usableWidth<630);table.classList.toggle('stacked-hud',usableWidth<548);
+    board?.setViewportPadding?.({top:(parseFloat(css.getPropertyValue('--board-pad-top'))||0)+(parseFloat(css.paddingTop)||0),bottom:(parseFloat(css.getPropertyValue('--board-pad-bottom'))||0)+(parseFloat(css.paddingBottom)||0),left:12+(parseFloat(css.paddingLeft)||0),right:12+(parseFloat(css.paddingRight)||0)});
+  }else board?.setViewportPadding?.({top:0,right:0,bottom:0,left:0});
 }
-new ResizeObserver(syncViewport).observe($('.topbar'));
-window.addEventListener('resize',syncViewport);window.visualViewport?.addEventListener('resize',syncViewport);
+window.addEventListener('resize',syncViewport);window.visualViewport?.addEventListener('resize',syncViewport);window.visualViewport?.addEventListener('scroll',syncViewport);
 document.addEventListener('focusin',syncViewport);document.addEventListener('focusout',()=>requestAnimationFrame(syncViewport));
+$('#rules-dialog').addEventListener('close',()=>{if(stagePanel)render();});
+$('#room-dialog').addEventListener('close',()=>{if(stagePanel)render();});
+$('#stage-dialog').addEventListener('cancel',e=>{e.preventDefault();closeStagePanel();});
+$('#stage-dialog').addEventListener('click',e=>{if(e.target===$('#stage-dialog')){const r=e.target.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)closeStagePanel();}});
 makeBoard();render();syncViewport();
 if(!entryError)refreshRooms();
 const last=storage.get('last');if(!entryError&&invite&&last?.code===invite)connect(last.code,last.token,last.name);

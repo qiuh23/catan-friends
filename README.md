@@ -141,3 +141,5 @@ scripts/             多浏览器与 Worker 实测脚本
 - [CATAN 基础版规则与词典](https://cdn.svc.asmodee.net/production-unboxnowcom/uploads/sites/6/2022/02/catan_base_rules_2020_200707.pdf)
 
 本项目按上级仓库约定，用于作者和朋友的个人非商业娱乐。
+
+对局铺屏舞台的布局、关键操作与前后截图见 [视口游戏舞台验收](docs/viewport-game-stage.md)。本地运行 `npm run test:viewport` 复核无页面滚动、弹窗与视角、3–6 人棋盘、触控/安全区及输入状态。
