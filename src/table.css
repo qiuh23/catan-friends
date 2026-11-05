@@ -1,0 +1,169 @@
+/* The board, current task and turn controls have separate layout slots. */
+:root { --app-height:100dvh; --header-height:76px; }
+#play-dock:empty, #decision-panel:empty { display:none; }
+#rail-status { display:none; }
+.table.playing { height:calc(var(--app-height) - var(--header-height)); min-height:680px; grid-template-rows:auto minmax(0,1fr); }
+.playing #left-panel { grid-column:1; grid-row:2; min-height:0; padding-top:12px; overflow-y:auto; overscroll-behavior:contain; }
+.playing #play-dock { grid-column:1; grid-row:1; background:var(--paper); padding:20px 22px 12px; min-width:0; }
+.playing .board-area { grid-column:2; grid-row:1 / 3; min-height:0; height:auto; }
+.playing #right-panel { grid-column:3; grid-row:1 / 3; min-height:0; overflow-y:auto; overscroll-behavior:contain; }
+.playing #board { inset:100px 0 170px; }
+.table-info { min-width:0; }
+.table-info>summary { min-height:44px; font-size:13px; flex-wrap:wrap; }
+.table-info>summary small { margin-left:auto; color:var(--muted); font-weight:400; font-size:11px; }
+.table-info .panel-heading { display:none; }
+.table-info .retention-notice { margin-top:10px; }
+.table-info .room-navigation { margin:8px 0 12px; padding-top:8px; }
+.table-info .room-navigation button { min-height:44px; }
+.task-shortcut { pointer-events:auto; min-height:44px; padding:8px 12px; background:#e8d59e; white-space:nowrap; }
+.needs-attention { border:1px solid #b38b40; }
+.needs-attention strong { color:#82501f; }
+#decision-panel { scroll-margin-block:12px; min-width:0; }
+#decision-panel:focus-visible { outline:3px solid var(--accent); outline-offset:3px; }
+.playing .development-hand { max-height:100px; overflow:auto; padding:3px; }
+.development-hand button { min-height:44px; }
+.board-controls button { min-width:44px; min-height:44px; }
+.home #board { inset:24px 8px 150px; }
+.home .tile-hint { bottom:132px; }
+.in-room:not(.playing) #board { inset:20px 8px 80px; }
+summary:focus-visible { outline:3px solid var(--accent); outline-offset:2px; }
+.topbar { padding-top:env(safe-area-inset-top); height:calc(76px + env(safe-area-inset-top)); }
+dialog { max-height:calc(var(--app-height) - 24px); overflow-y:auto; padding-bottom:max(22px,env(safe-area-inset-bottom)); }
+
+/* Portrait phones and tablets: the board fills the space above a two-row dock. */
+@media (max-width:900px), (max-height:600px) and (max-width:1200px) {
+  .at-table .topbar { display:grid; grid-template-columns:auto minmax(0,1fr) auto; gap:6px; height:auto; min-height:52px; padding:calc(4px + env(safe-area-inset-top)) max(10px,env(safe-area-inset-right)) 4px max(10px,env(safe-area-inset-left)); }
+  .at-table .brand { font-size:16px; gap:6px; }
+  .at-table .brand-mark { width:28px; height:32px; border-radius:8px; }
+  .at-table .brand-mark .icon { width:22px; height:22px; }
+  .at-table .brand small { display:none; }
+  .at-table .brand>span:last-child { display:block; }
+  .at-table #room-meta:has(.room-code) { grid-column:2; grid-row:1; flex-wrap:nowrap; justify-content:flex-end; gap:6px; max-width:none; min-height:44px; padding:0; border:0; }
+  .at-table .room-code { font-size:11px; letter-spacing:0; white-space:nowrap; }
+  .at-table .connection { font-size:0; gap:0; }
+  .at-table #room-meta>.square { display:none; }
+  .at-table #room-meta>.text-button { width:44px; min-height:44px; padding:10px; }
+  .at-table #room-meta>.text-button>span { display:none; }
+  .at-table .topbar nav { grid-column:3; grid-row:1; gap:0; }
+  .at-table .topbar nav button { width:44px; min-height:44px; }
+  .at-table .topbar nav button>span { display:none; }
+  .at-table .topbar nav a { display:none; }
+  .table.playing { display:flex; flex-direction:column; height:auto; min-height:calc(var(--app-height) - var(--header-height)); }
+  .table.playing .board-area { order:1; flex:none; width:100%; min-height:310px; height:clamp(310px,calc(var(--app-height) - var(--header-height) - 122px - env(safe-area-inset-bottom)),740px); }
+  .table.playing #board { inset:76px 0 112px; }
+  .playing .board-top { top:10px; left:max(10px,env(safe-area-inset-left)); right:max(10px,env(safe-area-inset-right)); }
+  .playing .turn-banner { max-width:560px; gap:8px; padding:8px 12px; min-height:56px; }
+  .playing .turn-banner strong { font-size:13px; }
+  .playing .turn-banner span:not(.turn-dot) { font-size:11px; line-height:1.5; }
+  .playing .dice-pair span { width:26px; height:26px; }
+  .playing .board-controls { top:auto; bottom:66px; right:max(10px,env(safe-area-inset-right)); gap:8px; }
+  .playing .board-controls .square { width:44px; min-height:44px; padding:10px; }
+  .playing .tile-hint { bottom:82px; left:max(12px,env(safe-area-inset-left)); transform:none; font-size:10px; max-width:calc(100% - 124px); white-space:normal; line-height:1.4; }
+  .playing .hand-tray { bottom:8px; left:12px; right:12px; }
+  .playing .hand-label { margin-bottom:5px; gap:8px; }
+  .playing .hand-label strong, .playing .hand-label span { font-size:10px; }
+  .playing .resource-hand { gap:6px; }
+  .playing .resource-card { display:flex; align-items:center; justify-content:center; gap:6px; width:70px; padding:5px 6px; border-radius:7px; border-top-width:3px; }
+  .playing .resource-art, .playing .resource-art .resource-illustration { width:27px; height:26px; margin:0; }
+  .playing .resource-card>strong { font-size:18px; margin:0; }
+  .playing .development-hand { margin-top:4px; flex-wrap:nowrap; justify-content:flex-start; max-height:50px; }
+  .playing .development-hand:empty { display:none; }
+  .playing .development-hand button { flex:none; font-size:11px; }
+  .table.playing:has(.development-hand:not(:empty)) #board { bottom:160px; }
+  .playing:has(.development-hand:not(:empty)) .board-controls { bottom:114px; }
+  .playing:has(.development-hand:not(:empty)) .tile-hint { bottom:130px; }
+  .table.playing #play-dock { order:2; flex:none; padding:8px max(12px,env(safe-area-inset-right)) max(8px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left)); }
+  .playing #play-dock .build-section { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:6px; margin:0; }
+  .playing #play-dock .panel-heading { display:none; }
+  .playing #play-dock .build-button { min-height:48px; padding:5px 4px; margin:0; gap:0; border:1px solid #d4ddcd; border-radius:8px; }
+  .playing #play-dock .build-icon, .playing #play-dock .build-button>.icon, .playing #play-dock .build-button>small { display:none; }
+  .playing #play-dock .build-button>span>b { display:block; text-align:center; font-size:12px; }
+  .playing #play-dock .cost { gap:3px; justify-content:center; margin-top:2px; }
+  .playing #play-dock .mini-resource { gap:1px; font-size:9px; }
+  .playing #play-dock .mini-resource .icon { width:10px; height:10px; }
+  .playing #play-dock .turn-actions { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:6px; }
+  .playing #play-dock .turn-actions button { min-height:44px; }
+  .playing #play-dock .supply { display:none; }
+  .table.playing #right-panel { order:3; display:flex; flex-direction:column; flex:none; gap:4px; padding:8px max(12px,env(safe-area-inset-right)) 8px max(12px,env(safe-area-inset-left)); }
+  .playing #right-panel>.secondary-panel { margin:0; }
+  .playing .secondary-panel summary { min-height:44px; }
+  .table.playing #left-panel { order:4; padding:0 max(12px,env(safe-area-inset-right)) 16px max(12px,env(safe-area-inset-left)); }
+  .playing .table-info>summary { min-height:48px; }
+  .playing .players { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .playing .player-info>span { white-space:normal; }
+  .playing .awards { gap:9px; padding:12px 0; }
+  .playing .awards>span { font-size:11px; }
+  .playing .choice-panel { max-width:none; margin:0; }
+  .playing .choice-panel h2 { font-size:15px; }
+  .playing .choice-panel p { margin:4px 0 8px; }
+  .playing .resource-input input { min-height:44px; font-size:16px; }
+  .playing input, .playing select { font-size:16px; }
+  .playing #discard-form { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:6px; }
+  .playing #discard-form .resource-input { flex-direction:column; gap:4px; margin:0; font-size:11px; }
+  .playing #discard-form .resource-input>span { gap:3px; }
+  .playing #discard-form input { width:100%; }
+  .playing #discard-form>button { grid-column:1 / -1; margin-top:2px; }
+  .playing .trade-offer { padding:12px; margin:4px 0; }
+  .table.playing.has-required-task .board-area, .table.playing.has-open-panel .board-area { height:clamp(280px,calc(var(--app-height) - var(--header-height) - 360px),470px); min-height:280px; }
+  .table.playing.has-required-task #right-panel, .table.playing.has-open-panel #right-panel { order:2; }
+  .table.playing.has-required-task #play-dock, .table.playing.has-open-panel #play-dock { order:3; }
+  .playing.has-required-task .secondary-panel, .playing.has-open-panel .secondary-panel { margin-top:8px!important; }
+  .keyboard-open .table.playing .board-area { height:240px; min-height:240px; }
+  #chat-message, #entry-form input, #entry-form select { font-size:16px; }
+  #toast { bottom:max(12px,env(safe-area-inset-bottom)); max-width:calc(100vw - 24px); }
+  .home #board { inset:0 0 56px; }
+  .home .tile-hint { bottom:52px; }
+  .in-room:not(.playing) #board { inset:0 0 28px; }
+}
+
+/* Short landscape viewports use height as the constraint, with a scrolling rail. */
+@media (orientation:landscape) and (max-height:600px) and (max-width:1200px) {
+  .table.playing { display:grid; grid-template-columns:minmax(0,1fr) clamp(244px,32vw,330px); grid-template-rows:auto auto minmax(0,1fr) auto; height:calc(var(--app-height) - var(--header-height)); min-height:260px; }
+  .table.playing .board-area, .table.playing.has-required-task .board-area, .table.playing.has-open-panel .board-area { grid-column:1; grid-row:1 / 5; min-height:0; height:auto; align-self:stretch; }
+  .table.playing #board { inset:6px 0 46px; }
+  .playing .board-area .board-top { display:none; }
+  .table.playing #rail-status { display:block; grid-column:2; grid-row:1; background:var(--paper); padding:6px max(8px,env(safe-area-inset-right)) 0 8px; }
+  .playing #rail-status .board-top { position:static; }
+  .playing #rail-status .turn-banner { box-shadow:none; border-radius:8px; min-height:54px; }
+  .playing #rail-status .turn-banner>.icon, .playing #rail-status .turn-dot { display:none; }
+  .table.playing #play-dock { grid-column:2; grid-row:2; padding:6px max(8px,env(safe-area-inset-right)) 6px 8px; }
+  .table.playing #right-panel { grid-column:2; grid-row:3; min-height:0; overflow-y:auto; overscroll-behavior:contain; padding:0 max(8px,env(safe-area-inset-right)) 6px 8px; }
+  .table.playing #left-panel { grid-column:2; grid-row:4; max-height:52px; overflow-y:auto; padding:0 max(8px,env(safe-area-inset-right)) max(4px,env(safe-area-inset-bottom)) 8px; }
+  .table.playing #left-panel:has(details[open]) { max-height:150px; }
+  .playing .table-info>summary { min-height:44px; font-size:12px; }
+  .playing #play-dock .build-button { min-height:44px; }
+  .playing #play-dock .build-button>span>b { font-size:11px; }
+  .playing #play-dock .cost { gap:1px; }
+  .playing #play-dock .mini-resource { font-size:8px; }
+  .playing #play-dock .mini-resource .icon { width:9px; height:9px; }
+  .playing .board-top { top:6px; left:max(6px,env(safe-area-inset-left)); right:6px; }
+  .playing .turn-banner { padding:6px 9px; min-height:50px; }
+  .playing .turn-banner strong { font-size:12px; }
+  .playing .turn-banner span:not(.turn-dot) { font-size:10px; }
+  .playing .hand-tray { bottom:max(5px,env(safe-area-inset-bottom)); left:max(8px,env(safe-area-inset-left)); right:112px; }
+  .playing .hand-label { display:none; }
+  .playing .resource-card { width:58px; padding:3px 5px; gap:3px; }
+  .playing .resource-art, .playing .resource-art .resource-illustration { width:23px; height:23px; }
+  .playing .board-controls, .playing:has(.development-hand:not(:empty)) .board-controls { bottom:max(5px,env(safe-area-inset-bottom)); right:8px; }
+  .playing .tile-hint { display:none; }
+  .table.playing:has(.development-hand:not(:empty)) #board { bottom:94px; }
+  .table.playing.has-required-task #play-dock { display:none; }
+  .table.playing.has-required-task #right-panel { grid-row:2 / 4; }
+  .playing .offer-columns { gap:10px; }
+  .playing .offer-columns .resource-input .icon { display:none; }
+  .playing .resource-input { font-size:11px; }
+  .playing .players { grid-template-columns:1fr; }
+}
+
+/* On short portrait phones, share the lower edge between hand and view controls. */
+@media (orientation:portrait) and (max-width:400px) and (max-height:700px) {
+  .table.playing #board { inset:66px 0 52px; }
+  .playing .hand-tray { left:8px; right:110px; bottom:8px; }
+  .playing .hand-label, .playing .tile-hint { display:none; }
+  .playing .resource-hand { gap:3px; }
+  .playing .resource-card { width:40px; padding:4px 2px; gap:2px; }
+  .playing .resource-art, .playing .resource-art .resource-illustration { width:18px; height:21px; }
+  .playing .resource-card>strong { font-size:15px; }
+  .playing .board-controls, .playing:has(.development-hand:not(:empty)) .board-controls { bottom:8px; right:8px; }
+  .table.playing:has(.development-hand:not(:empty)) #board { bottom:100px; }
+}

@@ -9,6 +9,7 @@
 接入与运维文档：
 
 - [自动发布、密钥与门禁](docs/automatic-deployment.md)
+- [程序化地形、手机布局、素材许可与性能验收](docs/terrain-art-and-layout.md)
 - [阿里云首次配置、空间轮转与回滚](docs/aliyun-deployment.md)
 - [集成验收与生产待办](docs/integration-verification.md)
 - [2026-11-05 生产配置、首次发布与回滚记录](docs/production-rollout-2026-11-05.md)
@@ -99,6 +100,8 @@ npm test
 # 以下两项需要 npm run dev 正在运行
 npm run test:browser
 npm run test:multiplayer
+# 地形、3–6 人竖横屏、触控、待处理任务与资源释放检查（本地）
+npm run test:terrain
 # 需要 npm run worker:dev 正在运行
 npm run test:worker
 # 3/4/5/6 人完整初始摆放、权限、隐私、重连和 Node 重启
@@ -119,7 +122,9 @@ shared/game.js        游戏规则、个人视图、电脑策略
 shared/room.js        身份、操作版本/去重、房间控制
 server/index.js       Node HTTP/WebSocket 服务与磁盘存档
 worker/index.js       Cloudflare Durable Objects 适配
-src/board.js          3D 模型、点击射线、2D 备用棋盘
+src/board.js          2D 备用棋盘与 3D 入口
+src/board3d.js        分层 3D 渲染、点击/触控、相机与资源释放
+src/terrain.js        程序化地形、共享几何与实例批次
 src/main.js           房间、对局、交易、手牌、聊天界面
 src/connection.js     自动重连与操作确认
 tests/               规则与真实 WebSocket 测试
