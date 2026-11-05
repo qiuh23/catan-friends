@@ -90,6 +90,8 @@ try {
   await host.page.locator('#chat-details>summary').click();
   await owner.page.getByRole('button',{name:'转交房主',exact:true}).click();await owner.page.locator('#transfer-choice').selectOption(host.state.me);await confirm(owner,'确认转交');
   await host.wait(s=>s.room.hostId===s.me);assert.equal(await owner.page.getByRole('button',{name:'解散房间',exact:true}).count(),0);
+  // Mobile room management lives in the explicit player/room disclosure.
+  await host.page.locator('#players-details>summary').click();
   await host.page.getByRole('button',{name:'转交房主',exact:true}).click();await host.page.locator('#transfer-choice').selectOption(owner.state.me);await confirm(host,'确认转交');
   await owner.wait(s=>s.room.hostId===s.me);
   checkpoint('pause deadline and closure');
