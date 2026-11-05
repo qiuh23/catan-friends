@@ -25,7 +25,14 @@ try {
     assert.equal(await lobby.getAttribute('href'),backendId==='aliyun'?'https://magical-athlete-online.cn/':'https://magical-athlete.qiuh23.workers.dev/lobby/');
     assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'production header must fit mobile');
     await page.screenshot({path:`test-results/${backendId}-room-mobile.png`,fullPage:true});
+    const roomURL=page.url(),destination=await lobby.getAttribute('href');
+    await lobby.click();await page.getByText(/你是房主。返回游戏大厅会暂离房间并保留房主身份/).waitFor();
+    assert.equal(page.url(),roomURL);await page.getByRole('button',{name:'取消',exact:true}).click();assert.equal(page.url(),roomURL);
+    // Capture the destination locally; never contact production during this test.
+    await page.route(destination,route=>route.fulfill({contentType:'text/html',body:'<h1>对应服务器游戏大厅</h1>'}));
+    await lobby.click();await page.getByRole('button',{name:'暂离并返回',exact:true}).click();await page.waitForURL(destination);
+    const returned=new URL(page.url());assert.equal(returned.search,'');assert.equal(returned.hash,'');
     assert.deepEqual(errors,[]);await context.close();
   }
-  console.log('Integration browser passed: wrong-server invitation is blocked without navigation; A/C own-server codes, trusted return links and mobile headers fit.');
+  console.log('Integration browser passed: wrong-server invitation blocked; A/C room codes, confirmation/cancel and corresponding lobby navigation without queries or tokens; mobile headers fit.');
 }finally{await browser.close();}
