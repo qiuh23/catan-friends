@@ -1,8 +1,9 @@
 import { chromium } from 'playwright';
-import { PerspectiveCamera, Vector3 } from 'three';
+import { Vector3 } from 'three';
 import assert from 'node:assert/strict';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { createGame, addPlayer, act, botAction, viewFor, RESOURCES } from '../shared/game.js';
+import { boardCamera, toggleBoard, openStagePanel, closeStagePanel } from './browser-stage-helpers.js';
 
 // These loopback-only fixtures exercise rare UI states without changing a live
 // game or exposing another player's hand. Actual room flows have separate tests.
@@ -28,6 +29,7 @@ async function open(count,viewport,{touch=true,setup=false}={}) {
   let game=fixture(count,setup),socket,revision=0,chat=[];const actions=[];
   const project=()=>({...viewFor(game,'p0'),chat,room:{hostId:'p0',paused:false,practice:false,visibility:'private',serverNow:Date.now()},players:viewFor(game,'p0').players.map(p=>({...p,online:true}))});
   const publish=()=>socket.send(JSON.stringify({type:'state',revision:++revision,state:project()}));
+  await page.route('**/api/deployment',route=>route.fulfill({json:{game:'catan-friends',backendId:'local',publicOrigin:new URL(url).origin}}));
   await page.route('**/api/rooms',route=>route.fulfill({json:route.request().method()==='POST'?{code:'ABC234'}:{rooms:[]}}));
   await page.routeWebSocket('**/api/rooms/*/ws',ws=>{
     socket=ws;ws.onMessage(message=>{
@@ -54,7 +56,7 @@ async function fits(page) {
   const rect=await page.locator('#board canvas').boundingBox();assert.ok(rect.width>=230&&rect.height>=120,`board too small: ${JSON.stringify(rect)}`);
   const dock=await page.locator('#play-dock').boundingBox();
   assert.ok(dock.y+dock.height<=await page.evaluate(()=>innerHeight)+2,'turn controls leave the viewport');
-  const sizes=await page.locator('.board-controls button,#play-dock button').evaluateAll(els=>els.map(el=>el.getBoundingClientRect().height));
+  const sizes=await page.locator('.board-controls button,#play-dock button').evaluateAll(els=>els.filter(el=>el.getClientRects().length).map(el=>el.getBoundingClientRect().height));
   assert.ok(sizes.every(h=>h>=44),'small touch control');
 }
 async function capture(client,name) {
@@ -76,8 +78,7 @@ async function capture(client,name) {
 }
 async function point(page,position) {
   const bounds=await page.locator('#board canvas').boundingBox();
-  const camera=new PerspectiveCamera(34,bounds.width/bounds.height,.1,150);
-  camera.position.fromArray(JSON.parse(await page.locator('#board canvas').getAttribute('data-camera')));camera.lookAt(0,0,0);camera.updateMatrixWorld();
+  const camera=await boardCamera(page,bounds);
   const p=new Vector3(position.x,position.y??.39,position.z).project(camera);
   return {x:bounds.x+(p.x+1)*bounds.width/2,y:bounds.y+(1-p.y)*bounds.height/2};
 }
@@ -96,17 +97,17 @@ try {
   console.log('terrain: layouts and rendering budgets passed');
   const client=await open(6,{width:390,height:844}),{page}=client;
   await settled(page);const before=await stats(page);
-  client.chat('检查普通消息不会重建棋盘');await page.locator('.chat-unread').filter({hasText:'条新消息'}).waitFor();await settled(page);
+  client.chat('检查普通消息不会重建棋盘');await page.locator('.chat-unread').waitFor();await settled(page);
   const after=await stats(page);assert.deepEqual(after,before,'ordinary chat scheduled a render or rebuilt a layer');
   await page.waitForTimeout(500);assert.deepEqual(await stats(page),after,'idle board keeps rendering');
   const handChange=structuredClone(client.game);handChange.players[0].hand.ore--;handChange.bank.ore++;client.setGame(handChange);await settled(page);
   assert.deepEqual(await stats(page),after,'ordinary hand update rebuilt or rendered the board');
   client.setGame(fixture(6));await settled(page);
-  await page.locator('#chat-details>summary').click();await page.locator('#chat-message').fill('自己的消息和忙碌状态也不重建棋盘');
+  await openStagePanel(page,'openChat');await page.locator('#chat-message').fill('自己的消息和忙碌状态也不重建棋盘');
   await page.getByRole('button',{name:'发送消息'}).click();await settled(page);assert.deepEqual(await stats(page),after,'chat send/ack rebuilt or rendered the board');
   await page.locator('#chat-message').fill('保留的草稿');
   client.chat('继续保留输入和视角');await settled(page);assert.equal(await page.locator('#chat-message').inputValue(),'保留的草稿');
-  await page.locator('#chat-details>summary').click();await page.evaluate(()=>scrollTo(0,0));
+  await closeStagePanel(page);await page.evaluate(()=>scrollTo(0,0));
 
   // Discard must be visible even when another player owns this turn.
   const discard=structuredClone(client.game);discard.phase='discard';discard.turn=1;discard.discards={p0:10,p1:5};client.setGame(discard);
@@ -116,15 +117,15 @@ try {
   await page.setViewportSize({width:844,height:390});await settled(page);
   assert.equal(await page.locator('#discard-wood').inputValue(),'4');
   await page.screenshot({path:'test-results/terrain-off-turn-discard-landscape.png',fullPage:true});
-  await page.getByRole('button',{name:'确认弃牌',exact:true}).click();await page.locator('#discard-form').waitFor({state:'detached'});
+  await page.getByRole('button',{name:'确认弃牌',exact:true}).click();await page.locator('#discard-form').waitFor({state:'hidden'});
   assert.equal(client.actions.at(-1).type,'discard');
 
   const trade=fixture(6);trade.turn=1;trade.offer={id:'offer-test',from:'p1',give:{wood:1,brick:0,sheep:0,wheat:0,ore:0},want:{wood:0,brick:1,sheep:0,wheat:0,ore:0}};client.setGame(trade);
   await page.locator('.turn-banner:visible strong').filter({hasText:'收到一笔交易报价'}).waitFor();await page.getByRole('button',{name:'接受这笔交易'}).waitFor();
   await page.screenshot({path:'test-results/terrain-trade-landscape.png',fullPage:true});
   await page.setViewportSize({width:390,height:844});await settled(page);await page.screenshot({path:'test-results/terrain-trade-portrait.png',fullPage:true});
-  await page.getByRole('button',{name:'去处理',exact:true}).click();assert.equal(await page.locator('#decision-panel').evaluate(el=>el===document.activeElement),true);
-  await page.getByRole('button',{name:'接受这笔交易'}).click();await page.locator('.trade-offer').waitFor({state:'detached'});
+  await page.keyboard.press('Escape');await page.getByRole('button',{name:'去处理',exact:true}).click();assert.equal(await page.locator('#decision-panel').evaluate(el=>el===document.activeElement||el.contains(document.activeElement)),true);
+  await page.getByRole('button',{name:'接受这笔交易'}).click();await page.locator('.trade-offer').waitFor({state:'hidden'});
   assert.equal(client.actions.at(-1).type,'acceptTrade');
 
   // Simulated keyboard viewport: keep input drafts and focused controls reachable.
@@ -133,22 +134,24 @@ try {
   await page.locator('#give-wood').focus();await settled(page);
   const focused=await page.locator('#give-wood').boundingBox();assert.ok(focused.y>=0&&focused.y+focused.height<=430);
   client.chat('模拟键盘收起前的消息');assert.equal(await page.locator('#give-wood').inputValue(),'2');
-  await page.setViewportSize({width:390,height:844});await page.getByRole('button',{name:'关闭操作面板'}).click();await page.evaluate(()=>scrollTo(0,0));
+  await page.setViewportSize({width:390,height:844});await closeStagePanel(page);await page.evaluate(()=>scrollTo(0,0));
 
   // Repeated switches should keep one canvas, bounded GPU resources, and camera fit.
   for(let i=0;i<5;i++) {
     await page.evaluate(()=>{window.previousBoardContext=document.querySelector('#board canvas').getContext('webgl2');});
-    await page.getByRole('button',{name:'切换二维棋盘'}).click();await page.locator('#board>svg').waitFor();assert.equal(await page.locator('#board canvas').count(),0);
+    await toggleBoard(page,'切换二维棋盘');await page.locator('#board>svg').waitFor();assert.equal(await page.locator('#board canvas').count(),0);
     await page.waitForFunction(()=>window.previousBoardContext.isContextLost());await page.evaluate(()=>{delete window.previousBoardContext;});
-    await page.getByRole('button',{name:'切换三维棋盘'}).click();await page.locator('#board canvas[data-render-stats]').waitFor();await settled(page);
+    await toggleBoard(page,'切换三维棋盘');await page.locator('#board canvas[data-render-stats]').waitFor();await settled(page);
     const metrics=await stats(page);assert.ok(metrics.geometries<=10&&metrics.textures<=17,'GPU resources grow across switches');assert.equal(await page.locator('#board canvas').count(),1);
   }
   const restored=await stats(page);results.push({name:'switch-cycle',...restored});
-  await page.evaluate(()=>{const spacer=document.createElement('div');spacer.id='visibility-fixture';spacer.style.height='1500px';document.body.append(spacer);scrollTo(0,document.body.scrollHeight);});
+  // The game page itself is intentionally fixed; simulate offscreen visibility
+  // by moving the stage instead of manufacturing a scrollable game document.
+  await page.evaluate(()=>{document.querySelector('#table').style.transform='translateY(-2000px)';});
   await settled(page);const offscreen=await stats(page);assert.ok(await page.locator('#board canvas').evaluate(el=>el.getBoundingClientRect().bottom<0));
   const moved=fixture(6);moved.robber=(moved.robber+1)%moved.board.tiles.length;client.setGame(moved);await settled(page);
   assert.equal((await stats(page)).renders,offscreen.renders,'offscreen board rendered');
-  await page.evaluate(()=>{document.querySelector('#visibility-fixture').remove();scrollTo(0,0);});
+  await page.evaluate(()=>{document.querySelector('#table').style.transform='';});
   await page.waitForFunction(r=>JSON.parse(document.querySelector('#board canvas').dataset.renderStats).renders>r,offscreen.renders);
   assert.equal((await stats(page)).landBuilds,restored.landBuilds,'robber move rebuilt terrain');
   assert.equal((await stats(page)).pieceBuilds,restored.pieceBuilds+1);
@@ -177,9 +180,9 @@ try {
   await gesture.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:150,y:230,id:0},{x:210,y:230,id:1}]});
   await gesture.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
   assert.equal(touch.actions.length,0,'pinch placed a piece');
-  await touch.page.getByRole('button',{name:'复位棋盘视角'}).click();await settled(touch.page);
+  await openStagePanel(touch.page,'openSettings');await touch.page.getByRole('button',{name:'复位棋盘视角'}).click();await closeStagePanel(touch.page);await settled(touch.page);
   const site=touch.game.board.vertices[viewFor(touch.game,'p0').legal.settlement[0]],p=await point(touch.page,site);
-  await touch.page.touchscreen.tap(p.x,p.y);await touch.page.waitForFunction(()=>document.querySelector('.turn-banner')?.textContent.includes('选择与新村庄相连的道路'));
+  await touch.page.touchscreen.tap(p.x,p.y);await touch.page.waitForFunction(()=>document.querySelector('.turn-banner')?.textContent.includes('铺设起始道路'));
   assert.equal(touch.actions.at(-1).type,'buildSettlement');assert.equal(touch.actions.at(-1).vertex,site.id);
   const state=viewFor(touch.game,'p0'),edge=state.board.edges[state.legal.road[0]],a=state.board.vertices[edge.a],b=state.board.vertices[edge.b];
   const road=await point(touch.page,{x:(a.x+b.x)/2,z:(a.z+b.z)/2});await touch.page.touchscreen.tap(road.x,road.y);await settled(touch.page);
@@ -191,7 +194,7 @@ try {
   const robber=fixture(6);robber.phase='robber';touch.setGame(robber);await settled(touch.page);
   const tileId=viewFor(robber,'p0').legal.robber[0],tile=robber.board.tiles[tileId],tilePoint=await point(touch.page,{...tile,y:.28});
   await touch.page.touchscreen.tap(tilePoint.x,tilePoint.y);await settled(touch.page);assert.equal(touch.actions.at(-1).type,'moveRobber');assert.equal(touch.actions.at(-1).tile,tileId);
-  touch.setGame(fixture(6,true));await touch.page.getByRole('button',{name:'切换二维棋盘'}).click();await touch.page.locator('#board [data-id]').first().tap();await settled(touch.page);
+  touch.setGame(fixture(6,true));await toggleBoard(touch.page,'切换二维棋盘');await touch.page.locator('#board [data-id]').first().tap();await settled(touch.page);
   assert.equal(touch.actions.at(-1).type,'buildSettlement');
   await touch.page.locator('#board [data-id]').first().focus();await touch.page.keyboard.press('Enter');await settled(touch.page);assert.equal(touch.actions.at(-1).type,'buildRoad');
   await touch.context.close();

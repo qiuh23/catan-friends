@@ -1,6 +1,7 @@
 import { chromium } from 'playwright';
 import assert from 'node:assert/strict';
 import { mkdir } from 'node:fs/promises';
+import { toggleBoard, openStagePanel, closeStagePanel } from './browser-stage-helpers.js';
 
 const url=process.env.TEST_URL||'http://127.0.0.1:5175',label=process.env.TEST_LABEL||'node';
 let stage='starting';
@@ -73,7 +74,7 @@ try {
   const owner=peers[0];await owner.wait(s=>s.players.every(p=>p.id===s.room.hostId||p.ready));
   await owner.page.getByRole('button',{name:'开始探索'}).click();await owner.wait(s=>s.phase==='setup-settlement');
   assert.equal(owner.state.targetPoints,11);assert.equal(owner.state.options.friendlyRobber,true);
-  for(const client of [host,...peers])await client.page.getByRole('button',{name:'切换二维棋盘'}).click();
+  for(const client of [host,...peers])await toggleBoard(client.page,'切换二维棋盘');
   for(let i=0;i<16;i++){
     await owner.wait(s=>['setup-settlement','setup-road'].includes(s.phase));
     const phase=owner.state.phase,setup=owner.state.setupIndex,actor=owner.state.players[owner.state.turn].id;
@@ -82,26 +83,27 @@ try {
   }
   await owner.wait(s=>s.phase==='roll');
   for(const client of [host,...peers])assert.ok(client.state.players.filter(p=>p.id!==client.state.me).every(p=>p.hand===undefined&&p.dev===undefined));
-  assert.equal(await host.page.locator('#chat-details').getAttribute('open'),null);
-  await host.page.locator('#chat-details>summary').click();await host.page.locator('#chat-message').fill('暂存的交易想法');await host.page.locator('#chat-details>summary').click();
-  await owner.page.locator('#chat-details').evaluate(el=>el.open=true);await owner.page.locator('#chat-message').fill('一起开拓');await owner.page.getByRole('button',{name:'发送消息'}).click();
-  await host.page.locator('.chat-unread').filter({hasText:'条新消息'}).waitFor();
-  await host.page.locator('#chat-details>summary').click();assert.equal(await host.page.locator('#chat-message').inputValue(),'暂存的交易想法');
-  await host.page.locator('#chat-details>summary').click();
+  assert.equal(await host.page.locator('#stage-dialog[open]').count(),0);
+  await openStagePanel(host.page,'openChat');await host.page.locator('#chat-message').fill('暂存的交易想法');await closeStagePanel(host.page);
+  await openStagePanel(owner.page,'openChat');await owner.page.locator('#chat-message').fill('一起开拓');await owner.page.getByRole('button',{name:'发送消息'}).click();
+  await host.page.locator('.chat-unread').waitFor();
+  await openStagePanel(host.page,'openChat');assert.equal(await host.page.locator('#chat-message').inputValue(),'暂存的交易想法');
+  await closeStagePanel(host.page);await openStagePanel(owner.page,'openSettings');
   await owner.page.getByRole('button',{name:'转交房主',exact:true}).click();await owner.page.locator('#transfer-choice').selectOption(host.state.me);await confirm(owner,'确认转交');
   await host.wait(s=>s.room.hostId===s.me);assert.equal(await owner.page.getByRole('button',{name:'解散房间',exact:true}).count(),0);
-  // Mobile room management lives in the explicit player/room disclosure.
-  await host.page.locator('#players-details>summary').click();
+  // Room management is reached directly from the floating settings button.
+  await openStagePanel(host.page,'openSettings');
   await host.page.getByRole('button',{name:'转交房主',exact:true}).click();await host.page.locator('#transfer-choice').selectOption(owner.state.me);await confirm(host,'确认转交');
   await owner.wait(s=>s.room.hostId===s.me);
   checkpoint('pause deadline and closure');
+  await openStagePanel(owner.page,'openSettings');
   await owner.page.getByRole('button',{name:'暂停对局',exact:true}).click();await confirm(owner,'确认暂停');await owner.wait(s=>s.room.paused);
-  await owner.page.getByRole('button',{name:'暂离房间',exact:true}).click();await confirm(owner,'暂离并返回');await host.wait(s=>s.room.expiresAt>0&&s.room.paused);
+  await openStagePanel(owner.page,'openSettings');await owner.page.getByRole('button',{name:'暂离房间',exact:true}).click();await confirm(owner,'暂离并返回');await host.wait(s=>s.room.expiresAt>0&&s.room.paused);
   const deadline=host.state.room.expiresAt,ownerId=owner.state.me;
-  await host.page.locator('#room-retention').filter({hasText:'剩余'}).waitFor();await host.page.screenshot({path:`test-results/${label}-paused-countdown-mobile.png`,fullPage:true});
+  await openStagePanel(host.page,'openSettings');await host.page.locator('#room-retention').filter({hasText:'剩余'}).waitFor();await host.page.screenshot({path:`test-results/${label}-paused-countdown-mobile.png`,fullPage:true});
   owner.state=null;await owner.page.getByRole('button',{name:/原身份返回/}).first().click();await owner.wait(s=>s.me===ownerId&&s.room.paused);
   assert.equal(owner.state.room.expiresAt,deadline);await owner.page.getByRole('button',{name:'恢复对局',exact:true}).click();await owner.wait(s=>!s.room.paused);
-  await owner.page.getByRole('button',{name:'解散房间',exact:true}).click();await owner.page.getByText(/旧邀请、存档与重连都不能恢复/).waitFor();await confirm(owner,'确认解散');
+  await openStagePanel(owner.page,'openSettings');await owner.page.getByRole('button',{name:'解散房间',exact:true}).click();await owner.page.getByText(/旧邀请、存档与重连都不能恢复/).waitFor();await confirm(owner,'确认解散');
   await host.page.getByText(/解散|关闭/).first().waitFor();assert.equal(await host.page.getByRole('button',{name:/原身份返回/}).count(),0);
 
   checkpoint('private and practice');
@@ -124,7 +126,7 @@ try {
   checkpoint('six human setup');
   assert.equal(six[0].state.board.tiles.length,30);assert.equal(six[0].state.deckCount,34);assert.equal(new Set(six[0].state.players.map(p=>p.color)).size,6);
   await fit(six[0]);await six[0].page.screenshot({path:`test-results/${label}-six-board-3d-mobile.png`,fullPage:true});
-  for(const client of six)await client.page.getByRole('button',{name:'切换二维棋盘'}).click();
+  for(const client of six)await toggleBoard(client.page,'切换二维棋盘');
   for(let i=0;i<24;i++){
     const phase=six[0].state.phase,setup=six[0].state.setupIndex,actor=six[0].state.players[six[0].state.turn].id,current=six.find(c=>c.state.me===actor);
     await current.wait(s=>s.phase===phase&&s.setupIndex===setup);await current.page.locator('#board [data-id]').first().click();await six[0].wait(s=>s.phase!==phase||s.setupIndex!==setup);
@@ -137,7 +139,8 @@ try {
   await six[0].page.getByRole('button',{name:'结束回合'}).click();await six[3].wait(s=>s.pairStep==='secondary'&&s.turn===3&&s.phase==='action');
   await six[3].page.getByRole('button',{name:'资源交易',exact:true}).click();assert.equal(await six[3].page.locator('#bank-form').count(),1);assert.equal(await six[3].page.locator('#trade-form').count(),0);
   await six[3].page.getByText('配对伙伴建设阶段仅可向银行或港口交易，不能与其他玩家交易。').waitFor();
-  await six[3].page.getByRole('button',{name:'结束回合'}).click();await six[1].wait(s=>s.pairStep==='primary'&&s.turn===1&&s.phase==='roll');
+  await closeStagePanel(six[3].page);
+  await six[3].page.getByRole('button',{name:'结束阶段'}).click();await six[1].wait(s=>s.pairStep==='primary'&&s.turn===1&&s.phase==='roll');
   assert.deepEqual(errors,[]);
   console.log(`${label}: directory errors/empty/full/paging, private/practice exclusion, four/six human full setup and paired stage, leave/rejoin/revocation/kick/transfer, variants, pause deadline/recovery/close, folded chat/unread/draft, privacy, desktop/mobile passed.`);
 } finally {await new Promise((resolve,reject)=>{const timer=setTimeout(resolve,15000);browser.close().then(()=>{clearTimeout(timer);resolve();},error=>{clearTimeout(timer);reject(error);});});}

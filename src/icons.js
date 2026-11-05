@@ -1,4 +1,7 @@
 const paths={
+  chat:'M4 4h16v12H9l-5 4Z M8 8h8 M8 12h5',
+  log:'M5 3h14v18H5Z M8 7h8 M8 11h8 M8 15h6',
+  settings:'M9 3h6l1 4 4 1v8l-4 1-1 4H9l-1-4-4-1V8l4-1Z M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z',
   island:'M12 3 21 8v9l-9 5-9-5V8Z M8 16l4-7 4 7Z',
   wood:'M12 2 6 10h3l-5 7h6v5h4v-5h6l-5-7h3Z',
   brick:'M3 8h18v12H3Z M3 14h18 M12 8v6 M7 14v6 M17 14v6',
