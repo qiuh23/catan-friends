@@ -3,6 +3,7 @@ import { LABELS } from '../shared/board.js';
 import { resourceIllustration } from './icons.js';
 import { terrain } from './terrain.js';
 import { boardFrame } from './board-frame.js';
+import { feedbackPoints } from './action-camera.js';
 
 export class FlatBoard {
   constructor(container,onSelect,onHover){
@@ -11,10 +12,11 @@ export class FlatBoard {
     const options={signal:this.events.signal};
     container.addEventListener('pointerdown',e=>{
       if(!e.target.closest('svg'))return;
-      if(!this.pointers.size)this.suppressClick=false;
+      this.cancelFocus();
+      if(!this.pointers.size){this.suppressClick=false;this.pointerManual=false;}
       this.pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
       if(this.pointers.size===1)this.gesture={kind:'pan',x:e.clientX,y:e.clientY,pan:{...this.pan}};
-      else {const [a,b]=[...this.pointers.values()];this.gesture={kind:'pinch',distance:Math.hypot(a.x-b.x,a.y-b.y),zoom:this.zoom};this.suppressClick=true;}
+      else {const [a,b]=[...this.pointers.values()];this.gesture={kind:'pinch',distance:Math.hypot(a.x-b.x,a.y-b.y),zoom:this.zoom};this.suppressClick=true;this.manualInput();}
     },options);
     window.addEventListener('pointermove',e=>{
       if(!this.pointers.has(e.pointerId))return;
@@ -24,20 +26,50 @@ export class FlatBoard {
         this.zoomAt(next/this.zoom,(a.x+b.x)/2,(a.y+b.y)/2);
       } else if(this.pointers.size===1&&g?.kind==='pan') {
         const dx=e.clientX-g.x,dy=e.clientY-g.y;
+        if(Math.hypot(dx,dy)>3&&!this.pointerManual){this.pointerManual=true;this.manualInput();}
         if(Math.hypot(dx,dy)>7)this.suppressClick=true;
         if(this.suppressClick){this.pan={x:g.pan.x+dx/this.scale,y:g.pan.y+dy/this.scale};this.resize();}
       }
     },options);
     const release=e=>{this.pointers.delete(e.pointerId);if(!this.pointers.size)this.gesture=null;};
     window.addEventListener('pointerup',release,options);window.addEventListener('pointercancel',release,options);
-    container.addEventListener('wheel',e=>{e.preventDefault();this.zoomAt(Math.exp(-e.deltaY*.0015),e.clientX,e.clientY);},{...options,passive:false});
+    container.addEventListener('wheel',e=>{e.preventDefault();this.manualInput();this.zoomAt(Math.exp(-e.deltaY*.0015),e.clientX,e.clientY);},{...options,passive:false});
     container.addEventListener('keydown',e=>{
-      if(['+','=','-','0'].includes(e.key)){e.preventDefault();if(e.key==='0')this.reset();else this.zoomAt(e.key==='-'?1/1.25:1.25);}
+      if(['+','=','-','0'].includes(e.key)){e.preventDefault();this.manualInput();if(e.key==='0')this.reset();else this.zoomAt(e.key==='-'?1/1.25:1.25);}
     },options);
-    this.observer=new ResizeObserver(()=>this.resize());this.observer.observe(container);
+    this.observer=new ResizeObserver(()=>{this.cancelFocus();this.resize();});this.observer.observe(container);
   }
-  reset(){this.zoom=1;this.pan={x:0,y:0};this.resize();}
-  zoomBy(factor){if(Number.isFinite(factor)&&factor>0)this.zoomAt(factor);}
+  reset(){this.cancelFocus();this.zoom=1;this.pan={x:0,y:0};this.resize();}
+  zoomBy(factor){if(Number.isFinite(factor)&&factor>0){this.manualInput();this.zoomAt(factor);}}
+  manualInput(){this.cancelFocus();this.onManual?.();}
+  cancelFocus(){cancelAnimationFrame(this.focusFrame);this.focusFrame=0;}
+  point(x,z){return this.landscape?{x:z*50+300,y:-x*50+290}:{x:x*50+300,y:z*50+290};}
+  setFeedback(event,{reducedMotion=this.reducedMotion??false}={}) {
+    this.feedback=event;this.reducedMotion=reducedMotion;
+    const svg=this.container.querySelector('svg');if(!svg||!this.state?.board)return;
+    let layer=svg.querySelector('[data-feedback-layer]');
+    if(!layer){layer=document.createElementNS('http://www.w3.org/2000/svg','g');layer.setAttribute('data-feedback-layer','');layer.setAttribute('pointer-events','none');layer.setAttribute('aria-hidden','true');svg.append(layer);}
+    const b=this.state.board;
+    layer.innerHTML=(event?.targets||[]).map(target=>{
+      const points=feedbackPoints(b,{targets:[target]});if(!points.length)return '';
+      if(target.kind==='edge') {const a=this.point(points[0].x,points[0].z),c=this.point(points[1].x,points[1].z);return `<path d="M${a.x} ${a.y}L${c.x} ${c.y}" fill="none" stroke="#f8ffff" stroke-width="15" stroke-linecap="round"/><path d="M${a.x} ${a.y}L${c.x} ${c.y}" fill="none" stroke="#167781" stroke-width="9" stroke-linecap="round"/>`;}
+      if(target.kind==='tile'){const tile=b.tiles[target.id],path=tile.vertices.map(id=>{const p=this.point(b.vertices[id].x,b.vertices[id].z);return `${p.x},${p.y}`;}).join(' ');return `<polygon points="${path}" fill="none" stroke="#f8ffff" stroke-width="7"/><polygon points="${path}" fill="none" stroke="#167781" stroke-width="4"/>`;}
+      const p=this.point(points[0].x,points[0].z);return `<circle cx="${p.x}" cy="${p.y}" r="17" fill="none" stroke="#f8ffff" stroke-width="7"/><circle cx="${p.x}" cy="${p.y}" r="17" fill="none" stroke="#167781" stroke-width="4"/>`;
+    }).join('');
+    svg.dataset.feedbackTargets=JSON.stringify(event?.targets||[]);
+  }
+  focusFeedback(event,{reducedMotion=false,manual=false}={}) {
+    if(this.pointers.size||reducedMotion&&!manual)return false;
+    const points=feedbackPoints(this.state?.board,event).map(p=>this.point(p.x,p.z)),bounds=this.contentBounds;if(!points.length||!bounds)return false;
+    const minX=Math.min(...points.map(p=>p.x)),maxX=Math.max(...points.map(p=>p.x)),minY=Math.min(...points.map(p=>p.y)),maxY=Math.max(...points.map(p=>p.y));
+    const f=boardFrame(this.container.clientWidth,this.container.clientHeight,this.padding),baseScale=Math.min(f.width/bounds.width,f.height/bounds.height)*.96;
+    const zoom=Math.max(1,Math.min(2.5,this.zoom*1.16,f.width/(maxX-minX+100)/baseScale,f.height/(maxY-minY+100)/baseScale));
+    const pan={x:bounds.x+bounds.width/2-(minX+maxX)/2,y:bounds.y+bounds.height/2-(minY+maxY)/2},from={pan:{...this.pan},zoom:this.zoom};
+    this.cancelFocus();
+    if(reducedMotion){this.pan=pan;this.zoom=zoom;this.resize();return true;}
+    const start=performance.now(),step=now=>{const t=Math.min(1,(now-start)/450),ease=t*t*(3-2*t);this.pan={x:from.pan.x+(pan.x-from.pan.x)*ease,y:from.pan.y+(pan.y-from.pan.y)*ease};this.zoom=from.zoom+(zoom-from.zoom)*ease;this.resize();this.focusFrame=t<1?requestAnimationFrame(step):0;};
+    this.focusFrame=requestAnimationFrame(step);return true;
+  }
   zoomAt(factor,clientX,clientY) {
     const svg=this.container.querySelector('svg');if(!svg)return;
     const rect=svg.getBoundingClientRect(),x=clientX==null ? .5 : (clientX-rect.left)/rect.width,y=clientY==null ? .5 : (clientY-rect.top)/rect.height;
@@ -48,7 +80,7 @@ export class FlatBoard {
   }
   setViewportPadding(padding={}) {
     const key=JSON.stringify([padding.top||0,padding.right||0,padding.bottom||0,padding.left||0]);
-    if(key===this.paddingKey)return;this.paddingKey=key;this.padding=padding;this.resize();
+    if(key===this.paddingKey)return;this.paddingKey=key;this.padding=padding;this.cancelFocus();this.resize();
   }
   resize() {
     const svg=this.container.querySelector('svg'),bounds=this.contentBounds,w=this.container.clientWidth,h=this.container.clientHeight;
@@ -92,6 +124,7 @@ export class FlatBoard {
       this.onSelect({kind:mode==='road'?'edge':'vertex',id:Number(candidates[0].el.dataset.id)});
     };
     if(mode==='robber')for(const el of this.container.querySelectorAll('[data-tile]'))if(state.legal.robber.includes(Number(el.dataset.tile)))activate(el,'tile',Number(el.dataset.tile),`将强盗移动至 ${LABELS[b.tiles[Number(el.dataset.tile)].resource]}地块 ${Number(el.dataset.tile)+1}`);
+    this.setFeedback(this.feedback,{reducedMotion:this.reducedMotion});
   }
-  dispose(){this.events.abort();this.observer.disconnect();this.container.innerHTML='';}
+  dispose(){this.cancelFocus();this.events.abort();this.observer.disconnect();this.container.innerHTML='';}
 }

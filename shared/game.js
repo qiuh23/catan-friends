@@ -31,6 +31,14 @@ export function addPlayer(g, id, name, bot = false) {
   g.players.push({ id, name: name.trim(), color: COLORS.find(c => !g.players.some(p => p.color === c)), bot, ready: bot, hand: emptyHand(), dev: [], knights: 0, roadLength: 0 });
 }
 function log(g, text) { g.log.push({ id: (g.log.at(-1)?.id || 0)+1, text }); g.log = g.log.slice(-80); }
+// Presentation is an append-only public stream. Never copy commands, hands,
+// development-card objects, or trade bundles into these records.
+function present(g, kind, actorId, text, targets = []) {
+  g.presentation ||= { epoch: crypto.randomUUID(), sequence: 0, events: [] };
+  const stream = g.presentation;
+  stream.events.push({ id: ++stream.sequence, kind, actorId, text, targets });
+  stream.events = stream.events.slice(-80);
+}
 export function points(g, id, hidden = true) {
   const p = g.players.find(p => p.id === id);
   return (g.board?.vertices.filter(v => v.owner === id).reduce((sum,v) => sum+v.level,0) || 0) + (g.longest === id ? 2 : 0) + (g.army === id ? 2 : 0) + (g.options?.harbormaster && g.harbormaster === id ? 2 : 0) + (hidden ? p.dev.filter(d => d.type === 'victory').length : 0);
@@ -84,13 +92,15 @@ function robberSites(g) {
 }
 function finishRobber(g) { g.phase = g.resumePhase || 'action'; g.resumePhase = null; }
 function produce(g, sum) {
+  const productiveResources = new Set();
   for (const r of RESOURCES) {
     const demand = g.players.map(p => ({ p, n: g.board.vertices.filter(v => v.owner === p.id).reduce((n,v) => n + v.level * v.tiles.filter(id => { const t = g.board.tiles[id]; return id !== g.robber && t.number === sum && t.resource === r; }).length,0) })).filter(d => d.n > 0);
     const need = demand.reduce((n,d) => n+d.n,0);
-    if (need <= g.bank[r]) for (const {p,n} of demand) take(g,p,r,n);
-    else if (demand.length === 1) take(g,demand[0].p,r,g.bank[r]);
+    if (need <= g.bank[r]) { if (need) productiveResources.add(r); for (const {p,n} of demand) take(g,p,r,n); }
+    else if (demand.length === 1) { if (g.bank[r]) productiveResources.add(r); take(g,demand[0].p,r,g.bank[r]); }
     else if (need) log(g, `${LABELS[r]}库存不足，本次该资源不分发。`);
   }
+  return g.board.tiles.filter(t => t.id !== g.robber && t.number === sum && productiveResources.has(t.resource) && t.vertices.some(id => g.board.vertices[id].owner)).map(t => ({ kind: 'tile', id: t.id }));
 }
 export function legal(g, id) {
   if (!g.board) return { settlement: [], road: [], city: [], robber: [], victims: [] };
@@ -126,6 +136,7 @@ export function act(source, actorId, action, random = Math.random) {
     g.board = createBoard(random,g.options); g.robber = g.board.tiles.find(t => t.resource === 'desert').id;
     g.deck = shuffle([...Array(expanded?20:14).fill('knight'), ...Array(5).fill('victory'), ...Array(expanded?3:2).fill('roadBuilding'), ...Array(expanded?3:2).fill('plenty'), ...Array(expanded?3:2).fill('monopoly')],random);
     g.primaryTurn=0;g.pairStep='primary';
+    g.presentation = { epoch: crypto.randomUUID(), sequence: 0, events: [] };
     g.phase = 'setup-settlement'; log(g, '新的岛屿已展开。按顺序放置第一座村庄和道路，再逆序放置第二组。'); return g;
   }
   requireRule(g.phase !== 'lobby' && g.phase !== 'finished','当前不能执行该操作。');
@@ -133,6 +144,7 @@ export function act(source, actorId, action, random = Math.random) {
     requireRule(g.phase === 'discard' && g.discards[actorId] > 0,'当前无需弃牌。');
     const cards = bundle(action.cards,ruleProfile(g).resourceCount); requireRule(total(cards) === g.discards[actorId] && afford(p.hand,cards),`请选择恰好 ${g.discards[actorId]} 张手牌。`);
     pay(g,p,cards); delete g.discards[actorId]; log(g,`${p.name} 弃掉 ${total(cards)} 张资源牌。`);
+    present(g,'discard',actorId,`${p.name} 完成弃牌。`);
     if (!Object.keys(g.discards).length) g.phase = 'robber'; return g;
   }
   if (type === 'acceptTrade') {
@@ -141,7 +153,7 @@ export function act(source, actorId, action, random = Math.random) {
     const from = g.players.find(v => v.id === g.offer.from), {give,want} = g.offer;
     requireRule(afford(from.hand,give) && afford(p.hand,want),'其中一方资源不足，无法成交。');
     for (const r of RESOURCES) { from.hand[r] += want[r]-give[r]; p.hand[r] += give[r]-want[r]; }
-    log(g, `${from.name} 与 ${p.name} 完成交易。`); g.offer = null; return g;
+    log(g, `${from.name} 与 ${p.name} 完成交易。`); present(g,'trade',actorId,`${from.name} 与 ${p.name} 完成交易。`); g.offer = null; return g;
   }
   requireRule(g.players[g.turn].id === actorId,'请等待你的回合。');
   const sites = legal(g,actorId);
@@ -153,11 +165,11 @@ export function act(source, actorId, action, random = Math.random) {
       if (g.setupIndex >= g.players.length) for (const id of v.tiles) { const r = g.board.tiles[id].resource; if (r !== 'desert' && g.bank[r]) take(g,p,r); }
       g.setupVertex = v.id; g.phase = 'setup-road';
     }
-    log(g,`${p.name} 建造了一座村庄。`); updateAwards(g);
+    log(g,`${p.name} 建造了一座村庄。`); present(g,'settlement',actorId,`${p.name} 建造了一座村庄。`,[{kind:'vertex',id:action.vertex}]); updateAwards(g);
   } else if (type === 'buildRoad') {
     requireRule(sites.road.includes(action.edge),'此处不能铺路：需连接自己的路网，且不能穿过对手建筑。');
     const setup = g.phase === 'setup-road', free = g.phase === 'road-building'; if (!setup && !free) pay(g,p,COSTS.road);
-    g.board.edges[action.edge].owner = actorId; log(g,`${p.name} 铺设了一条道路。`);
+    g.board.edges[action.edge].owner = actorId; log(g,`${p.name} 铺设了一条道路。`); present(g,'road',actorId,`${p.name} 铺设了一条道路。`,[{kind:'edge',id:action.edge}]);
     if (setup) {
       g.setupIndex++; g.setupVertex = null;
       const n = g.players.length;
@@ -169,26 +181,34 @@ export function act(source, actorId, action, random = Math.random) {
     updateAwards(g);
   } else if (type === 'buildCity') {
     requireRule(sites.city.includes(action.vertex),'只能升级自己的村庄，且最多建造 4 座城市。');
-    pay(g,p,COSTS.city); g.board.vertices[action.vertex].level = 2; log(g,`${p.name} 将村庄升级为城市。`); updateAwards(g);
+    pay(g,p,COSTS.city); g.board.vertices[action.vertex].level = 2; log(g,`${p.name} 将村庄升级为城市。`); present(g,'city',actorId,`${p.name} 将村庄升级为城市。`,[{kind:'vertex',id:action.vertex}]); updateAwards(g);
   } else if (type === 'roll') {
     requireRule(g.phase === 'roll','当前不能掷骰。');
     g.dice = [1+Math.floor(random()*6),1+Math.floor(random()*6)]; const sum = g.dice[0]+g.dice[1]; log(g,`${p.name} 掷出了 ${g.dice[0]} + ${g.dice[1]} = ${sum}。`);
     if (sum === 7) {
       g.discards = Object.fromEntries(g.players.filter(v => total(v.hand)>7).map(v => [v.id,Math.floor(total(v.hand)/2)]));
       g.resumePhase = 'action'; g.phase = Object.keys(g.discards).length ? 'discard' : 'robber';
-    } else { produce(g,sum); g.phase = 'action'; }
+      present(g,'roll',actorId,`${p.name} 掷出 7，等待弃牌与移动强盗。`);
+    } else {
+      const targets=produce(g,sum); g.phase = 'action';
+      const owners=new Set(targets.flatMap(t=>g.board.tiles[t.id].vertices.map(id=>g.board.vertices[id].owner)).filter(Boolean));
+      const names=g.players.filter(player=>owners.has(player.id)).map(player=>player.name).join('、');
+      present(g,targets.length?'production':'roll',actorId,targets.length?`${p.name} 掷出 ${sum} · ${names} 收获，${targets.length} 处地块产出。`:`${p.name} 掷出 ${sum}，本次没有地块产出。`,targets);
+    }
   } else if (type === 'moveRobber') {
     requireRule(sites.robber.includes(action.tile),g.options?.friendlyRobber ? '友善强盗不能影响公开分不超过 2 分的玩家；无合法地块时须退回沙漠。' : '请选择强盗当前所在格以外的地块。');
     g.robber = action.tile; log(g,`${p.name} 将强盗移到${LABELS[g.board.tiles[g.robber].resource]}地块。`);
+    present(g,'robber',actorId,`${p.name} 移动了强盗。`,[{kind:'tile',id:action.tile}]);
     if (victims(g).length) g.phase = 'steal'; else finishRobber(g);
   } else if (type === 'steal') {
     requireRule(sites.victims.includes(action.victim),'只能从相邻且有资源的对手处抽取一张牌。');
     const victim = g.players.find(v => v.id === action.victim), cards = RESOURCES.flatMap(r => Array(victim.hand[r]).fill(r));
-    const r = cards[Math.floor(random()*cards.length)]; victim.hand[r]--; p.hand[r]++; log(g,`${p.name} 从 ${victim.name} 手中抽取了一张资源牌。`); finishRobber(g);
+    const r = cards[Math.floor(random()*cards.length)]; victim.hand[r]--; p.hand[r]++; log(g,`${p.name} 从 ${victim.name} 手中抽取了一张资源牌。`); present(g,'steal',actorId,`${p.name} 从 ${victim.name} 手中抽取了一张资源牌。`,[{kind:'tile',id:g.robber}]); finishRobber(g);
   } else if (type === 'bankTrade') {
     requireRule(g.phase === 'action' && RESOURCES.includes(action.give) && RESOURCES.includes(action.want) && action.give !== action.want,'请选择两种不同的资源。');
     const ratio = tradeRatio(g,actorId,action.give); requireRule(p.hand[action.give] >= ratio && g.bank[action.want] > 0,'手牌或银行库存不足。');
     pay(g,p,{[action.give]:ratio}); take(g,p,action.want); log(g,`${p.name} 用 ${ratio} 张${LABELS[action.give]}换取了 1 张${LABELS[action.want]}。`);
+    present(g,'trade',actorId,`${p.name} 完成银行或港口交易。`);
   } else if (type === 'offerTrade') {
     requireRule(g.phase === 'action','掷骰并处理强盗后才能交易。');
     requireRule(g.pairStep!=='secondary','配对玩家二不能与其他玩家交易。');
@@ -200,6 +220,7 @@ export function act(source, actorId, action, random = Math.random) {
   } else if (type === 'buyDevelopment') {
     requireRule(g.phase === 'action' && g.deck.length>0,'当前不能购买发展卡。'); pay(g,p,COSTS.development);
     p.dev.push({id:crypto.randomUUID(),type:g.deck.pop(),bought:g.turnNo}); log(g,`${p.name} 购买了一张发展卡。`);
+    present(g,'development',actorId,`${p.name} 购买了一张发展卡。`);
   } else if (type === 'playDevelopment') {
     requireRule(['roll','action'].includes(g.phase) && !g.playedDev,'每回合只能打出一张发展卡。');
     const card = p.dev.find(c => c.id === action.cardId);
@@ -217,6 +238,7 @@ export function act(source, actorId, action, random = Math.random) {
       g.freeRoads = Math.min(2,15-g.board.edges.filter(e => e.owner === actorId).length); g.resumePhase = g.phase; g.phase = 'road-building';
     }
     p.dev = p.dev.filter(c => c.id !== card.id); g.playedDev = true; log(g,`${p.name} 打出了「${DEV_NAMES[card.type]}」。`);
+    present(g,'development',actorId,`${p.name} 打出了「${DEV_NAMES[card.type]}」。`);
   } else if (type === 'endTurn') {
     requireRule(g.phase === 'action','请先完成掷骰、弃牌或强盗操作。');
     // Victory belongs to the active player; check before handing the turn over.
@@ -231,9 +253,11 @@ export function act(source, actorId, action, random = Math.random) {
   victory(g); return g;
 }
 export function viewFor(g, id) {
-  const {deck,players,...rest} = structuredClone(g);
+  const {deck,players,presentation,...rest} = structuredClone(g);
+  // An explicit projection keeps future internal metadata out of public views.
+  const publicPresentation = presentation ? {epoch:presentation.epoch,sequence:presentation.sequence,events:presentation.events.map(({id,kind,actorId,text,targets})=>({id,kind,actorId,text,targets:targets.map(({kind,id})=>({kind,id}))}))} : undefined;
   const profile=ruleProfile(g);
-  return { ...rest, options:normalizeOptions(g.options), profile,minPlayers:profile.minPlayers,maxPlayers:profile.maxPlayers,primaryTurn:g.primaryTurn??g.turn,pairStep:g.pairStep||'primary',targetPoints:targetPoints(g), harbormaster:g.harbormaster || null, deckCount:deck.length, me:id, legal:legal(g,id), players:players.map(p => {
+  return { ...rest, ...(publicPresentation?{presentation:publicPresentation}:{}), options:normalizeOptions(g.options), profile,minPlayers:profile.minPlayers,maxPlayers:profile.maxPlayers,primaryTurn:g.primaryTurn??g.turn,pairStep:g.pairStep||'primary',targetPoints:targetPoints(g), harbormaster:g.harbormaster || null, deckCount:deck.length, me:id, legal:legal(g,id), players:players.map(p => {
     const {hand,dev,...publicPlayer} = p;
     return { ...publicPlayer, cards:total(hand), developmentCount:dev.length, points:points(g,p.id,p.id===id || g.phase==='finished'), ...(p.id===id ? {hand,dev} : {}) };
   }) };

@@ -82,6 +82,15 @@ async function snapshot(client,name,{review=false}={}) {
   results.push({name,viewport:client.page.viewportSize(),...layout,screenshot});
 }
 async function cameraState(page){return page.locator('#board').evaluate(el=>({bounds:el.getBoundingClientRect().toJSON(),camera:el.querySelector('canvas')?.dataset.camera,view:el.querySelector('canvas')?.dataset.cameraView}));}
+function assertSameCamera(actual,expected,message) {
+  const {camera:actualPosition,...actualFrame}=actual,{camera:expectedPosition,...expectedFrame}=expected;
+  assert.deepEqual(actualFrame,expectedFrame,message);
+  const a=JSON.parse(actualPosition),b=JSON.parse(expectedPosition);
+  assert.equal(a.length,b.length,message);
+  // OrbitControls can round-trip spherical coordinates with sub-ulp noise.
+  // Keep bounds and projection exact, and reject any meaningful eye movement.
+  for(let i=0;i<a.length;i++)assert.ok(Number.isFinite(a[i])&&Number.isFinite(b[i])&&Math.abs(a[i]-b[i])<=1e-7,`${message}: camera coordinate ${i}: ${a[i]} / ${b[i]}`);
+}
 async function dialogFits(page) {
   const box=await page.locator('#stage-dialog').boundingBox(),height=await page.evaluate(()=>visualViewport?.height||innerHeight);
   assert.ok(box.y>=-1&&box.y+box.height<=height+1,`dialog clipped: ${JSON.stringify({box,height})}`);
@@ -99,7 +108,7 @@ try {
     const camera=await cameraState(client.page);
     for(const action of ['openPlayers','openLog','openSettings','openHand']) {
       await openStagePanel(client.page,action);await dialogFits(client.page);await closeStagePanel(client.page);
-      await settled(client.page);assert.deepEqual(await cameraState(client.page),camera,`${action} moved or resized map`);
+      await settled(client.page);assertSameCamera(await cameraState(client.page),camera,`${action} moved or resized map`);
     }
     await client.context.close();
   }
