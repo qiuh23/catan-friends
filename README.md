@@ -2,7 +2,7 @@
 
 > 原作者：[Jack15678](https://github.com/Jack15678)，上游：[Jack15678/catan-friends](https://github.com/Jack15678/catan-friends)。本 Fork 保留原提交历史与 upstream 关联，由 qiuh23 为现有好友游戏大厅适配双部署。用户确认已获朋友授权并明确跳过邮件核对；本次未新增或宣称开源许可证，仍按原项目个人非商业娱乐说明使用。
 >
-> **当前状态：未上线。** 两个大厅入口均关闭。Node/Worker 的本地验证不等于生产验收；生产配置、部署、合并和入口启用均待用户确认。
+> **2026-11-05 首次生产状态：双端已部署，大厅入口仍关闭，完整验收进行中。** 用户已批准合并、生产配置与部署。阿里云和 Cloudflare 均运行 `1cebfe1cd7fbd328131f72acb488c3621554c0bd`，HTTPS、静态资源、前后端版本和无房间 WSS 探针已通过；多人、恢复与发布回滚仍须分别记录。首次发布为受控手动触发，后续 main 的自动触发链待下一次发布验证。见 [生产记录](docs/production-rollout-2026-11-05.md)。
 
 本地目录为 `C:\Game\CatanFriends`，与 `MagicalAthlete-catan`、`WizardFriends-catan` 并排，后两者为最新 main 的独立工作区，原工作区保留。
 
@@ -11,6 +11,7 @@
 - [自动发布、密钥与门禁](docs/automatic-deployment.md)
 - [阿里云首次配置、空间轮转与回滚](docs/aliyun-deployment.md)
 - [集成验收与生产待办](docs/integration-verification.md)
+- [2026-11-05 生产配置、首次发布与回滚记录](docs/production-rollout-2026-11-05.md)
 
 
 可在浏览器游玩的 3–4 人卡坦岛基础版。中文界面、低多边形 3D 岛屿、房间码联机、电脑练习与断线恢复。
@@ -88,7 +89,7 @@ npm run worker:dev
 npm run worker:check
 ```
 
-Fork 的生产发布使用上述检查产物链，并默认关闭生产门禁；请勿同时启用 Native Builds 或运行手动 `npm run deploy` 覆盖生产。保留原手动命令仅供上游参考和明确授权的独立环境使用。当前交付只运行本地服务和本地模拟，未执行公网部署。云端房间状态写入 Durable Object 存储，电脑回合由 alarm 驱动，WebSocket 使用休眠接口。
+Fork 的生产发布使用上述检查产物链，并默认关闭生产门禁；请勿同时启用 Native Builds 或运行手动 `npm run deploy` 覆盖生产。保留原手动命令仅供上游参考和明确授权的独立环境使用。qiuh23 已经通过受检查产物链完成首次公网部署，当前账号的生产门禁为 true；新 Fork/新环境仍应缺省或设置 false，先配置并验权。云端房间状态写入 Durable Object 存储，电脑回合由 alarm 驱动，WebSocket 使用休眠接口。
 
 ## 验证
 

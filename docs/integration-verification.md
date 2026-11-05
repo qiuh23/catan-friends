@@ -6,7 +6,7 @@ Fork：[qiuh23/catan-friends](https://github.com/qiuh23/catan-friends)，原作�
 
 已从各自最新 main 建立并排工作区：`C:\Game\CatanFriends`、`C:\Game\MagicalAthlete-catan`、`C:\Game\WizardFriends-catan`。另两仓库原工作区及其功能分支保留。运动会起点 `dfb2dc9ef0234043797cbad9f50993212b8a835a`，巫师牌起点 `1f564076d5794815eb72676e512314b1e1ade0a2`。
 
-卡坦岛尚未生产上线，两个大厅的 `catan.enabled` 均为 false，显示未上线。GitHub Actions 已只读确认 enabled；卡坦岛生产 variables 为空，production environment 不存在，没有设置生产密钥、RAM role 或启用门禁。
+**首次生产发布已完成，完整验收进行中。** 用户已批准合并及生产配置/部署；[PR #1](https://github.com/qiuh23/catan-friends/pull/1) 合并后的 main `1cebfe1cd7fbd328131f72acb488c3621554c0bd` 经 [Checks 42036916669](https://github.com/qiuh23/catan-friends/actions/runs/42036916669) 与 [发布 42037701133](https://github.com/qiuh23/catan-friends/actions/runs/42037701133) 成功部署两服。公网 HTTPS、资源、前后端完整 SHA 与无房间 WSS 标记逐端回读通过。production environment、加密 CF secret 与专用 RAM role/policy 已配置并回读，当前仓库发布 gate=true。两个大厅的 `catan.enabled` 仍为 false，等待完整验收后启用；首次发布是受控手动触发，下一次 main 自动发布和带真实测试房间的发布/回滚恢复尚待完成。完整配置与证据边界见 [生产记录](production-rollout-2026-11-05.md)。
 
 ## 已实施
 
@@ -34,9 +34,9 @@ Fork：[qiuh23/catan-friends](https://github.com/qiuh23/catan-friends)，原作�
 
 ## 必须在授权部署后逐环境实测
 
-以下目前均**未进行**，不能用上表本地测试代替：
+以下为逐环境验收清单。两服基础 HTTPS/静态资源/SHA/WSS 检查已完成；完整多人、持久化与发布回滚验收正在进行，最终结果需追加到生产记录，不能用上表本地测试代替：
 
-1. 在实际阿里云和 Cloudflare origin 逐一验证 TLS 证书、页面、JS/CSS/SVG、WebSocket、精确 Origin、限流与错误配置。卡坦岛 DNS/证书/Worker/服务本次初查不存在。
+1. 在实际阿里云和 Cloudflare origin 逐一验证 TLS 证书、页面、JS/CSS/SVG、WebSocket、精确 Origin、限流与错误配置。DNS/证书/Worker/独立服务已按授权配置；初查“不存在”仅是配置前快照。
 2. 每服分别用三个独立真人身份建房、加入、邀请、准备、完整布局及行动，核对每条邀请都回创建服；把另一服前缀、冲突 server、重复参数与观战邀请交给实际页面，确认拒绝且不跨服找房。
 3. 逐人核对自己的手牌与发展卡可见、别人资源/发展卡内容和牌堆不可见；断网重连、刷新、浏览器恢复和 Node 服务/DO 持久化恢复不丢身份或局面。不要求 Cloudflare 迁移到 Node，反之亦然。
 4. 受控失败发布/错误配置验证上一代码恢复、最新存档不被覆盖；备份恢复先在隔离目录及 loopback 测试端口进行，不能用生产数据覆盖测试或自动恢复旧房间。
