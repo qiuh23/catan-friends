@@ -201,3 +201,9 @@ dialog { max-height:calc(var(--visual-height) - 24px); overscroll-behavior:conta
   .stage-brand { display:none; }
   .stage-utilities { gap:0; }
 }
+/* Secondary chat tools stay within the existing drawer, off the island. */
+.chat-report{font:inherit;font-size:.72rem;padding:.15rem .35rem;min-height:24px;background:transparent;color:var(--muted,#657878);border:0;text-decoration:underline;text-underline-offset:3px}
+#report-dialog{width:min(520px,calc(100vw - 24px));max-height:calc(var(--visual-height,100dvh) - 24px);overflow:auto;box-sizing:border-box}
+#report-dialog p{line-height:1.65;overflow-wrap:anywhere}
+#report-dialog a{color:inherit;text-decoration:underline}
+.report-context{font-weight:600}

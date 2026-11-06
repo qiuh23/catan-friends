@@ -1,146 +1,106 @@
 # 卡坦岛 · 好友桌
 
-> 原作者：[Jack15678](https://github.com/Jack15678)，上游：[Jack15678/catan-friends](https://github.com/Jack15678/catan-friends)。本 Fork 保留原提交历史与 upstream 关联，由 qiuh23 为现有好友游戏大厅适配双部署。用户确认已获朋友授权并明确跳过邮件核对；本次未新增或宣称开源许可证，仍按原项目个人非商业娱乐说明使用。
->
-> **2026-11-05 首次生产状态：双端已部署，大厅入口仍关闭，完整验收进行中。** 用户已批准合并、生产配置与部署。阿里云和 Cloudflare 均运行 `1cebfe1cd7fbd328131f72acb488c3621554c0bd`，HTTPS、静态资源、前后端版本和无房间 WSS 探针已通过；多人、恢复与发布回滚仍须分别记录。首次发布为受控手动触发，后续 main 的自动触发链待下一次发布验证。见 [生产记录](docs/production-rollout-2026-11-05.md)。
+| 线路 | 游戏大厅 | 卡坦岛直达 |
+| --- | --- | --- |
+| 国内（阿里云） | [国内游戏大厅](https://magical-athlete-online.cn/) | [进入卡坦岛](https://catan.magical-athlete-online.cn/) |
+| Cloudflare | [Cloudflare 游戏大厅](https://magical-athlete.qiuh23.workers.dev/lobby/) | [进入卡坦岛](https://catan-friends.qiuh23.workers.dev/) |
 
-本地目录为 `C:\Game\CatanFriends`，与 `MagicalAthlete-catan`、`WizardFriends-catan` 并排，后两者为最新 main 的独立工作区，原工作区保留。
+**线上核实于 2026-11-06 08:33（北京时间）：** 两个大厅的卡坦岛入口均已开启，两端 `/api/deployment` 与 `/build-info.json` 均返回 `061ee3eff1972205a8956eb4002d21671c15ff99`。本轮修改基于前两步合并后的 main `440ea04`；这些新功能尚未部署，线上举报配置接口当前返回 404。合并、发布成功及线上验收须分别确认。取证范围与本轮测试见 [交付记录](docs/random-chat-report-2026-11-06.md)。
 
-接入与运维文档：
-
-- [自动发布、密钥与门禁](docs/automatic-deployment.md)
-- [程序化地形、手机布局、素材许可与性能验收](docs/terrain-art-and-layout.md)
-- [阿里云首次配置、空间轮转与回滚](docs/aliyun-deployment.md)
-- [集成验收与生产待办](docs/integration-verification.md)
-- [2026-11-05 生产配置、首次发布与回滚记录](docs/production-rollout-2026-11-05.md)
-
-
-可在浏览器游玩的卡坦岛好友桌：默认 3–4 人基础版，可选完整的 2025 年第六版 5–6 人扩充、友善强盗和卡坦港口。中文界面、程序化 3D 岛屿、公开/私密房间、电脑练习和断线恢复。规则版本、组件、人数与其他拓展范围见 [资料库核对](docs/catan-reference-audit.md)，房间期限、测试、存档和发布回滚见 [本次交付](docs/room-rules-review.md)。
+3–4 人基础版，以及可选的 **5–6 人扩充（2025 配对回合）**。中文界面、程序化 Three.js 岛屿、好友联机、电脑练习、聊天与存档恢复。本文功能说明对应源码，线上版本以上述实际回读为准。
 
 ## 本地启动
 
-需要 Node.js 22 或更新版本。
+推荐 Node.js 24（与生产一致；最低版本见 `package.json`）。
 
 ```powershell
-cd 'C:\Game\CatanFriends'
-npm install
+npm ci
 npm run dev
 ```
 
-打开 **http://localhost:5175**。一个进程同时运行 Vite 页面与 WebSocket 房间服务。
+打开 **http://localhost:5175**。Vite 页面和 Node WebSocket 房间服务由同一个进程提供。输入昵称创建房间，把完整邀请链接发给朋友；或者用独立练习房与电脑游玩。建房时选择基础版或 5–6 人扩充、公开/私密及可选规则；开局前由房主调整设置，其他真人须重新准备。
 
-输入昵称后可以：
+同一台电脑测试多人请用独立浏览器配置或无痕窗口；同一浏览器的相同房间凭据会恢复原身份，新页面接管旧连接。局域网可访问 `http://本机局域网IP:5175`，邀请链接应从该地址复制，连通性取决于防火墙和路由。不同服务器的房间、身份与存档独立。
 
-- **创建好友房间**：选择公开或私密、人数规则与可选变体；按对应人数准备后由房主开局，可用电脑补齐座位。公开真人房可从在线列表刷新、加入及原身份返回，私密/练习房不公开。
-- **加入房间**：输入 6 位房间码，或打开邀请链接。
-- **先和电脑练一局**：创建独立房间，按人数规则自动补足电脑玩家并开始对局。
-
-同一台电脑测试真人联机，请使用不同浏览器或独立的浏览器配置/无痕窗口。同一浏览器中的同一房间会恢复同一个身份，新页面接管旧页面的座位。
-
-同一网络内的朋友可访问 `http://这台电脑的局域网IP:5175`。需要从该地址建房/复制邀请，发出的链接才会指向朋友能访问的主机。服务监听 `0.0.0.0`，网络访问仍取决于系统防火墙和路由配置。`localhost` 链接只适用于这台电脑。
-
-## 当前实现
-
-- 19 块随机地形、54 个交点、72 条边、9 个港口；6/8 数字不相邻。
-- 蛇形初始放置，两座村庄与两条道路，第二座村庄发放起始资源。
-- 双骰资源生产，城市双倍产出，银行每种资源 19 张及库存不足处理。
-- 7 点弃牌、移动强盗、随机抽取相邻对手资源。
-- 道路/村庄/城市建造、距离规则、道路连接规则、棋子数量上限。
-- 玩家之间的资源报价与接受，银行 4:1、普通港口 3:1、专属港口 2:1。
-- 25 张发展卡：骑士、道路建设、丰收、垄断、隐藏胜利点；购买回合限制与每回合出牌限制。
-- 最长道路、最大骑士军队、10 分获胜、结算及重新开局。
-- 房间码、邀请链接、准备状态、聊天、在线状态、身份恢复与保存对局。
-- 旋转/缩放/复位 3D 棋盘；二维备用棋盘支持键盘 Tab 和 Enter 操作。
-- 公开行动提示与地图高亮；自动定位可暂停，支持手动中断与减少动态效果，刷新/重连不重播历史。见 [行动反馈与本地检查](docs/action-feedback.md)。
-- 桌面与手机布局；基础电脑策略，可建造、交易和使用发展卡完成整局。
-
-基础版先手按房间入座顺序决定，采用自由交易/建造顺序，保留既有随机地图默认。5–6 人扩充使用 30 地块、11 港口、每种资源 24 张、34 张发展卡、六套棋子，以及 2025 配对回合：主玩家掷骰行动后，相隔三席的第二行动玩家可建造、银行交易、购买/使用发展卡及获胜，不再次掷骰或与玩家交易；之后下一位主玩家行动。两个小变体默认关闭，可与人数扩充组合。未实现其余大型拓展、观战、回放、续赛投票或自动接管掉线真人。所有模型为程序化 Three.js 几何，没有 `.blend` 文件，也未引入资料库官方图片。
-
-## 联机设计
-
-与用户指定的两个项目一样，把身份、房间传输、规则引擎和个人视图分开。详细对照见 [docs/architecture.md](docs/architecture.md)。
-
-- 服务端唯一裁决骰子、牌堆、资源、交易与胜利。浏览器只提交意图。
-- 每位玩家只收到自己的手牌和发展卡；其他玩家只显示公开数量与公开分数。
-- 客户端凭证由随机数生成，留在浏览器本地；服务端保存 SHA-256 摘要。凭证通过 WebSocket 首条消息发送，不放进邀请 URL。
-- 操作带唯一 ID 和期望版本；按房间串行执行，去重最近 256 次成功操作，拒绝旧版本写入。断线重发保留原 ID。
-- Node 每次确认操作前将房间写入 `.data/房间码.json`，临时文件替换保证存档写入完整；启动扫描并恢复期限。Worker 复用同一 Room，SQLite 事务同时保存状态和 alarm，公开目录复用原 Durable Object namespace，不增加绑定或部署 migration。
-- 等待阶段非房主主动退座释放席位，旧身份失效；对局中暂离和网络断线保留原座位。房主可开局前踢人、主动转交及确认解散；解散和暂离分开，关闭后旧链接不能复活。
-- 普通真人房从房主最后一个有效连接离线起保留 30 分钟；主动暂停的真人房从本次暂停首次离线起固定最多 4 小时，短暂返回不顺延；个人练习离线后 10 分钟。普通在线闲置不关房；其他玩家/AI 活动不续房主离线期限。到期直接关闭、清私密数据并保存小型永久关闭标记，不使用旧 48 小时最后活动规则。
-
-## 构建与运行
+生产模式本地运行：
 
 ```powershell
 npm run build
 npm start
 ```
 
-生产模式默认 **http://localhost:3005**，可通过 `PORT` 环境变量修改。页面和 WebSocket 同源，无需另配 API 地址。保留 `.data/` 即保留 Node 对局存档；该目录不进 Git。
+默认 **http://localhost:3005**；可通过 `PORT`、`HOST`、`DATA_DIR` 设置端口、监听与存档目录。Node 不自动加载 `.env`；示例见 [.env.example](.env.example)。保留整个数据目录，包括 `moderation/`。浏览器身份仍保存在原网站的本地存储中。
 
-## Cloudflare 入口
+## 当前功能
 
-项目包含 Worker + Durable Objects 适配，使用同一套规则与房间控制代码。
+- 基础版 19 地块、54 交点、72 条边、9 港口；随机数字的 6/8 不相邻，10,000 次生成失败时明确报错并回滚开局。
+- 5–6 人扩充为 30 地块、80 交点、109 条边、11 港口、每种资源 24 张、34 张发展卡；沿用 A..Zc 环形数字次序，跳过两块沙漠，保留配对伙伴建设阶段。
+- 蛇形初始放置、第二座村庄起始资源、双骰生产、银行库存不足处理、弃牌、强盗和按资源张数等概率抢牌。
+- 道路/村庄/城市、玩家交易、银行/港口交易、发展卡、最长道路与最大骑士军队、结算及原房间再来一局。
+- 可选友善强盗、卡坦港口；先手始终按入座顺序，不随机先手。
+- 服务端权威随机：Web Crypto 种子、ChaCha20 随机流、无偏整数采样与 Fisher–Yates；秘密流与游玩结果在同一个房间事务中提交，失败/非法/重复请求不额外推进流。
+- 身份恢复、请求去重与版本校验；普通房主离线保留 30 分钟，主动暂停首次离线固定最多 4 小时，练习离线 10 分钟。房主在线不会因普通闲置关闭。
+- 玩家级聊天限流、独立聊天序号及去重；聊天不占棋盘版本，重连恢复历史，发送失败或确认期间继续编辑均保留输入。
+- 聊天及设置内提供“隐私 / 举报”，消息显示编号并可定位举报；邮箱为用户已确认的 `qiutian0808@163.com`，由玩家确认发送邮件。站长使用独立权限人工处置，无自动审核或工单系统。
+- 桌面/手机布局、3D 与可键盘操作的 2D 棋盘、公开行动提示及可中断镜头跟随。电脑使用基础策略。
+
+## 隐私与站长处置
+
+玩家仅收到自己的资源和发展卡；不公开其他玩家手牌、牌库顺序、恢复凭据摘要、随机密钥或流缓冲。客户端快照和站长查看使用字段白名单；服务端基础设施错误只返回固定说明，后台错误记录只含固定类别。
+
+已确认默认：`REPORT_CONTACT=qiutian0808@163.com`，`MODERATION_RETENTION_DAYS=90`。普通聊天保留本房间最近 100 条、最长 7 天；必要人工查看/处置记录及证据保留 90 天，人工保全项持续至明确解除。消息隐藏、昵称替换和身份限制标记用于继续执行处置，关闭标记防止旧链接复活。备份轮转与恢复清理另见运维文档。这些是运行设置，不构成备案或适用要求已审核完成的声明。
+
+站长权限需要独立的 `SECURITY_ADMIN_TOKEN`（32–256 位 base64url 字符）；缺失时返回 403。房主、玩家凭据均无此权限。Node 通过受保护服务环境配置，Cloudflare 使用 Worker Secret；真实密钥不得放进仓库、参数、网址、浏览器或日志。用法、保全/解除、容量与权限边界见 [随机、聊天与举报运维](docs/random-chat-report-operations.md)。
+
+## Cloudflare 本地运行
 
 ```powershell
 npm run build
 npm run worker:dev
 ```
 
-本地 Worker 地址 **http://127.0.0.1:8788**。验证打包：
+打开 **http://127.0.0.1:8788**。本地使用 `wrangler.local.jsonc`，房间和处置写入本机 `.wrangler/`，与生产不同。Worker 和 Node 共用规则、房间事务与个人视图；Worker 使用 SQLite Durable Objects、WebSocket 休眠和 alarm。
 
 ```powershell
 npm run worker:check
 ```
 
-Fork 的生产发布使用上述检查产物链，并默认关闭生产门禁；请勿同时启用 Native Builds 或运行手动 `npm run deploy` 覆盖生产。保留原手动命令仅供上游参考和明确授权的独立环境使用。qiuh23 已经通过受检查产物链完成首次公网部署，当前账号的生产门禁为 true；新 Fork/新环境仍应缺省或设置 false，先配置并验权。云端房间状态写入 Durable Object 存储，电脑回合由 alarm 驱动，WebSocket 使用休眠接口。
+此命令只做打包预演，不部署。
 
-## 验证
+## 部署、迁移与回滚
+
+沿用既有 GitHub Checks → 受检查双端产物发布链，目标仍为独立 Catan Node 服务与 `catan-friends` Worker；不新增远端 CI、Native Builds 或其他发布者。`npm run deploy` 保留为明确授权的独立环境手动命令，不能用它覆盖生产链。
+
+**首次发布本改动前，需要更新主机上的 `ops/deploy.py`、`ops/backup.py`，备份房间与处置记录，并核实管理员密钥与运行配置。** 房间和发布产物升级到 state schema 3，旧房间在第一次加载时仅为后续随机操作增加安全流，原地图、手牌、牌库、座位、先手与进度保留。Cloudflare 不创建新类或命名空间。
+
+工作流新增 `CATAN_STATE_SCHEMA=3` 发布准备门禁；与现有 `CATAN_PRODUCTION_ENABLED=true` 同时满足才发布。该仓库变量须在上述准备完成后设置，本 PR 不修改线上变量、主机文件或 Worker Secret。
+
+代码回滚只允许回到支持 schema 3 的兼容版本，保留最新数据。首次跨版本发布缺少兼容旧版本时，自动回滚会拒绝降到不执行安全随机/聊天/处置规则的旧代码，需要发布兼容修复版本。不要删除随机字段、重播已确认操作、覆盖新存档或删除 Worker/DO 来“回滚”。详见 [迁移与回滚步骤](docs/random-chat-report-operations.md)。
+
+既有资料：[发布链](docs/automatic-deployment.md) · [阿里云部署](docs/aliyun-deployment.md) · [历史首次发布](docs/production-rollout-2026-11-05.md)。历史记录的入口开关、版本及验收描述只代表当时。
+
+## 本地验证
 
 ```powershell
 npm test
-# 以下两项需要 npm run dev 正在运行
+npm run build
+npm run worker:check
+npm run test:secure-worker
+npm run test:chat-report:browser
+npm run test:node:restart
+# 另开 npm run dev 后运行原有浏览器测试
 npm run test:browser
 npm run test:multiplayer
-# 地形、3–6 人竖横屏、触控、待处理任务与资源释放检查（本地）
-npm run test:terrain
-# 需要 npm run worker:dev 正在运行
-npm run test:worker
-# 3/4/5/6 人完整初始摆放、权限、隐私、重连和 Node 重启
-node scripts/room-protocol-smoke.js
-# 已启动本地 Worker 时，同一协议复核
-$env:TEST_URL='http://127.0.0.1:8788'; node scripts/room-protocol-smoke.js
-# 本地独立 Worker 进程重启，TEST_PLAYERS 可为 3、4、5、6
-$env:TEST_PLAYERS='6'; npm run test:worker:restart
+# 独立启动、杀进程、重开本地 Worker
+npm run test:worker:restart
 ```
 
-首次运行浏览器测试，如缺少浏览器，执行 `npx playwright install chromium`。截图输出到 `test-results/`。测试覆盖与已验证结果见 [docs/verification.md](docs/verification.md)。
+浏览器未安装时运行 `npx playwright install chromium`。截图在 `test-results/`；专项脚本使用临时数据并自动清理，不接触生产。实际通过、失败及未测试项单独记录于 [本轮验收](docs/random-chat-report-2026-11-06.md)。手机尺寸模拟不能代替真机 Safari、键盘与移动网络测试。
 
-## 代码结构
+## 代码与来源
 
-```text
-shared/board.js       六边形拓扑、合法建造位置、最长道路
-shared/game.js        游戏规则、个人视图、电脑策略
-shared/room.js        身份、操作版本/去重、房间控制
-server/index.js       Node HTTP/WebSocket 服务与磁盘存档
-worker/index.js       Cloudflare Durable Objects 适配
-src/board.js          2D 备用棋盘与 3D 入口
-src/board3d.js        分层 3D 渲染、点击/触控、相机与资源释放
-src/terrain.js        程序化地形、共享几何与实例批次
-src/main.js           房间、对局、交易、手牌、聊天界面
-src/connection.js     自动重连与操作确认
-tests/               规则与真实 WebSocket 测试
-scripts/             多浏览器与 Worker 实测脚本
-```
+`shared/board.js` 管地图拓扑，`shared/game.js` 管规则和个人视图，`shared/random.js` 管随机算法，`shared/room.js` 管私有随机流、身份/版本/去重及聊天，`shared/moderation.js` 管处置白名单；`server/` 与 `worker/` 提供两端存储和网络。`src/` 提供棋盘及界面，`ops/` 与 `scripts/deploy/` 提供运维工具。`.data/`、`.wrangler/`、备份及测试产物不进 Git。
 
-3D 资产可在后续替换为 Blender 导出的 glTF，规则层与棋盘拓扑无需更改。当前所有模型和图标由代码绘制，没有运行时外部图像依赖。
+原作者：[Jack15678](https://github.com/Jack15678)，上游：[Jack15678/catan-friends](https://github.com/Jack15678/catan-friends)。本 Fork 保留原历史和 upstream 关联；作者已授权朋友间适配，未新增开源许可证，按原项目个人非商业娱乐说明使用。3D 为程序化几何，没有宣称 Blender 资产。
 
-## 参考
-
-- [qiuh23/magical-athlete-online](https://github.com/qiuh23/magical-athlete-online)
-- [qiuh23/wizard-friends](https://github.com/qiuh23/wizard-friends)
-- [CATAN 官方基础版 FAQ](https://www.catan.com/faq/basegame)
-- [CATAN 基础版规则与词典](https://cdn.svc.asmodee.net/production-unboxnowcom/uploads/sites/6/2022/02/catan_base_rules_2020_200707.pdf)
-
-本项目按上级仓库约定，用于作者和朋友的个人非商业娱乐。
-
-对局铺屏舞台的布局、关键操作与前后截图见 [视口游戏舞台验收](docs/viewport-game-stage.md)。本地运行 `npm run test:viewport` 复核无页面滚动、弹窗与视角、3–6 人棋盘、触控/安全区及输入状态。
+实现参考：[巫师牌](https://github.com/qiuh23/wizard-friends) · [胡闹运动会](https://github.com/qiuh23/magical-athlete-online) · [RFC 8439](https://www.rfc-editor.org/rfc/rfc8439) · [Cloudflare Web Crypto](https://developers.cloudflare.com/workers/runtime-apis/web-crypto/)。规则参考：[CATAN 官方 FAQ](https://www.catan.com/faq/basegame)。

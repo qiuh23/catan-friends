@@ -28,8 +28,22 @@ def backup():
                 size+=len(raw)
                 if size>MAX_BYTES:raise RuntimeError('Room snapshot exceeds backup budget; export to approved external storage.')
                 record=json.loads(raw)
-                if record.get('version')!=1 or not isinstance(record.get('identities'),dict):raise RuntimeError('Unsupported room state schema.')
+                if record.get('version') not in (1,2,3) or not (record.get('closed') is True or isinstance(record.get('identities'),dict)):raise RuntimeError('Unsupported room state schema.')
                 (root/'rooms'/source.name).write_bytes(raw)
+            moderation=DATA/'moderation';(root/'moderation').mkdir(mode=0o700)
+            if moderation.exists():
+                if moderation.is_symlink() or not moderation.is_dir():raise RuntimeError('Invalid moderation directory.')
+                # Copy directives after game files: a newer directive can safely
+                # redact an older room snapshot before any restored publication.
+                for source in sorted(moderation.iterdir()):
+                    if not ROOM.fullmatch(source.name):continue
+                    if source.is_symlink() or not source.is_file():raise RuntimeError('Invalid moderation file.')
+                    if source.stat().st_size>64*1024**2:raise RuntimeError('Moderation file exceeds snapshot bound.')
+                    raw=source.read_bytes();size+=len(raw)
+                    if size>MAX_BYTES:raise RuntimeError('Snapshot exceeds backup budget.')
+                    record=json.loads(raw)
+                    if record.get('version')!=1 or not isinstance(record.get('audit'),list):raise RuntimeError('Unsupported moderation schema.')
+                    (root/'moderation'/source.name).write_bytes(raw)
             config=root/'config';config.mkdir(mode=0o700)
             for name,source in {
                 'server.env':'/etc/catan-friends/server.env',
@@ -39,7 +53,7 @@ def backup():
             }.items():
                 p=Path(source)
                 if p.is_file() and not p.is_symlink():(config/name).write_bytes(p.read_bytes())
-            (root/'snapshot.json').write_text(json.dumps({'schema':1,'stateSchema':1,'at':stamp,'rooms':len(list((root/'rooms').iterdir())),'consistency':'each room is a complete atomic saved revision; different rooms may have different capture times'})+'\n')
+            (root/'snapshot.json').write_text(json.dumps({'schema':1,'stateSchema':3,'at':stamp,'rooms':len(list((root/'rooms').iterdir())),'consistency':'each file is an atomic saved revision; moderation is copied after rooms and must be reapplied on restore'})+'\n')
             temporary=target.with_suffix('.pending')
             try:
                 with tarfile.open(temporary,'w:gz') as archive:archive.add(root,arcname='snapshot',recursive=True)

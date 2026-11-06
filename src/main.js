@@ -14,7 +14,7 @@ import { ActionFeedbackCursor, mergeFeedbackEvents } from './action-feedback.js'
 const $=s=>document.querySelector(s), esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const storage={get(key){try{return JSON.parse(localStorage.getItem(`catan:${key}`));}catch{return null;}},set(key,value){try{localStorage.setItem(`catan:${key}`,JSON.stringify(value));}catch{}}};
 let state=null,connection=null,code='',status='idle',busy=false,selectedBuild='',panel='',cardId='',flat=false,board;
-let seenChatIds=new Set();
+let seenChatIds=new Set(),chatBusy=false,chatAttempt=null,reportInfo=null,reportContext='';
 let roomList={status:'loading',rooms:[],error:'',nextCursor:null,moreStatus:'idle',moreError:''},listRequest=0,terminalMessage='',receivedAt=Date.now(),confirmation=null;
 let previewSeed=17;const preview={board:createBoard(()=>{previewSeed=(previewSeed*1664525+1013904223)>>>0;return previewSeed/4294967296;}),players:[],robber:null,legal:{}};
 let stagePanel='';
@@ -45,8 +45,44 @@ document.querySelector('#app').innerHTML=`
 document.querySelector('[data-action="rules"]').setAttribute('aria-label','玩法指南');
 document.querySelector('[data-action="cancelRoomDialog"]').setAttribute('aria-label','关闭房间确认');
 document.querySelector('[data-action="closeRules"]').setAttribute('aria-label','关闭玩法指南');
+document.querySelector('.topbar nav').insertAdjacentHTML('beforeend',button('隐私 / 举报','report',false,'text-button'));
+document.querySelector('#app').insertAdjacentHTML('beforeend',`<dialog id="report-dialog" aria-labelledby="report-title"><div class="dialog-heading"><h2 id="report-title">隐私 / 举报</h2>${button(icon('close'),'closeReport',false,'square')}</div><div id="report-copy"></div></dialog>`);
+document.querySelector('[data-action="closeReport"]').setAttribute('aria-label','关闭举报说明');
 const resetButton=document.querySelector('[data-action="reset"]');resetButton.setAttribute('aria-label','复位棋盘视角');
 function toast(text){if($('#stage-dialog').open){$('#stage-feedback').textContent=text;return;}const el=$('#toast');el.textContent=text;el.classList.add('show');clearTimeout(toast.timer);toast.timer=setTimeout(()=>el.classList.remove('show'),4500);}
+async function sendChat(event){
+  event.preventDefault();
+  const raw=$('#chat-message').value,text=raw.trim(),owner=connection;
+  if(!text||chatBusy)return;
+  const attempt=chatAttempt?.owner===owner && chatAttempt.text===text?chatAttempt:{owner,text,id:newId()};chatAttempt=attempt;
+  chatBusy=true;$('#stage-feedback').textContent='';render();
+  try{
+    await owner.action({type:'chat',text},{id:attempt.id});
+    if(connection!==owner)return;
+    if(chatAttempt===attempt)chatAttempt=null;
+    const current=$('#chat-message');
+    // Acknowledge the submitted draft without erasing edits typed while waiting.
+    if(current?.value===raw)current.value='';
+    if(inputDrafts.get('chat-message')===raw)inputDrafts.set('chat-message','');
+  }catch(error){if(connection===owner){if(error.definitive&&chatAttempt===attempt)chatAttempt=null;toast(error.message);}}
+  finally{if(connection===owner){chatBusy=false;render();}}
+}
+function renderReport(){
+  const el=$('#report-copy');
+  if(!reportInfo){el.innerHTML='<p>正在读取本站配置…</p>';return;}
+  if(reportInfo.failed){el.innerHTML='<p>暂时无法读取举报联系方式，请稍后重新打开。</p>';return;}
+  const contact=reportInfo.contact;
+  const subject=`卡坦岛举报 · ${backendId} · ${code?displayCode(code):'首页'}`;
+  const body=`线路：${location.origin}\n房间：${code?displayCode(code):'无'}\n${reportContext}\n举报原因：\n\n请勿提供恢复凭据、完整手牌或证件。`;
+  el.innerHTML=`<p>举报聊天、昵称或房间问题，可提供线路、房间码、消息编号、时间和原因。站长人工核实后可隐藏消息、重置昵称、限制该游戏身份或关闭房间。</p>${reportContext?`<p class="report-context">${esc(reportContext)}</p>`:''}<p>${contact?`举报邮箱：<a id="report-mail" href="mailto:${esc(contact)}?subject=${encodeURIComponent(subject)}&amp;body=${encodeURIComponent(body)}">${esc(contact)} · 用邮件举报</a>`:'本站举报联系方式待配置，邮件举报暂不可用。'}</p><p class="small muted">点击邮箱会打开邮件编辑器，由你确认发送。请勿附恢复凭据、完整手牌或证件。</p><p>普通聊天仅保留本房间最近 ${Number(reportInfo.chatLimit)||100} 条，最长 ${Number(reportInfo.chatDays)||7} 天，关闭房间后清理。${reportInfo.retentionDays?`必要处置记录按当前配置保留 ${Number(reportInfo.retentionDays)} 天；人工保全项至明确解除。`:'处置记录留存期限待配置。'}${reportInfo.adminReady?'站长处置接口已配置；具体举报由人工核实。':'站长处置接口尚未启用。'}</p><p class="small muted">以上是当前运行配置，适用备案、留存及处置要求仍需运营者核实。</p>`;
+}
+async function openReport(message){
+  reportContext=message?`消息 #${message.seq} · ${new Date(message.sentAt).toLocaleString('zh-CN',{hour12:false})}`:'';
+  reportInfo=null;renderReport();if(!$('#report-dialog').open)$('#report-dialog').showModal();
+  try{const response=await fetch('/api/security/contact',{cache:'no-store',signal:AbortSignal.timeout(8000)});if(!response.ok)throw Error();reportInfo=await response.json();}
+  catch{reportInfo={failed:true};}
+  renderReport();
+}
 function mode(){if(!state||!myTurn()||state.room?.paused)return '';if(state.phase==='setup-settlement')return 'settlement';if(['setup-road','road-building'].includes(state.phase))return 'road';if(state.phase==='robber')return 'robber';return state.phase==='action'?selectedBuild:'';}
 function makeBoard(){board?.dispose();$('#board').innerHTML='';try{board=flat?new FlatBoard($('#board'),select,hover):new Board($('#board'),select,hover);}catch(error){flat=true;board=new FlatBoard($('#board'),select,hover);toast('当前设备无法开启 3D，已切换到二维棋盘。');}board.onManual=pauseFollowing;$('#flat-toggle').textContent=flat?'3D':'2D';$('#flat-toggle').setAttribute('aria-label',flat?'切换三维棋盘':'切换二维棋盘');syncViewport();board.set(state?.board?state:preview,mode());board.setFeedback?.(actionFeedback,{reducedMotion:reducedMotion()});}
 function cameraControls(){return `<button id="camera-overview" type="button" data-action="overview" class="camera-overview" aria-label="回到全局">全局</button><button id="camera-follow" type="button" data-action="toggleFollow" aria-pressed="${autoFollow&&!followPaused}" aria-label="${!autoFollow?'开启自动跟随':followPaused?'恢复自动跟随':'暂停自动跟随'}" title="拖动、缩放会暂停跟随">${!autoFollow?'跟随关':followPaused?'已暂停':'跟随中'}</button>`;}
@@ -97,9 +133,9 @@ async function send(action){
 function connect(room,token,name){
   if(entryError)return toast(entryError);
   try {room=readRoom(room,backendId);}catch(error){return toast(error.message);}
-  connection?.close();clearActionFeedback();feedbackEpoch='';followPaused=false;code=room;state=null;seenChatIds=new Set();inputDrafts.clear();stagePanel='';lastTaskKey='';status='connecting';
+  connection?.close();clearActionFeedback();feedbackEpoch='';followPaused=false;code=room;state=null;seenChatIds=new Set();chatBusy=false;inputDrafts.clear();stagePanel='';lastTaskKey='';status='connecting';
   terminalMessage='';storage.set('name',name);history.replaceState(null,'',invitationURL(location.origin,code,backendId));
-  connection=new Connection(code,token,name,(next)=>{const old=state;receivedAt=Date.now();if(next.room?.closed)return terminal({type:'closed',message:next.room.closeReason||'房间已关闭。'});state=next;storage.set('last',{code,token,name});storage.set(`token:${code}`,token);if(old?.turnNo!==next.turnNo||old?.phase!==next.phase){selectedBuild='';panel='';cardId='';}render();receiveActionFeedback(next);},s=>{status=s;if(s!=='connected'){feedbackCursor.consume(state,{connected:false,roomKey:code});clearActionFeedback();}render();},toast,terminal);
+  connection=new Connection(code,token,name,(next)=>{const old=state;receivedAt=Date.now();if(next.room?.closed)return terminal({type:'closed',message:next.room.closeReason||'房间已关闭。'});if(!old)for(const chat of next.chat)seenChatIds.add(chat.id);state=next;storage.set('last',{code,token,name});storage.set(`token:${code}`,token);if(old?.turnNo!==next.turnNo||old?.phase!==next.phase){selectedBuild='';panel='';cardId='';}render();receiveActionFeedback(next);},s=>{status=s;if(s!=='connected'){feedbackCursor.consume(state,{connected:false,roomKey:code});clearActionFeedback();}render();},toast,terminal);
   render();
 }
 async function create(practice=false){
@@ -176,15 +212,15 @@ function banner(){
 }
 function hand(){if(!state?.board)return '';return `<div class="hand-tray" aria-label="你的资源与手牌"><div class="resource-hand">${RESOURCES.map(r=>`<div class="resource-card ${r}" role="img" aria-label="${LABELS[r]} ${mine().hand[r]} 张" title="${LABELS[r]}：${mine().hand[r]} 张，银行剩余 ${state.bank[r]} 张"><span class="resource-art">${resourceIllustration(r)}</span><strong>${mine().hand[r]}</strong></div>`).join('')}${button(`${icon('development')}<b>${mine().dev.length}</b>`,'openHand',false,'hand-entry')}</div></div>`;}
 function tools(){return `<div class="stage-primary"><a class="stage-brand" data-home-link href="/" aria-label="卡坦岛好友桌首页" title="卡坦岛">${icon('island')}</a><div id="camera-toolbar" role="group" aria-label="棋盘视角" data-follow-state="${!autoFollow?'off':followPaused?'manual':'following'}">${cameraControls()}</div></div><div class="stage-utilities">${[['chat','openChat','聊天'],['users','openPlayers','玩家'],['log','openLog','记录'],['settings','openSettings','设置']].map(([glyph,action,label])=>`<button type="button" data-action="${action}" aria-label="${label}" title="${label}" aria-haspopup="dialog">${icon(glyph)}${action==='openChat'&&unreadChat()?`<span class="chat-unread badge">${unreadChat()}</span>`:''}</button>`).join('')}</div>`;}
-function chatMessages(){return state.chat.length?state.chat.slice(-80).map(c=>`<p><strong>${esc(c.name)}</strong> ${esc(c.text)}</p>`).join(''):'<p class="muted">和朋友打声招呼。</p>'; }
-function chatPanel(){return `<section class="chat-section"><div id="chat-messages" class="chat-log" role="log" aria-label="聊天记录">${chatMessages()}</div><form id="chat-form"><input id="chat-message" data-persist maxlength="200" placeholder="说点什么…" aria-label="聊天消息"><button class="square" aria-label="发送消息" ${busy?'disabled':''}>${icon('arrow')}</button></form></section>`;}
+function chatMessages(){return state.chat.length?state.chat.map(c=>`<p data-message-id="${esc(c.id)}"><strong>${esc(c.name)}</strong> ${esc(c.text)} <button type="button" class="chat-report" data-report-message="${esc(c.id)}" aria-label="举报消息 ${esc(c.seq)}">#${esc(c.seq)} · 举报</button></p>`).join(''):'<p class="muted">和朋友打声招呼。</p>'; }
+function chatPanel(){return `<section class="chat-section"><p class="small muted">最近 100 条，最长 7 天；关闭房间后清理。${button('隐私 / 举报','report',false,'text-button')}</p><div id="chat-messages" class="chat-log" role="log" aria-label="聊天记录">${chatMessages()}</div><form id="chat-form"><input id="chat-message" data-persist maxlength="200" placeholder="说点什么…" aria-label="聊天消息"><button class="square" aria-label="发送消息" ${chatBusy||status!=='connected'?'disabled':''}>${icon('arrow')}</button></form></section>`;}
 function developmentPanel(){return `<div class="development-hand">${mine().dev.length?mine().dev.map(c=>`<button data-card="${c.id}" ${busy||state.room?.paused||!myTurn()||!['roll','action'].includes(state.phase)||state.playedDev||c.type==='victory'||c.bought>=state.turnNo?'disabled':''} title="${c.type==='victory'?'私下自动计入胜利点':c.bought>=state.turnNo?'本回合购入，下回合可用':'打出这张发展卡'}">${icon(c.type==='knight'?'flag':'development')}${DEV_NAMES[c.type]}${c.bought>=state.turnNo&&c.type!=='victory'?'<small>新</small>':''}</button>`).join(''):'<p class="muted">暂无发展卡</p>'}</div><p class="small muted">资源 ${total(mine().hand)} 张 · 胜利点卡私下计分</p><div class="supply"><span>剩余棋子</span><b>${15-state.board.edges.filter(e=>e.owner===state.me).length} 路 · ${5-state.board.vertices.filter(v=>v.owner===state.me&&v.level===1).length} 村 · ${4-state.board.vertices.filter(v=>v.owner===state.me&&v.level===2).length} 城</b></div><div class="bank-stock" aria-label="银行资源">${RESOURCES.map(r=>`<span class="${r}" title="银行${LABELS[r]}">${icon(r)} ${state.bank[r]}</span>`).join('')}</div>`;}
 function resultPanel(){const winner=state.players.find(p=>p.id===state.winner);return `<section class="winner">${icon('flag')}<h2>${esc(winner?.name)} 获胜</h2><p>${winner?.points} 个胜利点</p>${isHost()?button('再来一局','rematch',busy,'primary'):''}${button('返回首页','home',false,'secondary')}</section>`;}
 function stageContent(){
   if(stagePanel==='chat')return chatPanel();
   if(stagePanel==='players')return gamePanel();
   if(stagePanel==='log')return `<div class="activity-log" aria-label="岛屿记事">${state.log.map(l=>`<p>${esc(l.text)}</p>`).join('')}</div>`;
-  if(stagePanel==='settings')return `<p class="settings-meta"><span class="connection ${status}"><i></i>${statusText()}</span>房间 ${displayCode(code)}</p>${retention()}<p class="rules-summary">${esc(rulesLabel(state.options))} · ${state.targetPoints||10} 分获胜</p><fieldset class="action-preferences"><legend>行动提示与镜头</legend><label><input id="auto-follow" type="checkbox" ${autoFollow?'checked':''}>自动跟随公开行动</label><label><input id="reduce-motion" type="checkbox" ${reducedMotion()?'checked':''}>减少动态效果</label><p>拖动或缩放会暂停跟随；点击「跟随」恢复。选择落点、输入和打开面板时保持视角。减少动态效果使用静态标记，可手动点击「定位」。</p></fieldset><div class="settings-grid">${button(`${icon('zoom')}放大地图`,'zoomIn')}${button('− 缩小地图','zoomOut')}${button(`${icon('reset')}复位视角`,'reset')}${button(flat?'3D 三维棋盘':'2D 备用棋盘','toggleFlat')}${button(`${icon('book')}玩法指南`,'rules')}${button(`${icon('link')}邀请好友`,'invite')}</div>${roomNavigation()}${lobbyOrigins[backendId]?`<a class="settings-lobby" data-lobby-link href="${lobbyOrigins[backendId]}">返回游戏大厅 ${icon('arrow')}</a>`:''}`;
+  if(stagePanel==='settings')return `<p class="settings-meta"><span class="connection ${status}"><i></i>${statusText()}</span>房间 ${displayCode(code)}</p>${retention()}<p class="rules-summary">${esc(rulesLabel(state.options))} · ${state.targetPoints||10} 分获胜</p><fieldset class="action-preferences"><legend>行动提示与镜头</legend><label><input id="auto-follow" type="checkbox" ${autoFollow?'checked':''}>自动跟随公开行动</label><label><input id="reduce-motion" type="checkbox" ${reducedMotion()?'checked':''}>减少动态效果</label><p>拖动或缩放会暂停跟随；点击「跟随」恢复。选择落点、输入和打开面板时保持视角。减少动态效果使用静态标记，可手动点击「定位」。</p></fieldset><div class="settings-grid">${button(`${icon('zoom')}放大地图`,'zoomIn')}${button('− 缩小地图','zoomOut')}${button(`${icon('reset')}复位视角`,'reset')}${button(flat?'3D 三维棋盘':'2D 备用棋盘','toggleFlat')}${button(`${icon('book')}玩法指南`,'rules')}${button(`${icon('link')}邀请好友`,'invite')}</div>${button('隐私 / 举报','report',false,'text-button')}${roomNavigation()}${lobbyOrigins[backendId]?`<a class="settings-lobby" data-lobby-link href="${lobbyOrigins[backendId]}">返回游戏大厅 ${icon('arrow')}</a>`:''}`;
   if(stagePanel==='hand')return developmentPanel();
   if(stagePanel==='result')return resultPanel();
   const task=requiredTask(state);
@@ -203,13 +239,14 @@ function renderStage(task){
   if(!stagePanel){dialog.close();return;}
   $('#stage-dialog-title').textContent=({chat:'围桌聊聊',players:`本桌玩家 · ${state.players.length} 人`,log:'岛屿记事',settings:'对局设置',hand:'你的手牌',result:'本局结算',decision:task?.title||'交换与行动'})[stagePanel];
   const scroller=$('#stage-dialog-content'),scroll=scroller.scrollTop,changed=scroller.dataset.panel!==stagePanel;
-  if(!changed&&stagePanel==='chat'&&$('#chat-form')){paint('#chat-messages',chatMessages());$('#chat-form button').disabled=busy;}else paint('#stage-dialog-content',stageContent());
+  if(!changed&&stagePanel==='chat'&&$('#chat-form')){paint('#chat-messages',chatMessages());$('#chat-form button').disabled=chatBusy||status!=='connected';}else paint('#stage-dialog-content',stageContent());
   scroller.dataset.panel=stagePanel;
   scroller.scrollTop=changed?panelScroll.get(stagePanel)||0:scroll;
   if(stagePanel==='chat')for(const chat of state.chat)seenChatIds.add(chat.id);
   if(!dialog.open&&!$('#room-dialog').open&&!$('#rules-dialog').open){$('#toast').classList.remove('show');dialog.showModal();}
 }
 function render(){
+  const oldChat=$('#chat-messages'),chatScroll=oldChat?.scrollTop||0,followChat=!oldChat||oldChat.scrollHeight-oldChat.clientHeight-chatScroll<32;
   const detailsState=new Map([...document.querySelectorAll('details[id]')].map(el=>[el.id,el.open]));
   saveDrafts();
   const activeElement=document.activeElement,active=activeElement?.id,start=activeElement?.selectionStart;
@@ -238,7 +275,8 @@ function render(){
   syncViewport();board?.set(state?.board?state:preview,mode());
   if(cameraBlocked()){feedbackCanFollow=false;board?.cancelFocus?.();}
   paintActionFeedback();
-  for(const el of document.querySelectorAll('.activity-log,.chat-log'))el.scrollTop=el.scrollHeight;
+  for(const el of document.querySelectorAll('.activity-log'))el.scrollTop=el.scrollHeight;
+  if($('#chat-messages'))$('#chat-messages').scrollTop=followChat?$('#chat-messages').scrollHeight:chatScroll;
   bindForms();updateRatio();
   document.querySelector('[data-action="confirmRoomDialog"]').disabled=busy;
   syncViewport();
@@ -252,12 +290,13 @@ function bindForms(){
   if($('#bank-form'))$('#bank-form').onsubmit=e=>{e.preventDefault();send({type:'bankTrade',give:$('#bank-give').value,want:$('#bank-want').value});};
   if($('#bank-give'))$('#bank-give').onchange=updateRatio;
   if($('#trade-form'))$('#trade-form').onsubmit=e=>{e.preventDefault();send({type:'offerTrade',give:formBundle('give'),want:formBundle('want')});};
-  if($('#chat-form'))$('#chat-form').onsubmit=async e=>{e.preventDefault();const el=$('#chat-message'),text=el.value.trim();if(text){el.value='';if(!await send({type:'chat',text})){const current=$('#chat-message');if(current&&!current.value)current.value=text;inputDrafts.set('chat-message',current?.value||text);}}};
+  if($('#chat-form'))$('#chat-form').onsubmit=sendChat;
   if($('#development-form'))$('#development-form').onsubmit=e=>{e.preventDefault();send({type:'playDevelopment',cardId,cards:formBundle('plenty'),resource:$('#monopoly-resource')?.value});};
 }
 document.addEventListener('click',async e=>{
   const nav=e.target.closest('a[data-lobby-link],a[data-home-link]');if(nav&&code){e.preventDefault();openLeave(nav.hasAttribute('data-lobby-link')?'lobby':'home');return;}
   const b=e.target.closest('button');if(!b||b.disabled)return;
+  if(b.dataset.reportMessage){const message=state?.chat.find(message=>message.id===b.dataset.reportMessage);return openReport(message);}
   if(b.dataset.build){if(b.dataset.build==='development')return send({type:'buyDevelopment'});selectedBuild=selectedBuild===b.dataset.build?'':b.dataset.build;panel='';return render();}
   if(b.dataset.listRoom){const room=b.dataset.listRoom,name=$('#nickname')?.value.trim()||storage.get('name');if(!name){toast('先填写你的昵称，再加入房间。');$('#nickname')?.focus();return;}return connect(room,storage.get(`token:${room}`)||newId(),name);}
   if(b.dataset.kick)return openConfirmation({type:'kick',playerId:b.dataset.kick},'移出玩家',`将 ${state.players.find(p=>p.id===b.dataset.kick)?.name||'该玩家'} 移出等待房间？对方席位及原身份将失效。`,'确认移出');
@@ -266,6 +305,8 @@ document.addEventListener('click',async e=>{
   if(b.dataset.victim)return send({type:'steal',victim:b.dataset.victim});
   if(b.dataset.card){cardId=b.dataset.card;panel='development';return openStagePanel('decision');}
   const action=b.dataset.action;
+  if(action==='report')return openReport();
+  if(action==='closeReport')return $('#report-dialog').close();
   if(action==='focusTask'){openStagePanel('decision');$('#decision-panel')?.focus({preventScroll:true});return;}
   const stageActions={openChat:'chat',openPlayers:'players',openLog:'log',openSettings:'settings',openHand:'hand',openResult:'result'};
   if(stageActions[action])return openStagePanel(stageActions[action]);

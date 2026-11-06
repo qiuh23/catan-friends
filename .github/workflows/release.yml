@@ -17,7 +17,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   release:
-    if: vars.CATAN_PRODUCTION_ENABLED == 'true' && github.repository == 'qiuh23/catan-friends' && (github.event_name == 'workflow_run' || github.ref == 'refs/heads/main')
+    if: vars.CATAN_PRODUCTION_ENABLED == 'true' && vars.CATAN_STATE_SCHEMA == '3' && github.repository == 'qiuh23/catan-friends' && (github.event_name == 'workflow_run' || github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
     timeout-minutes: 40
     environment: production

@@ -1,5 +1,7 @@
 # 卡坦岛自动发布与一次性配置
 
+> 2026-11-06：当前源码升级至 state schema 3，新增 `CATAN_STATE_SCHEMA=3` 准备门禁，并要求先更新主机接收器/备份脚本。下文首次发布描述为历史快照；当前线上回读见 [本轮记录](random-chat-report-2026-11-06.md)，迁移与兼容回滚见 [运维步骤](random-chat-report-operations.md)。
+
 **2026-11-05 21:41 首次发布快照（北京时间）：** [PR #1](https://github.com/qiuh23/catan-friends/pull/1) 已按用户授权合并，main `1cebfe1cd7fbd328131f72acb488c3621554c0bd` 的 [Checks 42036916669](https://github.com/qiuh23/catan-friends/actions/runs/42036916669) 与 [首次双端发布 42037701133](https://github.com/qiuh23/catan-friends/actions/runs/42037701133) 成功；两端公网 SHA/HTTPS/资源/WSS 已回读。production environment、专用 RAM role/policy 与加密 CF secret 已配置；仓库 `CATAN_PRODUCTION_ENABLED=true`。首次发布为手动选择当前 main 的成功 push Checks；后续 main 的自动 `workflow_run` 尚待下一次发布实证。大厅卡坦岛入口仍关闭，完整验收进行中。详见 [生产记录](production-rollout-2026-11-05.md)。
 
 新 Fork/新环境的安全默认值仍是不设置门禁或 `false`；本仓库的实际 true 是完成用户审批和配置后的状态，不代表其他环境已获准发布。下文保留新环境准备与维护规则。
@@ -69,4 +71,4 @@ Checks 仅运行针对性的网络/部署/入口契约、Vite 构建和 Worker d
 
 首次 CF 发布尚无上一版本、或发布失败而无法安全记录本次版本时，保留该 dormant Worker 并报告，**不通过删除 Worker/DO“回滚”**；大厅保持关闭。DO 不兼容的版本回滚须停止并人工检查，不能 force 或回滚数据。普通代码回滚永远不恢复旧存档覆盖最新对局。
 
-本次状态格式维持 upstream version1，无业务数据迁移。两服身份/房间独立，邀请绑定创建服；旧裸房码仅在原来源解释。后续状态 schema 变化需单独迁移、备份、兼容性检查和批准，不能把跨服复制当迁移。
+2026-11-06 源码采用 state schema 3：房间根字段保存私有随机流，增加独立聊天去重/玩家限流及处置记录。旧房间加载时补一次安全流，保留既有牌库、地图、座位和进度。发布前更新主机接收器和备份脚本；只允许回滚同 schema 的兼容代码，详见上述运维步骤。两服身份/房间仍独立，不能把跨服复制当迁移。

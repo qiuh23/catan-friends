@@ -32,7 +32,7 @@ test('Worker failed alarm write rolls back a human command and receipt, allowing
 test('Worker failed bot alarm persistence restores the pre-turn state and retry applies exactly one bot action',async()=>{
   const f=await fixture();await f.command({type:'addBot'});await f.command({type:'addBot'});await f.command({type:'start'});
   f.object.room.record.game.turn=1;await f.object.persist();const before=structuredClone(f.object.room.record);
-  assert.equal(before.game.phase,'setup-settlement');f.fault.alarm=true;await assert.rejects(f.object.alarm(),/injected alarm/);
+  assert.equal(before.game.phase,'setup-settlement');f.fault.alarm=true;await assert.rejects(f.object.alarm(),/ROOM_ALARM_COMMIT_FAILED/);
   assert.deepEqual(f.object.room.record,before);assert.deepEqual(f.saved.get('room'),before);
   f.fault.alarm=false;await f.object.alarm();assert.equal(f.object.room.record.revision,before.revision+1);assert.equal(f.object.room.record.game.phase,'setup-road');
   assert.deepEqual(f.saved.get('room'),f.object.room.record);
