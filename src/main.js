@@ -4,6 +4,7 @@ import './entry.css';
 import './map-first.css';
 import './immersive-polish.css';
 import './home-family.css';
+import './home-showcase.css';
 import { Board, FlatBoard } from './board.js';
 import { Connection } from './connection.js';
 import { icon, resourceIllustration, dieFace } from './icons.js';
@@ -16,6 +17,7 @@ import { requiredTask } from './table-layout.js';
 import { ActionFeedbackCursor, mergeFeedbackEvents } from './action-feedback.js';
 import { installDialogDismissal } from './dialogs.js';
 import { placeMapBubble } from './map-bubble.js';
+import { createHomeExample, homePadding } from './home-showcase.js';
 
 const $=s=>document.querySelector(s), esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const storage={get(key){try{return JSON.parse(localStorage.getItem(`catan:${key}`));}catch{return null;}},set(key,value){try{localStorage.setItem(`catan:${key}`,JSON.stringify(value));}catch{}}};
@@ -24,7 +26,9 @@ let seenChatIds=new Set(),chatBusy=false,chatAttempt=null,reportInfo=null,report
 let roomList={status:'loading',rooms:[],error:'',nextCursor:null,moreStatus:'idle',moreError:''},listRequest=0,terminalMessage='',receivedAt=Date.now(),confirmation=null;
 let previewSeed=17;const preview={board:createBoard(()=>{previewSeed=(previewSeed*1664525+1013904223)>>>0;return previewSeed/4294967296;}),players:[],robber:null,legal:{}};
 const largePreview={...preview,board:createBoard(undefined,{playerExpansion:'five-six-2025'})};
-const sceneState=()=>state?.board?state:state?.players.length>4?largePreview:preview;
+const homeExample=createHomeExample();
+const sceneState=()=>state?.board?state:state?state.players.length>4?largePreview:preview:code?preview:homeExample;
+let showcaseInterrupted=false,pageAway=false;
 let stagePanel='', focusedPlayer='';
 const savedBoardViews=new Map();
 const feedbackCursor=new ActionFeedbackCursor(), motionQuery=matchMedia('(prefers-reduced-motion:reduce)');
@@ -62,12 +66,14 @@ document.querySelector('#app').insertAdjacentHTML('beforeend',`<dialog id="repor
 document.querySelector('[data-action="closeReport"]').setAttribute('aria-label','关闭举报说明');
 document.querySelector('#app').insertAdjacentHTML('beforeend',`<dialog id="practice-dialog" aria-labelledby="practice-title"><div class="dialog-heading"><h2 id="practice-title">人机练习</h2>${button(icon('close'),'closePractice',false,'square')}</div><form id="practice-form"><div id="practice-options"></div><div id="practice-seats" class="practice-seats" aria-live="polite"></div><p id="practice-feedback" role="alert"></p><button id="practice-start" type="submit" class="primary">${icon('bot')}开始练习 ${icon('arrow')}</button></form></dialog>`);
 document.querySelector('[data-action="closePractice"]').setAttribute('aria-label','关闭练习设置');
-document.querySelector('#table').insertAdjacentHTML('beforeend',`<nav id="player-orbit" aria-label="本桌玩家"></nav><section id="home-welcome" aria-label="欢迎来到卡坦岛"><h1>一起，开拓这座岛。</h1><p>收集资源，交换机会，建起你的村庄。</p></section><nav id="home-dock" aria-label="开始游戏">${button(`${icon('island')}<span>开桌 / 加入</span>`,'openEntry',false,'primary')}${button(`${icon('bot')}<span>人机练习</span>`,'homePractice')}${button(`${icon('users')}<span>在线房间</span>`,'openRooms')}</nav>`);
+document.querySelector('#table').insertAdjacentHTML('beforeend',`<nav id="player-orbit" aria-label="本桌玩家"></nav><section id="home-welcome" aria-label="欢迎来到卡坦岛"><h1><span>一起，</span><span>开拓这座岛。</span></h1><p>收集资源，交换机会，建起你的村庄。</p></section><nav id="home-dock" aria-label="开始游戏">${button(`${icon('island')}<span>开桌 / 加入</span>`,'openEntry',false,'primary')}${button(`${icon('bot')}<span>人机练习</span>`,'homePractice')}${button(`${icon('users')}<span>在线房间</span>`,'openRooms')}</nav>`);
 document.querySelector('#app').insertAdjacentHTML('beforeend',`<dialog id="entry-dialog" aria-labelledby="entry-title"><div class="dialog-heading"><h2 id="entry-title">开桌 / 加入</h2>${button(icon('close'),'closeEntry',false,'square')}</div><div id="entry-content"></div></dialog><dialog id="rooms-dialog" aria-label="在线房间"><div class="dialog-heading"><h2>在线房间</h2>${button(icon('close'),'closeRooms',false,'square')}</div><div id="rooms-content"></div></dialog>`);
 document.querySelector('[data-action="closeEntry"]').setAttribute('aria-label','关闭开始游戏');
 document.querySelector('[data-action="closeRooms"]').setAttribute('aria-label','关闭在线房间');
 document.querySelector('.board-area').insertAdjacentHTML('beforeend','<svg id="action-feedback-leader" aria-hidden="true" hidden><defs><mask id="feedback-line-mask" maskUnits="userSpaceOnUse"><rect width="100%" height="100%" fill="white"/><g id="feedback-line-cutouts"></g></mask></defs><path mask="url(#feedback-line-mask)"/></svg>');
 const resetButton=document.querySelector('[data-action="reset"]');resetButton.setAttribute('aria-label','复位棋盘视角');
+document.querySelector('.board-controls').insertAdjacentHTML('afterbegin',`<button type="button" id="home-motion" data-action="homeMotion" aria-label="暂停首页展示">${icon('pause')}<span>暂停展示</span></button>`);
+document.querySelector('#table').insertAdjacentHTML('beforeend','<div id="home-safe-area" aria-hidden="true"></div>');
 function toast(text){if($('#stage-dialog').open){$('#stage-feedback').textContent=text;return;}const el=$('#toast');el.textContent=text;el.classList.add('show');clearTimeout(toast.timer);toast.timer=setTimeout(()=>el.classList.remove('show'),4500);}
 async function sendChat(event){
   event.preventDefault();
@@ -103,7 +109,7 @@ async function openReport(message){
   renderReport();
 }
 function mode(){if(!state||!myTurn()||state.room?.paused)return '';if(state.phase==='setup-settlement')return 'settlement';if(['setup-road','road-building'].includes(state.phase))return 'road';if(state.phase==='robber')return 'robber';return state.phase==='action'?selectedBuild:'';}
-function makeBoard(){if(board)savedBoardViews.set(board instanceof FlatBoard,board.exportView?.());board?.dispose();$('#board').innerHTML='';try{board=flat?new FlatBoard($('#board'),select,hover):new Board($('#board'),select,hover);}catch(error){flat=true;board=new FlatBoard($('#board'),select,hover);toast('当前设备无法开启 3D，已切换到二维棋盘。');}board.onManual=pauseFollowing;board.onProjectionChange=()=>{positionActionFeedback();if(!viewSaveTimer)viewSaveTimer=setTimeout(saveBoardView,120);};$('#flat-toggle').textContent=flat?'3D':'2D';$('#flat-toggle').setAttribute('aria-label',flat?'切换三维棋盘':'切换二维棋盘');syncViewport();board.set(sceneState(),mode());if(!board.importView?.(storedBoardView()))board.importView?.(savedBoardViews.get(flat));board.setFeedback?.(actionFeedback,{reducedMotion:reducedMotion()});positionActionFeedback();}
+function makeBoard(){if(board&&state?.board)savedBoardViews.set(board instanceof FlatBoard,board.exportView?.());board?.dispose();$('#board').innerHTML='';try{board=flat?new FlatBoard($('#board'),select,hover):new Board($('#board'),select,hover);}catch(error){flat=true;board=new FlatBoard($('#board'),select,hover);toast('当前设备无法开启 3D，已切换到二维棋盘。');}board.onManual=()=>{if(!state&&!code){showcaseInterrupted=true;updateAmbient();}else pauseFollowing();};board.onProjectionChange=()=>{positionActionFeedback();if(state?.board&&!viewSaveTimer)viewSaveTimer=setTimeout(saveBoardView,120);};$('#flat-toggle').textContent=flat?'3D':'2D';$('#flat-toggle').setAttribute('aria-label',flat?'切换三维棋盘':'切换二维棋盘');syncViewport();board.set(sceneState(),mode());if(state?.board&&!board.importView?.(storedBoardView()))board.importView?.(savedBoardViews.get(flat));board.setFeedback?.(actionFeedback,{reducedMotion:reducedMotion()});positionActionFeedback();}
 function storedBoardView(){if(!state?.board||!code)return null;try{return JSON.parse(sessionStorage.getItem(`catan:view:${backendId}:${code}:${state.me}:${flat}`)||'null');}catch{return null;}}
 function saveBoardView(){clearTimeout(viewSaveTimer);viewSaveTimer=0;if(!state?.board||!code)return;try{sessionStorage.setItem(`catan:view:${backendId}:${code}:${state.me}:${flat}`,JSON.stringify({...board.exportView?.(),followPaused}));sessionStorage.setItem(`catan:renderer:${backendId}:${code}:${state.me}`,JSON.stringify(flat));}catch{}}
 function restoreBoardView(){if(!state?.board)return;try{const preference=JSON.parse(sessionStorage.getItem(`catan:renderer:${backendId}:${code}:${state.me}`)||'null');if(typeof preference==='boolean'&&preference!==flat){flat=preference;makeBoard();render();}const view=JSON.parse(sessionStorage.getItem(`catan:view:${backendId}:${code}:${state.me}:${flat}`)||'null');if(board.importView?.(view)){followPaused=Boolean(view.followPaused??view.viewMode==='manual');paintCameraControls();}}catch{}}
@@ -177,6 +183,7 @@ async function send(action){
 function connect(room,token,name){
   if(entryError)return toast(entryError);
   try {room=readRoom(room,backendId);}catch(error){return toast(error.message);}
+  showcaseInterrupted=false;savedBoardViews.clear();
   connection?.close();clearActionFeedback();feedbackEpoch='';followPaused=false;code=room;state=null;seenChatIds=new Set();chatBusy=false;stagePanel='';lastTaskKey='';status='connecting';
   $('#entry-dialog').close();$('#rooms-dialog').close();
   terminalMessage='';storage.set('name',name);replaceViewURL(invitationURL(location.origin,code,backendId));
@@ -365,7 +372,16 @@ function render(){
   document.querySelector('[data-action="confirmRoomDialog"]').disabled=busy;
   syncViewport();
 }
-function updateAmbient(){board?.setAmbient?.(!state&&!document.hidden&&!document.querySelector('dialog[open]'),{reducedMotion:reducedMotion()});}
+function updateAmbient(){
+  const home=!state&&!code,staticView=flat||reducedMotion();
+  const paused=pageAway||document.hidden||Boolean(document.querySelector('dialog[open]'))||showcaseInterrupted;
+  board?.setAmbient?.(home&&!paused,{reducedMotion:reducedMotion()});
+  const control=$('#home-motion');control.hidden=!home;control.disabled=staticView;
+  const label=staticView?'静态展示':showcaseInterrupted?'恢复展示':'暂停展示';
+  const markup=`${icon(staticView?'island':showcaseInterrupted?'play':'pause')}<span>${label}</span>`;
+  if(control.innerHTML!==markup)control.innerHTML=markup;
+  control.setAttribute('aria-label',`${label}${staticView?'，二维或减少动态效果已开启':'首页岛屿'}`);control.title=control.getAttribute('aria-label');control.setAttribute('aria-pressed',String(home&&!paused&&!staticView));
+}
 function paint(selector,markup){const el=$(selector);if(el._markup!==markup){el.innerHTML=markup;el._markup=markup;}}
 function updateRatio(){if($('#bank-ratio'))$('#bank-ratio').textContent=`${ownRatio($('#bank-give').value)} : 1`;}
 function bindQuantityForms(){
@@ -404,6 +420,12 @@ document.addEventListener('click',async e=>{
   if(b.dataset.victim)return send({type:'steal',victim:b.dataset.victim});
   if(b.dataset.card){cardId=b.dataset.card;panel='development';return openStagePanel('decision');}
   const action=b.dataset.action;
+  if(action==='homeMotion'){
+    if(state||code||flat||reducedMotion())return;
+    showcaseInterrupted=!showcaseInterrupted;
+    if(!showcaseInterrupted)board.resumeShowcase?.();
+    updateAmbient();return;
+  }
   if(action==='openEntry'){saveDrafts();$('#entry-dialog').showModal();return;}
   if(action==='closeEntry'){$('#entry-dialog').close();return;}
   if(action==='openRooms'){$('#rooms-dialog').showModal();return;}
@@ -433,7 +455,7 @@ document.addEventListener('click',async e=>{
   if(['start','addBot','roll','endTurn','cancelTrade','rematch'].includes(action))return send({type:action});
   if(action==='acceptTrade')return send({type:'acceptTrade',offerId:state.offer.id});
   if(action==='rules'){saveDrafts();return $('#rules-dialog').showModal();}if(action==='closeRules'){ $('#rules-dialog').close();return render();}
-  if(action==='reset'){pauseFollowing();return board.reset();}
+  if(action==='reset'){if(!state&&!code){board.reset({defaultOrientation:true});return;}pauseFollowing();return board.reset();}
   if(action==='zoomIn'||action==='zoomOut')return board.zoomBy(action==='zoomIn'?1.25:.8);
   if(action==='practice')return openPractice();
   if(action==='closePractice')return $('#practice-dialog').close();
@@ -462,7 +484,12 @@ function syncViewport(){
     const top=Math.max(...['#stage-tools','#turn-banner','#player-orbit'].map(selector=>{const el=$(selector);return el&&!el.hidden&&el.getClientRects().length?el.getBoundingClientRect().bottom+10:0;}));
     const bottom=Math.max(...['#hand .hand-tray','#play-dock'].map(selector=>{const el=$(selector);return el&&el.getClientRects().length?innerHeight-el.getBoundingClientRect().top+10:0;}));
     board?.setViewportPadding?.({top:Math.max(top,(parseFloat(css.getPropertyValue('--board-pad-top'))||0)+(parseFloat(css.paddingTop)||0)),bottom:Math.max(bottom,(parseFloat(css.getPropertyValue('--board-pad-bottom'))||0)+(parseFloat(css.paddingBottom)||0)),left:12+(parseFloat(css.paddingLeft)||0),right:12+(parseFloat(css.paddingRight)||0)},{preserveView:Boolean(actionFeedback)});
-  }else if(!state){const header=$('.topbar').getBoundingClientRect(),dock=$('#home-dock').getBoundingClientRect();board?.setViewportPadding?.({top:header.bottom+8,right:12,bottom:innerHeight-dock.top+10,left:12});}
+  }else if(!state){
+    const rect=selector=>{const el=$(selector);return el?.getClientRects().length&&getComputedStyle(el).display!=='none'?el.getBoundingClientRect():null;};
+    const safeCSS=getComputedStyle($('#home-safe-area')),safe=Object.fromEntries(['top','right','bottom','left'].map(side=>[side,parseFloat(safeCSS.getPropertyValue(`padding-${side}`))||0]));
+    const padding=homePadding(innerWidth,innerHeight,{header:rect('.topbar'),brand:rect('.topbar .brand'),nav:rect('.topbar nav'),welcome:rect('#home-welcome'),server:rect('.entry-server'),dock:rect('#home-dock'),controls:rect('.board-controls'),safe,sideControls:matchMedia('(orientation:landscape) and (max-height:600px)').matches});
+    $('#board').dataset.homePadding=JSON.stringify(padding);board?.setViewportPadding?.(padding);
+  }
   else board?.setViewportPadding?.({top:0,right:0,bottom:0,left:0});
   positionActionFeedback();
 }
@@ -483,8 +510,10 @@ replaceViewURL=installDialogDismissal({beforeClose:saveDrafts,onStageClose:close
 restoreDrafts();makeBoard();render();syncViewport();
 document.addEventListener('input',event=>{if(event.target.matches('[data-persist]'))saveDrafts();});
 document.addEventListener('change',event=>{if(event.target.matches('[data-persist]'))saveDrafts();});
-const hudObserver=new ResizeObserver(syncViewport);for(const selector of ['#stage-tools','#turn-banner','#player-orbit','#home-dock','#hand','#play-dock'])hudObserver.observe($(selector));
-window.addEventListener('pagehide',()=>{saveDrafts();saveBoardView();clearActionFeedback();});
+const hudObserver=new ResizeObserver(syncViewport);for(const selector of ['#stage-tools','#turn-banner','#player-orbit','#home-dock','#hand','#play-dock','#home-welcome','.topbar','.entry-server','.board-controls'])hudObserver.observe($(selector));
+document.fonts.ready.then(syncViewport);
+window.addEventListener('pagehide',()=>{pageAway=true;saveDrafts();saveBoardView();clearActionFeedback();clearTimeout(viewSaveTimer);viewSaveTimer=0;updateAmbient();board?.dispose();});
+window.addEventListener('pageshow',event=>{pageAway=false;if(event.persisted){makeBoard();render();syncViewport();}});
 if(!entryError)refreshRooms();
 const last=storage.get('last');if(!entryError&&invite&&last?.code===invite)connect(last.code,last.token,last.name);
 window.addEventListener('online',()=>{if(connection&&!connection.stopped&&connection.ws.readyState>1){clearTimeout(connection.reconnectTimer);connection.connect();}});

@@ -1,0 +1,33 @@
+/* Home-only measured composition. The canvas and sea still fill the viewport. */
+.at-home .topbar { right:0; height:calc(76px + env(safe-area-inset-top)); padding-top:calc(12px + env(safe-area-inset-top)); }
+.at-home .entry-server { top:calc(82px + env(safe-area-inset-top)); }
+.at-home .topbar nav { margin-left:auto; }
+.at-home #home-welcome { display:block; top:calc(105px + env(safe-area-inset-top)); }
+.home .board-controls { gap:2px; }
+.home .board-controls #home-motion { width:auto; gap:6px; padding:8px 12px; font-size:12px; white-space:nowrap; flex-shrink:0; }
+#home-motion[hidden] { display:none; }
+#home-safe-area { position:absolute; visibility:hidden; pointer-events:none; padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
+@media(max-width:1050px) {
+  .home .board-controls { top:auto; bottom:calc(84px + env(safe-area-inset-bottom)); left:50%; right:auto; transform:translateX(-50%); flex-direction:row; gap:2px; padding:3px; }
+}
+@media(max-width:700px) {
+  .at-home .topbar { height:calc(66px + env(safe-area-inset-top)); padding-top:calc(8px + env(safe-area-inset-top)); }
+  .at-home .entry-server { top:calc(72px + env(safe-area-inset-top)); }
+  .at-home #home-welcome { top:calc(106px + env(safe-area-inset-top)); }
+}
+@media(max-height:620px) {
+  .at-home #home-welcome p { display:none; }
+  .at-home #home-welcome h1 { font-size:22px; }
+}
+@media(orientation:landscape) and (max-height:600px) {
+  .at-home .topbar { height:calc(58px + env(safe-area-inset-top)); padding-top:calc(6px + env(safe-area-inset-top)); padding-bottom:6px; }
+  .at-home .entry-server { top:calc(64px + env(safe-area-inset-top)); font-size:10px; max-width:155px; }
+  .at-home #home-welcome { top:calc(105px + env(safe-area-inset-top)); left:max(14px,env(safe-area-inset-left)); transform:none; width:150px; max-width:none; text-align:left; }
+  .at-home #home-welcome h1 { font-size:21px; line-height:1.6; }
+  .at-home #home-welcome h1 span { display:block; white-space:nowrap; }
+  .home #home-dock { left:auto; right:max(14px,env(safe-area-inset-right)); transform:none; flex-direction:column; width:158px; }
+  .home #home-dock button { min-height:44px; justify-content:flex-start; padding:8px 10px; }
+  .home .board-controls { top:auto; bottom:max(14px,env(safe-area-inset-bottom)); right:auto; left:max(14px,env(safe-area-inset-left)); transform:none; flex-direction:row; }
+  .home .board-controls #home-motion { width:44px; padding:8px; }
+  .home .board-controls #home-motion span { display:none; }
+}
