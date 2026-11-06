@@ -1,5 +1,5 @@
 const paths={
-  chat:'M4 4h16v12H9l-5 4Z M8 8h8 M8 12h5',
+  chat:'M8 18 3 21l1.2-5A8 8 0 1 1 8 18Z M8 9h.01 M12 9h.01 M16 9h.01',
   log:'M5 3h14v18H5Z M8 7h8 M8 11h8 M8 15h6',
   settings:'M9 3h6l1 4 4 1v8l-4 1-1 4H9l-1-4-4-1V8l4-1Z M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z',
   island:'M12 3 21 8v9l-9 5-9-5V8Z M8 16l4-7 4 7Z',
@@ -25,8 +25,23 @@ const paths={
   check:'m5 12 4 4L19 6',
   bot:'M5 7h14v13H5Z M12 7V3 M9 12v2 M15 12v2 M9 17h6 M2 11v5 M22 11v5',
   zoom:'M12 5v14 M5 12h14',
+  minus:'M5 12h14',
+  focus:'M3 8V3h5 M16 3h5v5 M21 16v5h-5 M8 21H3v-5 M8 12h8 M12 8v8',
+  follow:'M3 11h4 M17 11h4 M12 2v4 M12 16v5 M17 11a5 5 0 1 1-10 0 5 5 0 0 1 10 0Z',
+  pause:'M8 5v14 M16 5v14',
+  cards:'m3 7 12-4 6 15-12 4Z M5 4l10-2',
+  trophy:'M7 3h10v7a5 5 0 0 1-10 0Z M7 5H3v3a5 5 0 0 0 5 5 M17 5h4v3a5 5 0 0 1-5 5 M12 15v6 M7 21h10',
+  harbor:'M12 3v17 M9 5a3 3 0 1 0 6 0 3 3 0 1 0-6 0 M3 13c0 5 4 8 9 8s9-3 9-8 M3 13l-1 4 M3 13l4 1 M21 13l1 4 M21 13l-4 1',
+  anchor:'M12 3v17 M9 5a3 3 0 1 0 6 0 3 3 0 1 0-6 0 M3 13c0 5 4 8 9 8s9-3 9-8 M3 13l-1 4 M3 13l4 1 M21 13l1 4 M21 13l-4 1',
+  knight:'M6 21V10l5-7h5l-1 4 4 4-4 3-3-2-2 4h7v5Z M13 7h.01',
+  offline:'M4 4l16 16 M9 5a9 9 0 0 1 11 6 M4 10a9 9 0 0 0 5 9 M14 16l3 3 M12 12h.01',
+  send:'m3 3 18 9-18 9 4-9Z M7 12h14',
+  shield:'m12 2 8 4v6c0 5-5 9-8 10-3-1-8-5-8-10V6Z M12 7v6 M12 17h.01',
 };
 export const icon=(name,cls='')=>`<svg class="icon ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${paths[name]||paths.island}"/></svg>`;
+
+const pipPositions={1:[[12,12]],2:[[7,7],[17,17]],3:[[7,7],[12,12],[17,17]],4:[[7,7],[17,7],[7,17],[17,17]],5:[[7,7],[17,7],[12,12],[7,17],[17,17]],6:[[7,6],[17,6],[7,12],[17,12],[7,18],[17,18]]};
+export const dieFace=value=>`<svg class="die-face" viewBox="0 0 24 24" aria-hidden="true">${(pipPositions[value]||[]).map(([x,y])=>`<circle cx="${x}" cy="${y}" r="1.8" fill="currentColor"/>`).join('')}</svg>`;
 
 // Original, code-drawn resource artwork. No CATAN reference images are embedded.
 const illustrations={

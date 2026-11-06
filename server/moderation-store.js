@@ -1,6 +1,7 @@
-import { readFile,writeFile,rename,mkdir,readdir } from 'node:fs/promises';
+import { readFile,writeFile,mkdir,readdir } from 'node:fs/promises';
 import path from 'node:path';
 import { emptyModeration,pruneModeration } from '../shared/moderation.js';
+import { renameWithRetry } from './file-store.js';
 export class ModerationStore {
   constructor(directory){this.directory=directory;this.cache=new Map();}
   async read(code) {
@@ -14,7 +15,7 @@ export class ModerationStore {
   async write(code,state) {
     await mkdir(this.directory,{recursive:true,mode:0o700});
     const file=path.join(this.directory,code+'.json');
-    await writeFile(file+'.tmp',JSON.stringify(state),{mode:0o600});await rename(file+'.tmp',file);
+    await writeFile(file+'.tmp',JSON.stringify(state),{mode:0o600});await renameWithRetry(file+'.tmp',file);
     this.cache.set(code,state);
   }
   async prune(code,now) {

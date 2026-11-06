@@ -51,6 +51,16 @@ async function open(count,viewport,{touch=true,setup=false}={}) {
 }
 async function stats(page){return JSON.parse(await page.locator('#board canvas').getAttribute('data-render-stats'));}
 async function settled(page){await page.waitForTimeout(180);}
+async function ready(client){
+  await client.page.locator('#board[aria-busy="false"]').waitFor();
+  // The new HUD and its off-axis camera projection settle after the state/ack.
+  await client.page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+}
+async function received(client,type){
+  const deadline=Date.now()+5000;
+  while(client.actions.at(-1)?.type!==type&&Date.now()<deadline)await client.page.waitForTimeout(25);
+  assert.equal(client.actions.at(-1)?.type,type,'expected actual protocol action');
+}
 async function fits(page) {
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'horizontal overflow');
   const rect=await page.locator('#board canvas').boundingBox();assert.ok(rect.width>=230&&rect.height>=120,`board too small: ${JSON.stringify(rect)}`);
@@ -61,6 +71,10 @@ async function fits(page) {
 }
 async function capture(client,name) {
   await settled(client.page);await fits(client.page);
+  if(client.page.viewportSize().width<client.page.viewportSize().height){
+    const [x,y,z]=JSON.parse(await client.page.locator('#board canvas').getAttribute('data-camera'));
+    assert.ok(y>Math.hypot(x,z)*2,'portrait game inherited the low landscape preview pitch');
+  }
   const metrics=await stats(client.page);assert.ok(metrics.calls<=100,`draw call budget: ${metrics.calls}`);assert.ok(metrics.triangles<=(metrics.shadows?45000:25000),`triangle budget: ${metrics.triangles}`);
   const screenshot=`test-results/terrain-${name}.png`;await client.page.screenshot({path:screenshot,fullPage:true});
   if(process.env.SAVE_REVIEW_SHOTS==='1'&&['6-desktop','6-portrait','6-landscape'].includes(name)) {
@@ -142,7 +156,8 @@ try {
     await toggleBoard(page,'切换二维棋盘');await page.locator('#board>svg').waitFor();assert.equal(await page.locator('#board canvas').count(),0);
     await page.waitForFunction(()=>window.previousBoardContext.isContextLost());await page.evaluate(()=>{delete window.previousBoardContext;});
     await toggleBoard(page,'切换三维棋盘');await page.locator('#board canvas[data-render-stats]').waitFor();await settled(page);
-    const metrics=await stats(page);assert.ok(metrics.geometries<=10&&metrics.textures<=17,'GPU resources grow across switches');assert.equal(await page.locator('#board canvas').count(),1);
+    // Two shared silhouette geometries distinguish village/city build sites.
+    const metrics=await stats(page);assert.ok(metrics.geometries<=12&&metrics.textures<=17,'GPU resources grow across switches');assert.equal(await page.locator('#board canvas').count(),1);
   }
   const restored=await stats(page);results.push({name:'switch-cycle',...restored});
   // The game page itself is intentionally fixed; simulate offscreen visibility
@@ -181,22 +196,24 @@ try {
   await gesture.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
   assert.equal(touch.actions.length,0,'pinch placed a piece');
   await openStagePanel(touch.page,'openSettings');await touch.page.getByRole('button',{name:'复位棋盘视角'}).click();await closeStagePanel(touch.page);await settled(touch.page);
+  await ready(touch);
   const site=touch.game.board.vertices[viewFor(touch.game,'p0').legal.settlement[0]],p=await point(touch.page,site);
   await touch.page.touchscreen.tap(p.x,p.y);await touch.page.waitForFunction(()=>document.querySelector('.turn-banner')?.textContent.includes('铺设起始道路'));
   assert.equal(touch.actions.at(-1).type,'buildSettlement');assert.equal(touch.actions.at(-1).vertex,site.id);
+  await ready(touch);
   const state=viewFor(touch.game,'p0'),edge=state.board.edges[state.legal.road[0]],a=state.board.vertices[edge.a],b=state.board.vertices[edge.b];
-  const road=await point(touch.page,{x:(a.x+b.x)/2,z:(a.z+b.z)/2});await touch.page.touchscreen.tap(road.x,road.y);await settled(touch.page);
+  const road=await point(touch.page,{x:(a.x+b.x)/2,z:(a.z+b.z)/2});await touch.page.touchscreen.tap(road.x,road.y);await received(touch,'buildRoad');
   assert.equal(touch.actions.at(-1).type,'buildRoad');assert.equal(touch.actions.at(-1).edge,edge.id);
   await touch.page.screenshot({path:'test-results/terrain-touch-six-setup.png',fullPage:true});
-  touch.setGame(fixture(6));await touch.page.locator('[data-build="city"]').click();await settled(touch.page);
+  touch.setGame(fixture(6));await touch.page.locator('[data-build="city"]').click();await ready(touch);
   const cityId=viewFor(touch.game,'p0').legal.city[0],city=await point(touch.page,touch.game.board.vertices[cityId]);
-  await touch.page.touchscreen.tap(city.x,city.y);await settled(touch.page);assert.equal(touch.actions.at(-1).type,'buildCity');
-  const robber=fixture(6);robber.phase='robber';touch.setGame(robber);await settled(touch.page);
+  await touch.page.touchscreen.tap(city.x,city.y);await received(touch,'buildCity');await ready(touch);
+  const robber=fixture(6);robber.phase='robber';touch.setGame(robber);await settled(touch.page);await ready(touch);
   const tileId=viewFor(robber,'p0').legal.robber[0],tile=robber.board.tiles[tileId],tilePoint=await point(touch.page,{...tile,y:.28});
-  await touch.page.touchscreen.tap(tilePoint.x,tilePoint.y);await settled(touch.page);assert.equal(touch.actions.at(-1).type,'moveRobber');assert.equal(touch.actions.at(-1).tile,tileId);
-  touch.setGame(fixture(6,true));await toggleBoard(touch.page,'切换二维棋盘');await touch.page.locator('#board [data-id]').first().tap();await settled(touch.page);
+  await touch.page.touchscreen.tap(tilePoint.x,tilePoint.y);await received(touch,'moveRobber');assert.equal(touch.actions.at(-1).tile,tileId);await ready(touch);
+  touch.setGame(fixture(6,true));await toggleBoard(touch.page,'切换二维棋盘');await ready(touch);await touch.page.locator('#board [data-id]').first().tap();await received(touch,'buildSettlement');await ready(touch);
   assert.equal(touch.actions.at(-1).type,'buildSettlement');
-  await touch.page.locator('#board [data-id]').first().focus();await touch.page.keyboard.press('Enter');await settled(touch.page);assert.equal(touch.actions.at(-1).type,'buildRoad');
+  await touch.page.locator('#board [data-id]').first().focus();await touch.page.keyboard.press('Enter');await received(touch,'buildRoad');
   await touch.context.close();
   // Losing 3D availability keeps the playable, keyboard-accessible fallback.
   const fallback=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true});

@@ -39,7 +39,7 @@ async function open(count,viewport,{touch=true,insets=null}={}) {
       if(m.type!=='action')return;
       actions.push(m.action);
       try {
-        if(m.action.type==='chat')chat=[...chat,{id:`chat-${revision}`,name:'海风',text:m.action.text}];
+        if(m.action.type==='chat')chat=[...chat,{id:`chat-${revision}`,seq:chat.length+1,sentAt:Date.now(),name:'海风',text:m.action.text}];
         else if(m.action.type==='resume')paused=false;
         else game=act(game,'p0',m.action,()=>.43);
         publish();ws.send(JSON.stringify({type:'ack',id:m.id}));
@@ -49,7 +49,7 @@ async function open(count,viewport,{touch=true,insets=null}={}) {
   await page.goto(url);await page.locator('#nickname').fill('海风');await page.getByRole('button',{name:'创建好友房间'}).click();
   await page.locator('.playing #board canvas[data-render-stats]').waitFor();
   await page.waitForFunction(()=>JSON.parse(document.querySelector('#board canvas').dataset.renderStats).pieceBuilds>0);
-  return {context,page,actions,get game(){return game;},setGame(next){game=next;publish();},setPaused(value){paused=value;publish();},publish,chat(text){chat=[...chat,{id:`peer-${revision}`,name:'松林',text}];publish();}};
+  return {context,page,actions,get game(){return game;},setGame(next){game=next;publish();},setPaused(value){paused=value;publish();},publish,chat(text){chat=[...chat,{id:`peer-${revision}`,seq:chat.length+1,sentAt:Date.now(),name:'松林',text}];publish();}};
 }
 const settled=page=>page.waitForTimeout(180);
 async function fit(page) {
@@ -122,7 +122,9 @@ try {
   assert.equal(await page.locator('#chat-message').evaluate(el=>el===document.activeElement),true,'incoming state lost chat focus');
   assert.equal(await page.locator('#chat-message').evaluate(el=>el===window.originalChatInput),true,'incoming state replaced a composing chat input');
   await page.locator('#chat-message').evaluate(el=>{el.dispatchEvent(new CompositionEvent('compositionend',{data:'草稿',bubbles:true}));delete window.originalChatInput;});
-  await closeStagePanel(page);await openStagePanel(page,'openChat');assert.equal(await page.locator('#chat-message').inputValue(),'保留的聊天草稿');
+  assert.equal(await page.locator('.chat-bubble>span').last().textContent(),'收到朋友的新消息');
+  await closeStagePanel(page);client.chat('聊天气泡与未读提示');await page.locator('.chat-unread').waitFor();
+  await openStagePanel(page,'openChat');assert.equal(await page.locator('#chat-message').inputValue(),'保留的聊天草稿');assert.equal(await page.locator('.chat-unread').count(),0,'reading chat did not clear unread indicator');
   // Browser viewport reduction models the space occupied by a system keyboard;
   // it does not establish behavior of an actual phone or keyboard implementation.
   await page.setViewportSize({width:390,height:430});await page.locator('#chat-message').focus();await settled(page);await dialogFits(page);
@@ -145,7 +147,14 @@ try {
 
   const discard=fixture(6);discard.phase='discard';discard.turn=1;discard.discards={p0:10,p1:5};const beforeDiscard=client.actions.length;client.setGame(discard);
   await page.locator('#stage-dialog[open] #discard-form').waitFor();await dialogFits(page);assert.equal(client.actions.length,beforeDiscard,'discard automatically chosen');
+  assert.equal(await page.getByRole('button',{name:'确认弃牌',exact:true}).isDisabled(),true,'incomplete discard can be confirmed');
+  await page.locator('#discard-wood').fill('4');assert.match(await page.locator('#discard-form .quantity-summary').textContent(),/4 \/ 10/);
   await page.locator('#discard-wood').fill('4');await page.locator('#discard-brick').fill('4');await page.locator('#discard-wheat').fill('2');
+  assert.equal(await page.getByRole('button',{name:'确认弃牌',exact:true}).isEnabled(),true);assert.match(await page.locator('#discard-form .quantity-summary').textContent(),/10 \/ 10/);
+  const discardButton=await page.getByRole('button',{name:'确认弃牌',exact:true}).boundingBox();assert.ok(discardButton.y>=0&&discardButton.y+discardButton.height<=320,'discard confirmation hidden in short landscape');
+  const discardFooter=await page.locator('#discard-form .decision-submit').boundingBox(),discardInput=await page.locator('#discard-wheat').boundingBox();
+  assert.ok(discardInput.y+discardInput.height<=discardFooter.y+1,'discard confirmation covers the focused resource input');
+  await page.screenshot({path:'test-results/viewport-discard-short-landscape.png',fullPage:true,scale:'css'});
   await page.keyboard.press('Escape');await page.locator('#stage-dialog[open]').waitFor({state:'hidden'});await page.locator('[data-action="focusTask"]').click();
   assert.equal(await page.locator('#discard-wood').inputValue(),'4','dismiss/reopen lost discard selection');
   client.chat('弃牌时也有消息');await settled(page);assert.equal(await page.locator('#discard-wood').inputValue(),'4');
@@ -160,6 +169,23 @@ try {
   const steal=fixture(6);steal.phase='steal';steal.resumePhase='action';steal.robber=steal.board.tiles.find(t=>t.vertices.some(v=>steal.board.vertices[v].owner&&steal.board.vertices[v].owner!=='p0')).id;
   const beforeSteal=client.actions.length;client.setGame(steal);await page.locator('#stage-dialog[open] [data-victim]').first().waitFor();assert.equal(client.actions.length,beforeSteal,'victim automatically selected');
   await page.screenshot({path:'test-results/viewport-steal.png',fullPage:true,scale:'css'});await page.locator('[data-victim]').first().click();await page.locator('[data-victim]').waitFor({state:'hidden'});assert.equal(client.actions.at(-1).type,'steal');
+
+  const plenty=fixture(6);plenty.players[0].dev=[{id:'plenty-check',type:'plenty',bought:0}];client.setGame(plenty);await openStagePanel(page,'openHand');
+  await page.locator('[data-card="plenty-check"]').click();await page.locator('#development-form [id="plenty-wood"]').waitFor();
+  assert.equal(await page.getByRole('button',{name:'打出丰收',exact:true}).isDisabled(),true,'empty plenty selection can be confirmed');
+  await page.locator('#plenty-wood').fill('1');await page.locator('#plenty-wheat').fill('1');
+  assert.equal(await page.locator('#stage-dialog-title').textContent(),'丰收','development dialog has an ambiguous title');
+  assert.match(await page.locator('#development-form .quantity-summary').textContent(),/2 \/ 2/);
+  await page.screenshot({path:'test-results/viewport-plenty-portrait.png',fullPage:true,scale:'css'});
+  await page.setViewportSize({width:740,height:320});await settled(page);await dialogFits(page);
+  await page.locator('#plenty-wood').fill('3');assert.equal(await page.getByRole('button',{name:'打出丰收',exact:true}).isDisabled(),true,'overfilled plenty selection can be confirmed');
+  await page.locator('#plenty-wood').fill('1');const plentyButton=await page.getByRole('button',{name:'打出丰收',exact:true}).boundingBox();
+  assert.ok(plentyButton.y>=0&&plentyButton.y+plentyButton.height<=320,'plenty confirmation hidden in short landscape');
+  const plentyFooter=await page.locator('#development-form .decision-submit').boundingBox(),plentyInput=await page.locator('#plenty-wood').boundingBox();
+  assert.ok(plentyInput.y+plentyInput.height<=plentyFooter.y+1,'plenty confirmation covers the focused resource input');
+  await page.screenshot({path:'test-results/viewport-plenty-short-landscape.png',fullPage:true,scale:'css'});
+  await page.getByRole('button',{name:'打出丰收',exact:true}).click();await settled(page);assert.equal(client.actions.at(-1).type,'playDevelopment');
+  assert.equal(client.game.players[0].hand.wood,5);assert.equal(client.game.players[0].hand.wheat,5);await closeStagePanel(page);await page.setViewportSize({width:390,height:844});
 
   client.setGame(fixture(6));client.setPaused(true);await page.getByRole('button',{name:'恢复对局',exact:true}).waitFor();
   assert.equal(await page.locator('#play-dock [data-build="road"]').isDisabled(),true);await page.getByRole('button',{name:'恢复对局',exact:true}).click();await settled(page);assert.equal(client.actions.at(-1).type,'resume');await closeStagePanel(page);

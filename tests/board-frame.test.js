@@ -42,6 +42,18 @@ test('actual viewport changes preserve manually chosen camera direction and rela
   assert.ok(Math.abs(view.camera.position.length()/view.fitDistance-zoom)<1e-9);
 });
 
+test('a new island uses the current canvas orientation instead of the home preview pitch',()=>{
+  for(const [width,height,direction] of [[390,844,[.3,16,3]],[844,390,[14,8,.3]]]){
+    const view=cameraFixture(width,height,{top:112,bottom:128,left:12,right:12},true);
+    view.camera.position.set(14,8,.3);view.controls.target.set(1,.2,1);
+    view.reset({defaultOrientation:true});
+    assert.ok(view.camera.position.clone().normalize().distanceTo(new Vector3(...direction).normalize())<1e-9);
+    assert.deepEqual(view.controls.target.toArray(),[0,0,0]);assert.equal(view.viewMode,'overview');
+    const bearing=view.camera.position.clone().normalize();view.reset();
+    assert.ok(view.camera.position.clone().normalize().distanceTo(bearing)<1e-9,'ordinary reset changed the chosen bearing');
+  }
+});
+
 test('an extremely small visual viewport retains a finite play frame',()=>{
   const frame=boardFrame(320,180,{left:-2,right:NaN,top:112,bottom:128});
   assert.ok(frame.width>0&&frame.height>0);

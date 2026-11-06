@@ -18,7 +18,7 @@ async function open(viewport={width:1440,height:960}) {
 }
 async function create(client,name,{visibility='public',options={}}={}) {
   await client.page.locator('#nickname').fill(name);await client.page.locator('#create-visibility').selectOption(visibility);
-  if(Object.keys(options).length){await client.page.locator('#create-options-details').evaluate(el=>el.open=true);for(const [key,value] of Object.entries(options)){if(key==='playerExpansion')await client.page.locator(`#create-${key}`).selectOption(value);else await client.page.locator(`#create-${key}`).setChecked(value);}}
+  if(Object.keys(options).length){for(const [key,value] of Object.entries(options)){if(key==='playerExpansion')await client.page.locator(`#create-count-${value==='five-six-2025'?6:4}`).check();else await client.page.locator(`#create-${key}`).setChecked(value);}}
   await client.page.getByRole('button',{name:'创建好友房间'}).click();await client.wait(s=>s.phase==='lobby');
   return new URL(client.page.url()).searchParams.get('room');
 }
@@ -109,7 +109,7 @@ try {
   checkpoint('private and practice');
   const secret=await open();const privateRoom=await create(secret,'私密房主',{visibility:'private'});
   assert.ok(!(await (await fetch(`${url}/api/rooms`)).json()).rooms.some(r=>r.code===privateRoom));
-  const practice=await open();await practice.page.locator('#nickname').fill('练习者');await practice.page.getByRole('button',{name:'先和电脑练一局'}).click();await practice.wait(s=>Boolean(s.board));
+  const practice=await open();await practice.page.locator('#nickname').fill('练习者');await practice.page.getByRole('button',{name:'人机练习',exact:true}).click();await practice.page.getByRole('button',{name:'开始练习',exact:false}).click();await practice.wait(s=>Boolean(s.board));
   const practiceRoom=new URL(practice.page.url()).searchParams.get('room');assert.ok(!(await (await fetch(`${url}/api/rooms`)).json()).rooms.some(r=>r.code===practiceRoom));
   await practice.page.setViewportSize({width:390,height:844});await fit(practice);await practice.page.screenshot({path:`test-results/${label}-practice-mobile.png`,fullPage:true});
   checkpoint('closing initial contexts');

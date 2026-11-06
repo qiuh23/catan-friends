@@ -1,13 +1,15 @@
 import http from 'node:http';
-import { readFile, writeFile, rename, mkdir, readdir } from 'node:fs/promises';
+import { readFile, writeFile, mkdir, readdir } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { WebSocketServer, WebSocket } from 'ws';
 import { deploymentConfig, requestAddress, originAllowed } from './request-policy.js';
 import { Room, roomCode, fingerprint, ROOM_PATTERN } from '../shared/room.js';
+import { createRoomFromInput } from '../shared/room-create.js';
 import { UserError,publicError } from '../shared/errors.js';
 import { securityConfig,adminAuthorized,applyModeration,disposition,inspectRoom,closedModeration } from '../shared/moderation.js';
 import { ModerationStore } from './moderation-store.js';
+import { renameWithRetry } from './file-store.js';
 
 const root=fileURLToPath(new URL('../',import.meta.url));
 const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.svg':'image/svg+xml','.png':'image/png','.woff2':'font/woff2'};
@@ -25,7 +27,7 @@ export async function createServer({port=Number(process.env.PORT)||3005,host=pro
   const serial=(code,fn)=>{const p=(queues.get(code)||Promise.resolve()).then(fn); queues.set(code,p.catch(()=>{})); return p;};
   const save=async(code,room)=>{
     if(room.record.closed){const previous=await moderation.read(code);if(previous.audit.length || previous.hiddenChat.length || Object.keys(previous.names).length || previous.restricted.length){const next=closedModeration(previous);if(next!==previous)await moderation.write(code,next);}}
-    const file=path.join(dataDir,`${code}.json`);await writeFile(`${file}.tmp`,JSON.stringify(room.record));await rename(`${file}.tmp`,file);
+    const file=path.join(dataDir,`${code}.json`);await writeFile(`${file}.tmp`,JSON.stringify(room.record));await renameWithRetry(`${file}.tmp`,file);
   };
   async function getRoom(code) {
     if(rooms.has(code)){const room=rooms.get(code);applyModeration(room,await moderation.read(code));return room;}
@@ -88,14 +90,7 @@ export async function createServer({port=Number(process.env.PORT)||3005,host=pro
           return json(res,200,{rooms:page,nextCursor:visible.length>40?page.at(-1).code:null,serverNow:now()});
         }
         if(url.pathname==='/api/rooms' && req.method==='POST') {
-          const input=await body(req),hash=await fingerprint(input.token);let code;
-          const room=new Room(undefined,now());const id=room.join(hash,input.name,now());
-          room.record.practice=input.practice===true;
-          room.handle(id,{id:crypto.randomUUID(),revision:room.record.revision,action:{type:'configure',visibility:input.visibility??'public',options:input.options}},now());
-          if(input.practice===true) {
-            for(let i=1;i<room.metadata(now()).minPlayers;i++)room.handle(id,{id:crypto.randomUUID(),revision:room.record.revision,action:{type:'addBot'}},now());
-            room.handle(id,{id:crypto.randomUUID(),revision:room.record.revision,action:{type:'start'}},now());
-          }
+          const room=await createRoomFromInput(await body(req),now());let code;
           // Reserve the name with an exclusive initial write, including tombstones.
           // Two simultaneous creates must never overwrite each other's identity.
           for(let tries=0;tries<8;tries++){const candidate=roomCode();try{await writeFile(path.join(dataDir,`${candidate}.json`),JSON.stringify(room.record),{flag:'wx'});code=candidate;break;}catch(error){if(error.code!=='EEXIST')throw error;}}

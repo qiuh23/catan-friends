@@ -1,0 +1,94 @@
+/* Entry uses three separate rows: caption, fitted island, controls. */
+.table.home { grid-template-columns:minmax(310px,360px) minmax(320px,1fr) minmax(220px,270px); align-items:start; }
+.home #left-panel { padding:26px 26px 20px; }
+.home .home-intro h1 { font-size:30px; line-height:1.35; }
+.home .home-intro p { margin:6px 0 22px; font-size:12px; }
+.home #entry-form>.join-row { margin:10px 0 22px; }
+.create-heading { display:flex; justify-content:space-between; align-items:center; gap:12px; }
+.create-heading h2 { font-size:17px; }
+.create-heading select { width:auto; padding:6px 26px 6px 10px; min-height:40px; font-size:12px; }
+.home .create-options { margin-top:12px; padding-top:0; border:0; }
+.count-options { min-width:0; border:0; padding:0; margin:14px 0 0; }
+.count-options legend,.rules-options legend { font-size:12px; font-weight:600; margin-bottom:7px; padding:0; }
+.count-buttons { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:7px; }
+.count-buttons label { position:relative; margin:0; cursor:pointer; }
+.count-buttons input,.variant-card input { position:absolute; opacity:0; width:1px; height:1px; min-height:0; padding:0; }
+.count-buttons label>span { display:flex; align-items:baseline; justify-content:center; gap:4px; min-height:46px; padding:6px; border:1px solid #b8c6bd; border-radius:9px; background:#fdfbf3; font-size:11px; }
+.count-buttons b { font-size:20px; }
+.count-buttons input:checked+span { background:#234d4b; border-color:#234d4b; color:#fff9df; }
+.count-buttons input:focus-visible+span,.variant-card:has(input:focus-visible) { outline:3px solid var(--accent); outline-offset:3px; }
+.rule-match { font-size:11px; color:#496158; line-height:1.6; margin:8px 0 13px; overflow-wrap:anywhere; }
+.rules-options { padding:0; }
+.rules-options legend small { font-size:10px; font-weight:400; color:var(--muted); margin-left:5px; }
+.variant-cards { display:grid; gap:7px; }
+.variant-card { position:relative; display:flex; align-items:center; gap:10px; min-height:54px; padding:9px 11px; margin:0; border:1px solid #c3cfc4; border-radius:9px; background:#fffdf5; font-weight:400; cursor:pointer; }
+.variant-card>span { flex:1; min-width:0; }
+.variant-card b { display:block; font-size:12px; }
+.variant-card small { display:block; color:var(--muted); font-size:10px; line-height:1.6; }
+.variant-card>.icon:first-of-type { width:25px; height:25px; color:#426d63; }
+.variant-card>.icon:last-child { width:18px; height:18px; border:1px solid #c4cfc1; border-radius:5px; padding:2px; color:transparent; }
+.variant-card:has(input:checked) { border-color:#386d60; background:#e8f0e2; box-shadow:inset 3px 0 #386d60; }
+.variant-card:has(input:checked)>.icon:last-child { color:#fff; background:#386d60; border-color:#386d60; }
+.rule-compatibility { padding:10px; margin:10px 0; border-radius:8px; font-size:12px; background:#fff0d6; color:#80522b; }
+.home #entry-form .large { margin:14px 0 10px; padding:11px 14px; }
+.home .practice-entry { display:flex; align-items:center; flex-wrap:wrap; justify-content:center; gap:8px; margin:0; }
+.practice-entry>span { color:var(--muted); font-size:10px; }
+.home .home-bottom { margin-top:14px; padding-top:12px; font-size:10px; }
+.home .resume-button { margin-top:10px; }
+.home .board-area { display:grid; grid-template-columns:minmax(0,1fr) auto; grid-template-rows:auto minmax(280px,1fr) auto; gap:0; padding:20px 16px 16px; height:clamp(480px,calc(100dvh - 76px),900px); min-height:0; max-height:none; }
+.home #board { position:relative; inset:auto; grid-row:2; grid-column:1/-1; height:100%; min-height:0; min-width:0; }
+.home #island-caption { position:static; grid-row:1; grid-column:1/-1; padding:0 0 12px; text-align:center; }
+.home #island-caption strong { font-size:25px; letter-spacing:.12em; line-height:1.4; margin:0; }
+.home #island-caption>span { display:block; font-size:10px; margin-top:4px; }
+.home .board-controls { position:static; grid-row:3; grid-column:2; align-self:center; gap:6px; margin-top:10px; }
+.home .board-controls button { min-height:44px; width:44px; }
+.home .tile-hint { position:static; transform:none; grid-row:3; grid-column:1; align-self:center; padding:10px 10px 0 0; font-size:11px; white-space:normal; line-height:1.6; overflow-wrap:anywhere; }
+.home #hand,.home #turn-banner { display:none; }
+.home #right-panel { max-height:none; overflow:visible; padding:26px 20px; }
+.home .public-rooms h2 { font-size:17px; }
+.home .list-message { padding:16px 0; }
+.room-settings .panel-heading { margin-bottom:10px; }
+.room-settings .panel-heading .square { min-height:44px; width:44px; }
+#practice-dialog { width:min(420px,calc(100vw - 24px)); padding:22px; max-height:calc(100dvh - 24px); overflow-y:auto; }
+#practice-dialog .dialog-heading { margin-bottom:8px; }
+#practice-title { font-size:21px; }
+#practice-start { width:100%; margin-top:12px; }
+#practice-feedback:not(:empty) { color:#914631; font-size:12px; margin-top:10px; }
+.practice-seats { display:flex; align-items:center; justify-content:center; gap:18px; margin-top:18px; padding:13px 8px; background:#e7ecdf; border-radius:10px; }
+.practice-seats>span { display:inline-flex; align-items:center; gap:7px; font-size:13px; }
+.practice-seats b { font-size:20px; }
+@media(max-width:1250px) {
+  .table.home { grid-template-columns:minmax(300px,340px) minmax(0,1fr); }
+  .home #right-panel { grid-column:1/-1; display:block; padding:22px 26px; }
+  .home .public-rooms #public-room-results { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:0 22px; }
+  .home .board-area { height:clamp(460px,calc(100dvh - 76px),760px); }
+}
+@media(max-width:760px) {
+  .table.home { display:grid; grid-template-columns:minmax(0,1fr); }
+  .home .board-area { order:0; grid-row:1; width:100%; height:clamp(300px,53vw,430px); min-height:0; grid-template-rows:auto minmax(180px,1fr) auto; padding:12px 14px; }
+  .home #left-panel { order:1; grid-row:2; width:100%; padding:24px max(20px,calc((100% - 440px)/2)); }
+  .home #right-panel { order:2; grid-row:3; padding:24px max(20px,calc((100% - 440px)/2)); }
+  .home #island-caption { padding-bottom:0; }
+  .home #island-caption strong { font-size:21px; }
+  .home #island-caption>span { display:none; }
+  .home .tile-hint { font-size:10px; padding-top:5px; }
+  .home .board-controls { margin-top:4px; }
+  .home .home-intro h1 { font-size:28px; }
+  .home .public-rooms #public-room-results { display:block; }
+  .home .topbar { min-width:0; }
+}
+@media(max-width:380px) { .topbar { gap:6px; padding-left:10px; padding-right:10px; } .brand { font-size:17px; } .topbar nav { gap:0; } .topbar nav button { padding:7px; font-size:11px; } }
+@media(max-height:560px) { #practice-dialog { padding:14px 18px; } #practice-dialog .variant-card { min-height:44px; padding:5px 10px; } #practice-dialog .practice-seats { margin-top:10px; padding:7px; } }
+@media(min-width:600px) and (max-height:560px) {
+  #practice-dialog { width:min(720px,calc(100vw - 24px)); }
+  #practice-form { display:grid; grid-template-columns:1fr 1fr; column-gap:18px; align-items:center; }
+  #practice-options { grid-column:1/-1; display:grid; grid-template-columns:1fr 1fr; column-gap:18px; align-items:start; }
+  #practice-options .count-options { grid-column:1; grid-row:1; margin-top:0; }
+  #practice-options .rule-match { grid-column:1; grid-row:2; margin-bottom:0; }
+  #practice-options .rules-options { grid-column:2; grid-row:1/3; }
+  #practice-options .rule-compatibility { grid-column:1/-1; }
+  #practice-dialog .practice-seats { margin-top:10px; min-height:44px; }
+  #practice-start { margin-top:10px; min-height:44px; }
+  #practice-feedback:empty { display:none; }
+  #practice-feedback:not(:empty) { grid-column:1/-1; }
+}

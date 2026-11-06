@@ -207,3 +207,80 @@ dialog { max-height:calc(var(--visual-height) - 24px); overscroll-behavior:conta
 #report-dialog p{line-height:1.65;overflow-wrap:anywhere}
 #report-dialog a{color:inherit;text-decoration:underline}
 .report-context{font-weight:600}
+
+/* Shared pictograms retain short labels for unfamiliar actions. */
+#camera-toolbar button { flex-direction:column; gap:1px; line-height:1.2; padding:4px 6px; }
+#camera-toolbar button .icon { width:19px; height:19px; }
+#camera-toolbar button span { font-size:10px; }
+.turn-description { display:flex; align-items:center; gap:4px; }
+.turn-description .icon { width:14px; height:14px; flex:none; }
+.dice-pair { align-items:center; gap:4px; }
+.dice-pair>span { display:grid; place-items:center; padding:1px; }
+.die-face { display:block; width:100%; height:100%; }
+.dice-pair>b { font-size:13px; margin-left:2px; font-variant-numeric:tabular-nums; color:#344f43; }
+#stage-dialog-content .game-goal { display:flex; align-items:center; gap:6px; padding:0 0 10px; border-bottom:1px solid #d9dfd1; font-size:12px; }
+.game-goal>.icon { width:24px; height:24px; color:#9a732f; }
+.game-goal>strong { font-size:24px; line-height:1; }
+.game-goal>small { margin-left:auto; color:#5d7263; font-size:11px; }
+.player-stat-legend { display:flex; justify-content:flex-end; align-items:center; gap:5px; margin:10px 4px 0; color:#647769; font-size:10px; }
+.player-stat-legend .icon { width:14px; height:14px; }
+#stage-dialog-content .player-stats { display:flex; align-items:center; flex-wrap:wrap; gap:6px 12px; margin-top:4px; color:#57705d; }
+.player-stats>span { display:inline-flex; align-items:center; gap:4px; font-size:12px; line-height:1.4; }
+.player-stats .icon { width:17px; height:17px; }
+.player-stats b { font-weight:600; font-variant-numeric:tabular-nums; }
+.player-stats .player-offline { color:#8c4e30; font-size:10px; }
+.player-stats .player-turn { color:#2b684b; font-size:10px; }
+#stage-dialog-content .player.active { border-radius:10px; background:#e5ecd8; box-shadow:inset 3px 0 #68885a; }
+#stage-dialog-content .player .avatar { border:2px solid #f9f8ec; box-shadow:0 0 0 1px #70836a66; }
+#stage-dialog-content .player .score b { font-size:24px; }
+#stage-dialog-content .awards { margin-top:12px; padding-top:12px; border-top:1px solid #d9dfd1; }
+#stage-dialog-content .awards>span { font-size:12px; }
+.chat-section .chat-footer { display:flex; justify-content:flex-end; margin-top:-8px; }
+.chat-footer .text-button { font-size:11px; min-height:32px; padding:4px; }
+.chat-footer .icon { width:15px; height:15px; }
+#stage-dialog-content .chat-log { padding:2px; }
+#stage-dialog-content .chat-log .chat-bubble { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:3px 10px; margin:0 0 10px; padding:9px 11px; border:1px solid #dce4d4; border-radius:11px 11px 11px 3px; background:#edf1e5; }
+.chat-bubble>strong { font-size:11px; color:#47684d; }
+.chat-bubble>span { grid-column:1/-1; grid-row:2; white-space:pre-wrap; overflow-wrap:anywhere; }
+#stage-dialog-content .chat-bubble .chat-report { grid-column:2; grid-row:1; display:flex; align-items:center; gap:4px; min-height:24px; padding:0; text-decoration:none; color:#60735f; }
+.chat-report .icon { width:13px; height:13px; }
+.chat-report small { font-size:10px; font-variant-numeric:tabular-nums; }
+.chat-empty,.hand-empty { display:grid; justify-items:center; align-content:center; gap:10px; min-height:100px; width:100%; color:#6b806b; }
+.chat-empty>.icon,.hand-empty>.icon { width:40px; height:40px; stroke-width:1.35; }
+#stage-dialog-content .chat-empty p,.hand-empty p { font-size:12px; margin:0; }
+.chat-empty { min-height:125px; }
+#stage-dialog-content .development-hand button { min-width:90px; display:flex; flex-direction:column; align-items:center; gap:6px; padding:14px 10px; position:relative; font-size:12px; }
+#stage-dialog-content .development-hand button>.icon { width:30px; height:30px; }
+#stage-dialog-content .development-hand button>small { position:absolute; top:4px; right:5px; color:#915e24; }
+.piece-stock { display:flex; align-items:center; justify-content:space-around; gap:10px; padding:14px 8px; margin-top:14px; background:#e9eddf; border-radius:10px; }
+.piece-stock>span { display:flex; align-items:center; gap:6px; font-size:16px; }
+.piece-stock .icon { width:25px; height:25px; color:#476a4d; }
+.piece-stock small { font-size:10px; color:#687b65; }
+.bank-stock { flex-wrap:wrap; align-items:center; gap:8px 14px; font-size:13px; }
+.bank-stock>small { font-size:11px; color:#647863; }
+.bank-stock b { font-weight:600; font-variant-numeric:tabular-nums; }
+.action-preferences { gap:10px; }
+.action-preferences label>.icon { width:17px; height:17px; }
+.preference-help { border-top:1px solid #d7e0cc; padding-top:4px; }
+.preference-help summary { min-height:32px; font-size:11px; color:#5f735d; font-weight:400; }
+.settings-grid button { gap:7px; font-size:12px; }
+.settings-grid button>.icon { width:20px; height:20px; }
+.decision-submit { flex:none; display:flex; align-items:center; gap:10px; margin-top:12px; padding:9px 0 2px; background:var(--paper); border-top:1px solid #d9dfcf; }
+.decision-submit>.quantity-summary { flex:1; min-width:0; font-size:12px; color:#7c5d2d; font-variant-numeric:tabular-nums; white-space:nowrap; }
+.decision-submit>.quantity-summary.complete { color:#2d6d48; }
+.decision-submit>button { min-height:44px; flex:1; font-size:12px; padding:8px 12px; white-space:nowrap; }
+#stage-dialog-content:has(.quantity-choice) { display:flex; flex-direction:column; overflow:hidden; }
+#decision-panel:has(.quantity-choice), #stage-dialog-content .quantity-choice, .quantity-choice>form { display:flex; flex-direction:column; flex:1; min-height:0; }
+#stage-dialog-content .quantity-choice>p { flex:none; }
+.quantity-fields { min-height:0; overflow-y:auto; overscroll-behavior:contain; padding:1px 3px 1px 1px; scroll-padding:8px; }
+.quantity-fields .resource-input { margin:7px 0; }
+@media (max-width:359px) {
+  .player-stats>span { font-size:11px; }
+  .piece-stock { padding:12px 5px; gap:7px; }
+  .piece-stock>span { gap:4px; font-size:15px; }
+  .piece-stock .icon { width:22px; height:22px; }
+}
+@media (orientation:landscape) and (max-height:600px) {
+  #stage-dialog-content .player { padding:9px 8px; }
+  .chat-empty { min-height:70px; }
+}
