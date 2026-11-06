@@ -17,6 +17,7 @@ async function connect(code, token) {
     const id = crypto.randomUUID(), after = client.messages.length;
     ws.send(JSON.stringify({ type: 'action', id, revision: client.state.revision, action }));
     const reply = await client.wait(message => message.id === id, after); assert.equal(reply.type, 'ack', JSON.stringify(reply));
+    if(action.type!=='close')await client.wait(message=>message.type==='state',after);
     return reply;
   };
   await client.wait(message => ['state', 'error'].includes(message.type)); return client;
@@ -33,9 +34,19 @@ try {
     assert.equal(view.targetPoints, 11); assert.equal(view.random, undefined); assert.equal(view.deck, undefined);
     const list = await (await fetch(origin + '/api/rooms')).json(); assert.ok(!list.rooms.some(room => room.code === code));
     const foreign = await connect(code, crypto.randomUUID()); assert.equal(foreign.messages.at(-1).type, 'error');
+    await client.command({ type: 'buildSettlement', vertex: view.legal.settlement[0] });
+    await client.command({ type: 'buildRoad', edge: client.state.state.legal.road[0] });
+    await client.command({ type: 'pause' }); const paused = structuredClone(client.state.state), pausedRevision = client.state.revision;
+    await new Promise(resolve=>setTimeout(resolve,1200));
+    assert.equal(client.state.state.room.paused,true);assert.equal(client.state.revision,pausedRevision);
+    assert.deepEqual(client.state.state.board,paused.board);assert.equal(client.state.state.turn,paused.turn);assert.equal(client.state.state.phase,paused.phase);
     client.ws.close(); const returning = await connect(code, token);
     assert.ok(returning.state, JSON.stringify(returning.messages)); assert.equal(returning.state.state.me, identity); assert.equal(returning.state.state.players.length, playerCount);
-    assert.deepEqual(returning.state.state.board, view.board); await returning.command({ type: 'close' });
+    assert.deepEqual(returning.state.state.board, paused.board); assert.equal(returning.state.state.room.paused,true);
+    await returning.command({ type: 'resume' }); assert.equal(returning.state.state.room.paused,false);
+    const resumedRevision=returning.state.revision;
+    await returning.wait(message=>message.type==='state'&&message.revision>resumedRevision,returning.messages.length);
+    await returning.command({ type: 'close' });
   }
   for (const input of [
     { playerCount: 2 }, { playerCount: 7 }, { playerCount: 4.5 }, { playerCount: '4' },
@@ -48,6 +59,6 @@ try {
   const token = crypto.randomUUID(), response = await post({ token, playerCount: 6, options }); assert.equal(response.status, 201);
   const { code } = await response.json(), lobby = await connect(code, token);
   assert.ok(lobby.state, JSON.stringify(lobby.messages)); assert.equal(lobby.state.state.players.length, 1); assert.equal(lobby.state.state.phase, 'lobby');
-  assert.deepEqual(lobby.state.state.options, { ...options, playerExpansion: 'five-six-2025' }); await lobby.command({ type: 'close' });
-  console.log('Practice protocol passed: 3–6 totals, matched rules, variants, private bot rooms, reconnect identity, incompatible rejection and ordinary lobby.');
+  assert.deepEqual(lobby.state.state.options, { ...options, playerExpansion: 'base' }); assert.equal(lobby.state.state.maxPlayers,6); await lobby.command({ type: 'close' });
+  console.log('Practice protocol passed: 3–6 totals, matched rules, variants, private bot rooms, paused bot turns, reconnect/resume, incompatible rejection and automatic ordinary lobby.');
 } finally { for (const ws of sockets) ws.terminate(); }

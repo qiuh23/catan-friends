@@ -5,6 +5,7 @@ import { createBoard } from '../shared/board.js';
 import { feedbackPoints, planActionCamera } from '../src/action-camera.js';
 import { boardFrame } from '../src/board-frame.js';
 import { Board } from '../src/board3d.js';
+import { FlatBoard } from '../src/board.js';
 
 const board=createBoard(()=>.43);
 const near=(a,b)=>Math.abs(a-b)<1e-8;
@@ -95,4 +96,29 @@ test('notice padding never moves an overview eye with reduced motion or preserve
     assert.deepEqual(view.camera.position.toArray(),[10,12,9]);assert.deepEqual(view.controls.target.toArray(),[0,0,0]);
     assert.equal(view.viewportFrame.height,504);
   }
+});
+
+test('a burst of automatic 3D shots shares one distance floor instead of repeatedly zooming in',()=>{
+  const view=Object.create(Board.prototype),camera=new PerspectiveCamera(34,1,.1,150),target=new Vector3();camera.position.set(12,12,12);
+  const original=camera.position.length();
+  Object.assign(view,{board,camera,pointers:new Set(),boardScale:1,viewportFrame:boardFrame(1000,700),
+    controls:{target,minDistance:6,maxDistance:45,update(){}},updateProjection(){},invalidate(){}});
+  let first;
+  for(let i=0;i<16;i++) {
+    assert.equal(view.focusFeedback({id:i,targets:[{kind:'vertex',id:0}]},{reducedMotion:true,manual:true}),true);
+    const distance=camera.position.distanceTo(target);first??=distance;
+    assert.ok(distance>=original*.86-1e-8);assert.ok(near(distance,first));
+  }
+  view.manualInput();assert.equal(view.followBaseline,null);
+});
+
+test('a burst of 2D action framing uses a single 16 percent zoom allowance',()=>{
+  const view=Object.create(FlatBoard.prototype);
+  Object.assign(view,{state:{board},container:{clientWidth:1000,clientHeight:700},contentBounds:{x:0,y:0,width:600,height:600},
+    pointers:new Set(),pan:{x:0,y:0},zoom:1,cancelFocus(){},resize(){}});
+  for(let i=0;i<16;i++) {
+    assert.equal(view.focusFeedback({targets:[{kind:'vertex',id:0}]},{reducedMotion:true,manual:true}),true);
+    assert.ok(near(view.zoom,1.16));
+  }
+  view.manualInput();assert.equal(view.followZoomBaseline,null);
 });

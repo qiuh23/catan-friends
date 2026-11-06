@@ -17,7 +17,7 @@ export async function closeStagePanel(page) {
 
 export async function openStagePanel(page, action) {
   await closeStagePanel(page);
-  await page.locator(`[data-action="${action}"]`).click();
+  await page.locator(`[data-action="${action}"]`).first().click();
   await page.locator('#stage-dialog[open]').waitFor();
 }
 

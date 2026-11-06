@@ -21,8 +21,8 @@ export class FlatBoard {
       this.cancelFocus();
       if(!this.pointers.size){this.suppressClick=false;this.pointerManual=false;}
       this.pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
-      if(this.pointers.size===1)this.gesture={kind:'pan',x:e.clientX,y:e.clientY,pan:{...this.pan}};
-      else {const [a,b]=[...this.pointers.values()];this.gesture={kind:'pinch',distance:Math.hypot(a.x-b.x,a.y-b.y),zoom:this.zoom};this.suppressClick=true;this.manualInput();}
+      if(this.pointers.size===1){this.gesture={kind:'pan',x:e.clientX,y:e.clientY,pan:{...this.pan}};const candidates=this.siteCandidates(e.clientX,e.clientY,e.pointerType==='touch');this.selectSite(candidates[0]&&(!candidates[1]||candidates[1].distance-candidates[0].distance>=6)?candidates[0].el:null);}
+      else {const [a,b]=[...this.pointers.values()];this.gesture={kind:'pinch',distance:Math.hypot(a.x-b.x,a.y-b.y),zoom:this.zoom};this.suppressClick=true;this.selectSite(null);this.manualInput();}
     },options);
     window.addEventListener('pointermove',e=>{
       if(!this.pointers.has(e.pointerId))return;
@@ -32,12 +32,12 @@ export class FlatBoard {
         this.zoomAt(next/this.zoom,(a.x+b.x)/2,(a.y+b.y)/2);
       } else if(this.pointers.size===1&&g?.kind==='pan') {
         const dx=e.clientX-g.x,dy=e.clientY-g.y;
-        if(Math.hypot(dx,dy)>3&&!this.pointerManual){this.pointerManual=true;this.manualInput();}
+        if(Math.hypot(dx,dy)>3&&!this.pointerManual){this.pointerManual=true;this.selectSite(null);this.manualInput();}
         if(Math.hypot(dx,dy)>7)this.suppressClick=true;
         if(this.suppressClick){this.pan={x:g.pan.x+dx/this.scale,y:g.pan.y+dy/this.scale};this.resize();}
       }
     },options);
-    const release=e=>{this.pointers.delete(e.pointerId);if(!this.pointers.size)this.gesture=null;};
+    const release=e=>{this.pointers.delete(e.pointerId);if(e.type==='pointercancel'){this.suppressClick=true;this.selectSite(null);}if(!this.pointers.size)this.gesture=null;};
     window.addEventListener('pointerup',release,options);window.addEventListener('pointercancel',release,options);
     container.addEventListener('wheel',e=>{e.preventDefault();this.manualInput();this.zoomAt(Math.exp(-e.deltaY*.0015),e.clientX,e.clientY);},{...options,passive:false});
     container.addEventListener('keydown',e=>{
@@ -45,18 +45,24 @@ export class FlatBoard {
     },options);
     this.observer=new ResizeObserver(()=>{this.cancelFocus();this.resize();});this.observer.observe(container);
   }
-  reset(){this.cancelFocus();this.zoom=1;this.pan={x:0,y:0};this.resize();}
+  reset(){this.cancelFocus();this.followZoomBaseline=null;this.zoom=1;this.pan={x:0,y:0};this.resize();}
   zoomBy(factor){if(Number.isFinite(factor)&&factor>0){this.manualInput();this.zoomAt(factor);}}
-  manualInput(){this.cancelFocus();this.onManual?.();}
+  manualInput(){this.cancelFocus();this.followZoomBaseline=null;this.onManual?.();}
   cancelFocus(){cancelAnimationFrame(this.focusFrame);this.focusFrame=0;}
   selectSite(el){
     if(!el?.hasAttribute('data-id'))el=null;
     for(const site of this.container.querySelectorAll('[data-id]')){
       const selected=site===el;site.dataset.selected=String(selected);
-      site.querySelector('[data-marker-fill]')?.setAttribute('fill',selected?'#155c9c':'#ffef9d');
-      site.querySelector('[data-marker-rim]')?.setAttribute('stroke',selected?'#ffffff':'#203e46');
+      site.querySelector('[data-marker-fill]')?.setAttribute(this.mode==='road'?'fill':'stroke',selected?'#687f63':'#9d8c55');
+      site.querySelector('[data-marker-rim]')?.setAttribute('opacity',selected?'1':'0');
     }
     const svg=this.container.querySelector('svg');if(svg)svg.dataset.selectedSite=el?`${this.mode==='road'?'edge':'vertex'}:${el.dataset.id}`:'';
+  }
+  siteCandidates(clientX,clientY,touch=false) {
+    return [...this.container.querySelectorAll('[data-id]')].map(el=>{
+      const center=new DOMPoint(Number(el.getAttribute('cx')),Number(el.getAttribute('cy'))).matrixTransform(el.getScreenCTM());
+      return {el,distance:Math.hypot(center.x-clientX,center.y-clientY)};
+    }).filter(p=>p.distance<=(touch?22:11)).sort((a,b)=>a.distance-b.distance);
   }
   point(x,z){return this.landscape?{x:z*50+300,y:-x*50+290}:{x:x*50+300,y:z*50+290};}
   projectFeedbackTarget(target) {
@@ -66,10 +72,19 @@ export class FlatBoard {
     const x=screen.x-rect.left,y=screen.y-rect.top;
     return {x,y,visible:Number.isFinite(x)&&Number.isFinite(y)&&x>=0&&y>=0&&x<=rect.width&&y<=rect.height};
   }
+  projectNumberObstacles() {
+    const matrix=this.container.querySelector('svg')?.getScreenCTM(),rect=this.container.getBoundingClientRect();
+    if(!matrix||!this.state?.board)return [];
+    const rx=18*Math.hypot(matrix.a,matrix.c)+2,ry=18*Math.hypot(matrix.b,matrix.d)+2;
+    return this.state.board.tiles.filter(tile=>tile.number).map(tile=>{
+      const p=this.point(tile.x,tile.z),center=new DOMPoint(p.x,p.y+3).matrixTransform(matrix);
+      return {x:center.x-rect.left-rx,y:center.y-rect.top-ry,width:rx*2,height:ry*2};
+    });
+  }
   exportView(){return {kind:'2d',mapKey:mapViewKey(this.state?.board),zoom:this.zoom,pan:{...this.pan},landscape:this.landscape};}
   importView(view) {
     if(view?.kind!=='2d'||view.mapKey!==mapViewKey(this.state?.board)||!Number.isFinite(view.zoom)||view.zoom<1||view.zoom>4||!Number.isFinite(view.pan?.x)||!Number.isFinite(view.pan?.y))return false;
-    this.cancelFocus();this.zoom=view.zoom;this.pan={...view.pan};
+    this.cancelFocus();this.followZoomBaseline=null;this.zoom=view.zoom;this.pan={...view.pan};
     if(view.landscape!==this.landscape)this.pan=this.landscape?{x:this.pan.y,y:-this.pan.x}:{x:-this.pan.y,y:this.pan.x};
     this.resize();return true;
   }
@@ -81,9 +96,9 @@ export class FlatBoard {
     const b=this.state.board;
     layer.innerHTML=(event?.targets||[]).map(target=>{
       const points=feedbackPoints(b,{targets:[target]});if(!points.length)return '';
-      if(target.kind==='edge') {const a=this.point(points[0].x,points[0].z),c=this.point(points[1].x,points[1].z),length=Math.hypot(c.x-a.x,c.y-a.y),angle=Math.atan2(c.y-a.y,c.x-a.x)*180/Math.PI;return `<g transform="translate(${(a.x+c.x)/2} ${(a.y+c.y)/2}) rotate(${angle})"><rect x="${-length*.4}" y="-9" width="${length*.8}" height="18" rx="4" fill="none" stroke="#f8ffff" stroke-width="5"/><rect x="${-length*.4}" y="-9" width="${length*.8}" height="18" rx="4" fill="none" stroke="#167781" stroke-width="2.5"/></g>`;}
-      if(target.kind==='tile'){const tile=b.tiles[target.id],path=tile.vertices.map(id=>{const p=this.point(b.vertices[id].x,b.vertices[id].z);return `${p.x},${p.y}`;}).join(' ');return `<polygon points="${path}" fill="none" stroke="#f8ffff" stroke-width="7"/><polygon points="${path}" fill="none" stroke="#167781" stroke-width="4"/>`;}
-      const p=this.point(points[0].x,points[0].z);return `<circle cx="${p.x}" cy="${p.y}" r="17" fill="none" stroke="#f8ffff" stroke-width="7"/><circle cx="${p.x}" cy="${p.y}" r="17" fill="none" stroke="#167781" stroke-width="4"/>`;
+      if(target.kind==='edge') {const a=this.point(points[0].x,points[0].z),c=this.point(points[1].x,points[1].z),length=Math.hypot(c.x-a.x,c.y-a.y),angle=Math.atan2(c.y-a.y,c.x-a.x)*180/Math.PI;return `<g transform="translate(${(a.x+c.x)/2} ${(a.y+c.y)/2}) rotate(${angle})"><rect x="${-length*.34}" y="-7" width="${length*.68}" height="14" rx="2" fill="none" stroke="#628f7c" stroke-width="1.6" stroke-dasharray="6 3"/></g>`;}
+      if(target.kind==='tile'){const tile=b.tiles[target.id],path=tile.vertices.map(id=>{const v=b.vertices[id],p=this.point(tile.x+(v.x-tile.x)*.94,tile.z+(v.z-tile.z)*.94);return `${p.x},${p.y}`;}).join(' ');return `<polygon points="${path}" fill="none" stroke="#628f7c" stroke-width="1.8" stroke-dasharray="7 4"/>`;}
+      const p=this.point(points[0].x,points[0].z);return `<circle cx="${p.x}" cy="${p.y}" r="14" fill="none" stroke="#628f7c" stroke-width="1.8" stroke-dasharray="5 3"/>`;
     }).join('');
     svg.dataset.feedbackTargets=JSON.stringify(event?.targets||[]);
   }
@@ -92,7 +107,8 @@ export class FlatBoard {
     const points=feedbackPoints(this.state?.board,event).map(p=>this.point(p.x,p.z)),bounds=this.contentBounds;if(!points.length||!bounds)return false;
     const minX=Math.min(...points.map(p=>p.x)),maxX=Math.max(...points.map(p=>p.x)),minY=Math.min(...points.map(p=>p.y)),maxY=Math.max(...points.map(p=>p.y));
     const f=boardFrame(this.container.clientWidth,this.container.clientHeight,this.padding),baseScale=Math.min(f.width/bounds.width,f.height/bounds.height)*.96;
-    const zoom=Math.max(1,Math.min(2.5,this.zoom*1.16,f.width/(maxX-minX+100)/baseScale,f.height/(maxY-minY+100)/baseScale));
+    this.followZoomBaseline??=this.zoom;
+    const zoom=Math.max(1,Math.min(2.5,this.followZoomBaseline*1.16,f.width/(maxX-minX+100)/baseScale,f.height/(maxY-minY+100)/baseScale));
     const pan={x:bounds.x+bounds.width/2-(minX+maxX)/2,y:bounds.y+bounds.height/2-(minY+maxY)/2},from={pan:{...this.pan},zoom:this.zoom};
     this.cancelFocus();
     if(reducedMotion){this.pan=pan;this.zoom=zoom;this.resize();return true;}
@@ -122,6 +138,7 @@ export class FlatBoard {
   }
   set(state,mode){
     const b=state.board;if(!b)return;this.state=state;this.mode=mode;
+    const mapKey=mapViewKey(b);if(mapKey!==this.mapKey){this.mapKey=mapKey;this.followZoomBaseline=null;}
     const landscape=this.container.clientWidth>this.container.clientHeight;
     if(this.landscape!==undefined&&this.landscape!==landscape)this.pan=landscape?{x:this.pan.y,y:-this.pan.x}:{x:-this.pan.y,y:this.pan.x};
     this.landscape=landscape;
@@ -132,8 +149,8 @@ export class FlatBoard {
     const roads=b.edges.filter(e=>e.owner).map(e=>{const a=point(b.vertices[e.a].x,b.vertices[e.a].z),c=point(b.vertices[e.b].x,b.vertices[e.b].z),path=`M${a.x+(c.x-a.x)*.10} ${a.y+(c.y-a.y)*.10}L${c.x+(a.x-c.x)*.10} ${c.y+(a.y-c.y)*.10}`;return `<g role="img" aria-label="道路"><path d="${path}" stroke="#203a3e" stroke-width="12" stroke-linecap="round"/><path d="${path}" stroke="#fff5da" stroke-width="9" stroke-linecap="round"/><path d="${path}" stroke="${color(e.owner)}" stroke-width="6" stroke-linecap="round"/></g>`;}).join('');
     const buildings=b.vertices.filter(v=>v.owner).map(v=>{const {x,y}=point(v.x,v.z),kind=v.level===2?'city':'settlement',path=buildingPath(kind,x,y);return `<g data-building="${kind}" role="img" aria-label="${kind==='city'?'城市':'村庄'}"><path d="${path}" fill="#fff5da" stroke="#203a3e" stroke-width="5" stroke-linejoin="round"/><path d="${path}" fill="${color(v.owner)}" stroke="#fff5da" stroke-width="1.8" stroke-linejoin="round"/>${kind==='settlement'?`<path d="M${x-8} ${y-1}L${x} ${y-9}L${x+8} ${y-1}" fill="none" stroke="#203a3e" stroke-width="2"/>`:`<path d="M${x-4} ${y-5}V${y-11}M${x+3} ${y-2}H${x+10}" fill="none" stroke="#fff5da" stroke-width="2"/>`}<path d="M${x-2} ${y+7}V${y+1}H${x+2}V${y+7}" fill="#203a3e"/></g>`;}).join('');
     const markers=(state.legal?.[mode]||[]).filter(()=>['road','settlement','city'].includes(mode)).map(id=>{
-      let x,z,shape;if(mode==='road'){const e=b.edges[id],a=point(b.vertices[e.a].x,b.vertices[e.a].z),c=point(b.vertices[e.b].x,b.vertices[e.b].z);x=(b.vertices[e.a].x+b.vertices[e.b].x)/2;z=(b.vertices[e.a].z+b.vertices[e.b].z)/2;const angle=Math.atan2(c.y-a.y,c.x-a.x)*180/Math.PI;shape=`<g transform="rotate(${angle} ${point(x,z).x} ${point(x,z).y})"><rect x="${point(x,z).x-17}" y="${point(x,z).y-6}" width="34" height="12" rx="3" fill="#fffdf0" stroke="#203e46" stroke-width="2.5" data-marker-rim/><rect x="${point(x,z).x-14}" y="${point(x,z).y-3}" width="28" height="6" rx="1" fill="#ffef9d" data-marker-fill/></g>`;}
-      else {({x,z}=b.vertices[id]);const p=point(x,z),path=buildingPath(mode,p.x,p.y,.9);shape=`<path d="${path}" fill="#fffdf0" stroke="#203e46" stroke-width="3" stroke-linejoin="round" data-marker-rim/><path d="${buildingPath(mode,p.x,p.y,.67)}" fill="#ffef9d" data-marker-fill/>`;}
+      let x,z,shape;if(mode==='road'){const e=b.edges[id],a=point(b.vertices[e.a].x,b.vertices[e.a].z),c=point(b.vertices[e.b].x,b.vertices[e.b].z);x=(b.vertices[e.a].x+b.vertices[e.b].x)/2;z=(b.vertices[e.a].z+b.vertices[e.b].z)/2;const angle=Math.atan2(c.y-a.y,c.x-a.x)*180/Math.PI;shape=`<g transform="rotate(${angle} ${point(x,z).x} ${point(x,z).y})"><rect x="${point(x,z).x-14}" y="${point(x,z).y-3.5}" width="28" height="7" rx="1.5" fill="none" stroke="#687f63" stroke-width="1.2" opacity="0" data-marker-rim/><rect x="${point(x,z).x-13}" y="${point(x,z).y-.7}" width="26" height="1.4" rx=".7" fill="#9d8c55" data-marker-fill/></g>`;}
+      else {({x,z}=b.vertices[id]);const p=point(x,z);shape=`<circle cx="${p.x}" cy="${p.y}" r="${mode==='city'?15:10}" fill="none" stroke="#687f63" stroke-width="1.3" opacity="0" data-marker-rim/><circle cx="${p.x}" cy="${p.y}" r="${mode==='city'?12:5.8}" fill="none" stroke="#9d8c55" stroke-width="1.4" data-marker-fill/>`;}
       const p=point(x,z);return `<g data-id="${id}" data-site-shape="${mode}" data-selected="false" cx="${p.x}" cy="${p.y}"><circle cx="${p.x}" cy="${p.y}" r="13" fill="transparent"/>${shape}</g>`;
     }).join('');
     const ports=b.ports.map(p=>{const a=b.vertices[p.vertices[0]],c=b.vertices[p.vertices[1]],x=(a.x+c.x)/2,z=(a.z+c.z)/2,l=Math.hypot(x,z),{x:px,y:py}=point(x+x/l*.65,z+z/l*.65);return `<g role="img" aria-label="${p.resource==='any'?'普通港口 3:1':LABELS[p.resource]+'港口 2:1'}"><title>${p.resource==='any'?'普通港口 3:1':LABELS[p.resource]+'港口 2:1'}</title><rect x="${px-30}" y="${py-14}" width="60" height="28" rx="6" fill="#faf4e3" stroke="#9bae99"/>${p.resource!=='any'?resourceIllustration(p.resource).replace('<svg ',`<svg x="${px-28}" y="${py-13}" width="26" height="26" `):''}<text x="${p.resource==='any'?px:px+12}" y="${py+5}" text-anchor="middle" font-size="14" font-weight="600" fill="#173b3d">${p.resource==='any'?'3:1':'2:1'}</text></g>`;}).join('');
@@ -149,10 +166,7 @@ export class FlatBoard {
     for(const el of this.container.querySelectorAll('[data-id]'))activate(el,mode==='road'?'edge':'vertex',Number(el.dataset.id),`${mode==='road'?'铺设道路':mode==='city'?'升级城市':'建造村庄'} · 位置 ${Number(el.dataset.id)+1}`);
     this.container.querySelector('svg').onclick=e=>{
       if(e.detail===0||this.suppressClick)return;
-      const candidates=[...this.container.querySelectorAll('[data-id]')].map(el=>{
-        const center=new DOMPoint(Number(el.getAttribute('cx')),Number(el.getAttribute('cy'))).matrixTransform(el.getScreenCTM());
-        return {el,distance:Math.hypot(center.x-e.clientX,center.y-e.clientY)};
-      }).filter(p=>p.distance<=(e.pointerType==='touch'?22:11)).sort((a,b)=>a.distance-b.distance);
+      const candidates=this.siteCandidates(e.clientX,e.clientY,e.pointerType==='touch');
       if(!candidates.length)return;
       if(e.pointerType==='touch'&&candidates[1]&&candidates[1].distance-candidates[0].distance<6){this.onHover('相邻落点较近，请放大棋盘后再点选。');return;}
       this.selectSite(candidates[0].el);this.onSelect({kind:mode==='road'?'edge':'vertex',id:Number(candidates[0].el.dataset.id)});

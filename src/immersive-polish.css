@@ -1,0 +1,63 @@
+/* Waiting uses the same scene, map frame and floating tools as the game. */
+.table.waiting { --board-pad-top:172px; --board-pad-bottom:88px; }
+.waiting .board-top { top:max(18px,env(safe-area-inset-top)); left:230px; right:230px; display:flex; justify-content:center; }
+.waiting-banner { display:flex; flex-direction:column; align-items:center; gap:4px; max-width:440px; padding:10px 18px; background:#f8f7eff2; border:1px solid #fff9; border-radius:13px; text-align:center; color:#244c48; }
+.waiting-banner>strong { font-size:16px; letter-spacing:.03em; }
+.waiting-banner>strong small { font-size:10px; font-weight:400; }
+.waiting-banner>span { font-size:12px; }
+.waiting-banner>small { font-size:10px; line-height:1.5; }
+.waiting #player-orbit { top:112px; left:0; right:0; justify-content:center; }
+.waiting .circle-score>.icon { width:13px; height:13px; }
+.waiting .circle-turn { display:none; }
+.waiting-actions { display:flex; gap:6px; align-items:center; }
+.waiting-actions button { min-height:46px; padding:10px 16px; font-size:12px; white-space:nowrap; }
+.waiting-actions .primary { min-width:140px; }
+.waiting #play-dock { bottom:max(16px,env(safe-area-inset-bottom)); }
+.pause-control.is-paused { color:#fff9e9; background:#385f50; }
+.stage-utilities .pause-control.is-paused:hover { background:#244c48; }
+.room-settings { margin:0; padding:0; border:0; }
+.room-settings>.panel-heading h2 { font-size:16px; }
+.room-settings .rule-match { padding:9px 10px; background:#e8edde; border-radius:8px; }
+.rules-copy { min-height:0; overflow:auto; overscroll-behavior:contain; }
+#rules-dialog { overflow:hidden; padding:0; }
+#rules-dialog[open] { display:flex; flex-direction:column; }
+#rules-dialog .dialog-heading { flex:none; padding:14px 20px; margin:0; border-bottom:1px solid #dce1d1; }
+#rules-dialog .dialog-heading h2 { font-size:19px; }
+#rules-dialog .rules-copy { padding:0 20px 20px; }
+#practice-dialog,#report-dialog { overflow-y:auto; }
+#practice-dialog .dialog-heading,#report-dialog .dialog-heading { position:sticky; top:0; z-index:2; background:var(--paper); }
+#action-feedback { transform:none; z-index:3; }
+#action-feedback::after { display:none; }
+#action-feedback-leader { position:absolute; inset:0; width:100%; height:100%; z-index:2; pointer-events:none; overflow:hidden; }
+#action-feedback-leader[hidden] { display:none; }
+#action-feedback-leader path { fill:none; stroke:#36594a; stroke-width:1.2; stroke-linecap:round; }
+/* SVG sites already show the selected double ring/rails on keyboard focus. */
+#board [data-id]:focus { outline:none; }
+@media(max-width:700px) {
+  .waiting .board-top { top:calc(62px + env(safe-area-inset-top)); left:8px; right:8px; }
+  .waiting-banner { padding:6px 13px; max-width:calc(100vw - 32px); }
+  .waiting-banner>strong { font-size:13px; }
+  .waiting-banner>span { font-size:11px; }
+  .waiting #player-orbit { top:calc(152px + env(safe-area-inset-top)); gap:8px; }
+  .table.waiting { --board-pad-top:218px; --board-pad-bottom:84px; }
+  .waiting-actions { gap:3px; }
+  .waiting-actions button { padding:7px 10px; gap:4px; font-size:11px; }
+  .waiting-actions .primary { min-width:110px; }
+  .waiting-actions button .icon { width:18px; height:18px; }
+}
+@media(orientation:landscape) and (max-height:600px) {
+  .table.waiting { --board-pad-top:74px; --board-pad-bottom:70px; }
+  .playing.waiting .board-top,.playing.waiting.compact-hud .board-top { top:max(8px,env(safe-area-inset-top)); left:58px; right:auto; width:134px; }
+  .waiting-banner { width:134px; max-width:134px; padding:5px 8px; gap:2px; }
+  .waiting-banner>strong { font-size:11px; }
+  .waiting-banner>span { font-size:10px; }
+  .waiting-banner>small { display:none; }
+  .waiting #player-orbit { top:10px; left:50%; right:auto; transform:translateX(-50%); gap:6px; }
+  .waiting #play-dock { left:50%; right:auto; transform:translateX(-50%); bottom:max(8px,env(safe-area-inset-bottom)); }
+  .waiting-actions button { min-height:44px; padding:7px 12px; }
+}
+@media(max-width:359px) {
+  .waiting-actions button { padding:6px; }
+  .waiting-actions .primary { min-width:100px; }
+  .waiting-actions button:not(.primary) { flex-direction:column; gap:1px; }
+}

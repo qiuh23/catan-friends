@@ -77,14 +77,14 @@ test('Node HTTP creates exact 3–6 practice rosters and restores them; rejects 
       const client = await join(code, token); assertPractice(client.state.state, playerCount);
       assert.equal(client.state.state.me, identity); assert.deepEqual(client.state.state.board, board);
     }
-    // A lobby change cannot silently discard variants or shrink an occupied room.
+    // Old clients cannot force the smaller edition on an occupied large room.
     const token = crypto.randomUUID(), response = await post({ token, playerCount: 6, options: { ...variants, playerExpansion: rulesFor(6) } });
     assert.equal(response.status, 201); const { code } = await response.json(), client = await join(code, token);
     assert.equal(client.state.state.players.length, 1); assert.equal(client.state.state.phase, 'lobby');
     for (let i = 0; i < 4; i++) await client.act({ type: 'addBot' });
     const room = app.rooms.get(code), game = structuredClone(room.record.game), revision = room.record.revision;
     const result = await client.request({ type: 'setOptions', options: { ...variants, playerExpansion: 'base' } });
-    assert.equal(result.result.type, 'error'); assert.match(result.result.message, /移出/);
+    assert.equal(result.result.type, 'error'); assert.match(result.result.message, /实际人数/);
     assert.deepEqual(room.record.game, game); assert.equal(room.record.revision, revision);
   } finally {
     for (const client of clients) client.close(); await app.close();
@@ -139,6 +139,78 @@ test('Worker Durable Object matches Node practice totals, variants, restart iden
   assert.equal(fixture.object.room.record.hostId, id);
   const game = structuredClone(fixture.object.room.record.game), revision = fixture.object.room.record.revision;
   const reply = await command({ type: 'setOptions', options: { ...variants, playerExpansion: 'base' } });
-  assert.equal(reply.type, 'error'); assert.match(reply.message, /移出/);
+  assert.equal(reply.type, 'error'); assert.match(reply.message, /实际人数/);
   assert.deepEqual(fixture.object.room.record.game, game); assert.equal(fixture.object.room.record.revision, revision);
+});
+
+test('Node creates a six-seat human lobby without an edition hint and restores paused practice after restart', async () => {
+  const dataDir = await mkdtemp(path.join(os.tmpdir(), 'catan-auto-room-'));
+  let app = await createServer({ port: 0, dataDir, botDelay: 60_000 }); const clients = [];
+  const origin = () => `http://127.0.0.1:${app.port}`;
+  async function create(input = {}) {
+    const token = crypto.randomUUID(), response = await fetch(origin() + '/api/rooms', { method: 'POST', body: JSON.stringify({ token, name: '自动人数', options: variants, ...input }) });
+    assert.equal(response.status, 201); return { token, ...(await response.json()) };
+  }
+  async function join({ token, code }) {
+    const client = new RuntimeClient(new WebSocket(origin() + `/api/rooms/${code}/ws`)); clients.push(client);
+    client.ws.addEventListener('open', () => client.ws.send(JSON.stringify({ type: 'hello', token, name: '自动人数' })));
+    await client.wait(message => message.type === 'state'); return client;
+  }
+  try {
+    for (const count of [3, 4, 5, 6]) {
+      const room = await create(), client = await join(room);
+      assert.equal(client.state.state.room.maxPlayers, 6);
+      for (let i = 1; i < count; i++) await client.act({ type: 'addBot' });
+      assert.equal(client.state.state.options.playerExpansion, rulesFor(count));
+      await client.act({ type: 'start' });
+      assert.equal(client.state.state.board.tiles.length, count > 4 ? 30 : 19);
+      assert.equal(client.state.state.deckCount, count > 4 ? 34 : 25);
+      assert.equal(client.state.state.profile.turnRule, count > 4 ? 'paired' : 'single');
+      assert.equal(client.state.state.options.harbormaster, true);
+    }
+    const room = await create({ practice: true, playerCount: 6 }), client = await join(room);
+    await client.act({ type: 'buildSettlement', vertex: client.state.state.legal.settlement[0] });
+    await client.act({ type: 'buildRoad', edge: client.state.state.legal.road[0] });
+    await client.act({ type: 'pause' }); const game = JSON.parse(JSON.stringify(app.rooms.get(room.code).record.game)), identity = client.state.state.me;
+    assert.equal(app.rooms.get(room.code).nextBot(), null);
+    for (const peer of clients) peer.close(); await app.close();
+    app = await createServer({ port: 0, dataDir, botDelay: 60_000 });
+    const returned = await join(room); assert.equal(returned.state.state.me, identity); assert.equal(returned.state.state.room.paused, true);
+    assert.deepEqual(app.rooms.get(room.code).record.game, game);
+    assert.equal((await returned.request({ type: 'roll' })).result.type, 'error');
+    await returned.act({ type: 'resume' }); assert.ok(app.rooms.get(room.code).nextBot());
+  } finally {
+    for (const peer of clients) peer.close(); await app.close();
+    await rm(dataDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 });
+  }
+});
+
+test('Worker creates automatic human editions for 3–6 seats and keeps paused practice frozen across alarm and restart', async () => {
+  async function command(fixture, socket, action) {
+    const id = crypto.randomUUID(); await fixture.object.webSocketMessage(socket, JSON.stringify({ type: 'action', id, revision: fixture.object.room.record.revision, action }));
+    const reply = socket.messages.findLast(message => message.id === id); assert.equal(reply.type, 'ack', JSON.stringify(reply));
+  }
+  for (const count of [3, 4, 5, 6]) {
+    const fixture = await durableFixture(), token = crypto.randomUUID();
+    assert.equal((await fixture.create({ token, options: variants })).status, 201);
+    const socket = await fixture.hello(token); assert.equal(socket.messages.at(-1).state.maxPlayers, 6);
+    for (let i = 1; i < count; i++) await command(fixture, socket, { type: 'addBot' });
+    assert.equal(socket.messages.at(-1).state.options.playerExpansion, rulesFor(count));
+    await command(fixture, socket, { type: 'start' });
+    const view = socket.messages.at(-1).state;
+    assert.equal(view.board.tiles.length, count > 4 ? 30 : 19); assert.equal(view.deckCount, count > 4 ? 34 : 25);
+    assert.equal(view.profile.turnRule, count > 4 ? 'paired' : 'single'); assert.equal(view.options.harbormaster, true);
+  }
+  const fixture = await durableFixture(), token = crypto.randomUUID();
+  assert.equal((await fixture.create({ token, options: variants, practice: true, playerCount: 6 })).status, 201);
+  const socket = await fixture.hello(token); let view = socket.messages.at(-1).state;
+  await command(fixture, socket, { type: 'buildSettlement', vertex: view.legal.settlement[0] }); view = socket.messages.at(-1).state;
+  await command(fixture, socket, { type: 'buildRoad', edge: view.legal.road[0] });
+  assert.ok(fixture.object.room.nextBot()); await command(fixture, socket, { type: 'pause' });
+  const before = structuredClone(fixture.object.room.record.game); await fixture.object.alarm();
+  assert.deepEqual(fixture.object.room.record.game, before);
+  const restored = await durableFixture(fixture.saved), returning = await restored.hello(token);
+  assert.equal(returning.messages.at(-1).state.room.paused, true); assert.equal(restored.object.room.nextBot(), null);
+  assert.deepEqual(restored.object.room.record.game, before);
+  await command(restored, returning, { type: 'resume' }); assert.ok(restored.object.room.nextBot());
 });

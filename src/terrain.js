@@ -48,12 +48,13 @@ export class Batches {
   add(shape,color,x,y,z,sx=1,sy=sx,sz=sx,rotation=0,kind='land') {
     const key=`${kind}:${shape}`;
     if(!this.entries.has(key))this.entries.set(key,{shape,kind,items:[]});
-    this.entries.get(key).items.push({color,x,y,z,sx,sy,sz,rotation});
+    this.entries.get(key).items.push({color,x,y,z,sx,sy,sz,rotation,tile:this.tile});
   }
   finish(group) {
     const transform=new THREE.Object3D(),color=new THREE.Color();
     for(const {shape,kind,items} of this.entries.values()) {
       const mesh=new THREE.InstancedMesh(this.assets.geometries[shape],this.assets.material(kind),items.length);
+      if(items.some(p=>Number.isInteger(p.tile)))mesh.userData.tileIds=items.map(p=>p.tile);
       items.forEach((p,i)=>{
         transform.position.set(p.x,p.y,p.z);transform.scale.set(p.sx,p.sy,p.sz);transform.rotation.set(0,p.rotation,0);transform.updateMatrix();
         mesh.setMatrixAt(i,transform.matrix);mesh.setColorAt(i,color.set(p.color));
@@ -125,11 +126,13 @@ function scenery(tile,batch) {
 export function buildTerrain(board,assets,group) {
   const batch=new Batches(assets);
   for(const tile of board.tiles) {
+    batch.tile=tile.id;
     batch.add('hex',0xb29b70,tile.x,.075,tile.z,.99,.18,.99);
     batch.add('hex',0xe7d7a6,tile.x,.18,tile.z,.985,.05,.985);
     batch.add('hex',terrain[tile.resource],tile.x,.235,tile.z,.942,.075,.942);
     scenery(tile,batch);
   }
+  batch.tile=undefined;
   const portEdges=new Set(board.ports.map(p=>p.edge));
   for(const edge of board.edges.filter(e=>e.tiles.length===1)) {
     const a=board.vertices[edge.a],b=board.vertices[edge.b],x=(a.x+b.x)/2,z=(a.z+b.z)/2;

@@ -15,10 +15,15 @@ export function normalizeOptions(options = {}) {
   return { friendlyRobber: options.friendlyRobber ?? false, harbormaster: options.harbormaster ?? false, playerExpansion: options.playerExpansion ?? 'base' };
 }
 export function ruleProfile(value = {}) {
-  const options = normalizeOptions(Array.isArray(value.players) ? value.options : value.options || value);
+  const options = Array.isArray(value.players) && value.phase === 'lobby' ? optionsForPlayers(value.options, value.players.length) : normalizeOptions(Array.isArray(value.players) ? value.options : value.options || value);
   return options.playerExpansion === 'five-six-2025'
     ? {id:'five-six-2025',version:'2025',minPlayers:5,maxPlayers:6,resourceCount:24,landHexes:30,developmentCards:34,turnRule:'paired'}
     : {id:'base',version:'2025',minPlayers:3,maxPlayers:4,resourceCount:19,landHexes:19,developmentCards:25,turnRule:'single'};
+}
+// Seat count owns the board edition in the waiting room. Persisted games keep
+// their original edition once started, even while their humans are offline.
+export function optionsForPlayers(options, count) {
+  return { ...normalizeOptions(options), playerExpansion: count >= 5 ? 'five-six-2025' : 'base' };
 }
 export function targetPoints(g) { return g.options?.harbormaster ? 11 : 10; }
 export function createGame(options = {}, seed) {
@@ -27,7 +32,7 @@ export function createGame(options = {}, seed) {
 }
 export function addPlayer(g, id, name, bot = false) {
   requireRule(g.phase === 'lobby', '对局已经开始，不能加入新玩家。');
-  requireRule(g.players.length < ruleProfile(g).maxPlayers, `房间已有 ${ruleProfile(g).maxPlayers} 位玩家。`);
+  requireRule(g.players.length < 6, '房间已有 6 位玩家。');
   requireRule(typeof name === 'string' && name.trim().length > 0 && name.trim().length <= 16, '昵称需要 1–16 个字符。');
   requireRule(!g.players.some(p => p.id === id), '该玩家已在房间。');
   g.players.push({ id, name: name.trim(), color: COLORS.find(c => !g.players.some(p => p.color === c)), bot, ready: bot, hand: emptyHand(), dev: [], knights: 0, roadLength: 0 });
@@ -128,16 +133,19 @@ export function act(source, actorId, action, fixtureRandom) {
   }
   if (type === 'setOptions') {
     requireRule(host && g.phase === 'lobby','只有房主可以在开局前更改规则。');
-    const options=normalizeOptions(action.options),profile=ruleProfile(options);
-    requireRule(g.players.length<=profile.maxPlayers,'请先移出多余玩家，再缩小房间人数。');
+    const requested=normalizeOptions(action.options);
+    requireRule(!(action.options?.playerExpansion === 'base' && g.players.length > 4),'当前实际人数需要 5–6 人扩充；人数规则自动匹配，请保留变体并刷新设置。');
+    const options=optionsForPlayers(requested,g.players.length),profile=ruleProfile(options);
     g.options = options; g.targetPoints = targetPoints(g); g.harbormaster = null;g.bank=emptyHand(profile.resourceCount);
     for (const player of g.players) player.ready = player.bot;
     return g;
   }
   if (type === 'start') {
     requireRule(host && g.phase === 'lobby','只有房主可以开始对局。');
+    g.options = optionsForPlayers(g.options,g.players.length);
     const profile=ruleProfile(g), expanded=profile.turnRule==='paired';
-    requireRule(g.players.length >= profile.minPlayers && g.players.length<=profile.maxPlayers && g.players.every(v => v.id === actorId || v.ready),`需要 ${profile.minPlayers}–${profile.maxPlayers} 位玩家，且其他玩家均已准备。`);
+    requireRule(g.players.length >= 3 && g.players.length<=6 && g.players.every(v => v.id === actorId || v.ready),'需要 3–6 位玩家，且其他玩家均已准备。');
+    g.bank = emptyHand(profile.resourceCount);
     g.board = createBoard(random,g.options); g.robber = g.board.tiles.find(t => t.resource === 'desert').id;
     g.deck = shuffle([...Array(expanded?20:14).fill('knight'), ...Array(5).fill('victory'), ...Array(expanded?3:2).fill('roadBuilding'), ...Array(expanded?3:2).fill('plenty'), ...Array(expanded?3:2).fill('monopoly')],random);
     g.primaryTurn=0;g.pairStep='primary';
@@ -266,7 +274,7 @@ export function viewFor(g, id) {
   // An explicit projection keeps future internal metadata out of public views.
   const publicPresentation = presentation ? {epoch:presentation.epoch,sequence:presentation.sequence,events:presentation.events.map(({id,kind,actorId,text,targets})=>({id,kind,actorId,text,targets:targets.map(({kind,id})=>({kind,id}))}))} : undefined;
   const profile=ruleProfile(g);
-  return { ...rest, ...(publicPresentation?{presentation:publicPresentation}:{}), options:normalizeOptions(g.options), profile,minPlayers:profile.minPlayers,maxPlayers:profile.maxPlayers,primaryTurn:g.primaryTurn??g.turn,pairStep:g.pairStep||'primary',targetPoints:targetPoints(g), harbormaster:g.harbormaster || null, deckCount:deck.length, me:id, legal:legal(g,id), players:players.map(p => {
+  return { ...rest, ...(publicPresentation?{presentation:publicPresentation}:{}), options:g.phase==='lobby'?optionsForPlayers(g.options,g.players.length):normalizeOptions(g.options), profile,minPlayers:g.phase==='lobby'?3:profile.minPlayers,maxPlayers:g.phase==='lobby'?6:profile.maxPlayers,primaryTurn:g.primaryTurn??g.turn,pairStep:g.pairStep||'primary',targetPoints:targetPoints(g), harbormaster:g.harbormaster || null, deckCount:deck.length, me:id, legal:legal(g,id), players:players.map(p => {
     const {hand,dev} = p, publicPlayer={};
     for(const key of ['id','name','color','bot','ready','knights','roadLength','harborPoints'])if(p[key]!==undefined)publicPlayer[key]=p[key];
     return { ...publicPlayer, cards:total(hand), developmentCount:dev.length, points:points(g,p.id,p.id===id || g.phase==='finished'), ...(p.id===id ? {hand,dev} : {}) };
