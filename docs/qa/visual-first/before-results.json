@@ -1,0 +1,51 @@
+{
+  "scope": "Local Chromium emulation; protocol fixtures for six-player table states.",
+  "results": [
+    {
+      "name": "desktop",
+      "homeFits": true,
+      "entry": true,
+      "rooms": true,
+      "rules": true,
+      "drafts": false,
+      "keyboard": false
+    },
+    {
+      "name": "portrait",
+      "homeFits": true,
+      "entry": true,
+      "rooms": true,
+      "rules": true,
+      "drafts": false,
+      "keyboard": false
+    },
+    {
+      "name": "landscape",
+      "homeFits": true,
+      "entry": true,
+      "rooms": true,
+      "rules": true,
+      "drafts": false,
+      "keyboard": false
+    },
+    {
+      "name": "small",
+      "homeFits": true,
+      "entry": true,
+      "rooms": true,
+      "rules": true,
+      "drafts": false,
+      "keyboard": false
+    },
+    {
+      "name": "short-landscape",
+      "homeFits": true,
+      "entry": true,
+      "rooms": true,
+      "rules": true,
+      "drafts": false,
+      "keyboard": false
+    }
+  ],
+  "errors": []
+}

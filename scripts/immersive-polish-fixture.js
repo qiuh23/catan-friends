@@ -31,7 +31,7 @@ export async function openPolishFixture(browser,{count=6,phase='action',viewport
     return {...view,chat,room:{hostId:'p0',paused,practice,visibility:'private',serverNow:Date.now(),retentionReason:practice?'practice':paused?'paused':'host-offline'},players:view.players.map(p=>({...p,online:true}))};
   };
   const publish=()=>socket?.send(JSON.stringify({type:'state',revision:++revision,state:project()}));
-  await page.route('**/api/deployment',route=>route.fulfill({json:{game:'catan-friends',backendId:'local',publicOrigin:new URL(polishURL).origin}}));
+  await page.route('**/api/deployment',route=>route.fulfill({json:{game:'catan-friends',siteEdition:'global',backendId:'local',publicOrigin:new URL(polishURL).origin}}));
   await page.route('**/api/rooms',route=>route.fulfill({json:route.request().method()==='POST'?{code:'ABC234'}:{rooms:[]}}));
   await page.routeWebSocket('**/api/rooms/*/ws',ws=>{
     socket=ws;ws.onMessage(message=>{
