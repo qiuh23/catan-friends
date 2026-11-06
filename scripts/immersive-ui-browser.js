@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { Vector3 } from 'three';
 import { createBoard } from '../shared/board.js';
-import { boardCamera, openStagePanel, closeStagePanel, toggleBoard } from './browser-stage-helpers.js';
+import { boardCamera, openStagePanel, closeStagePanel, toggleBoard, openEntry } from './browser-stage-helpers.js';
 
 const url=process.env.TEST_URL||'http://127.0.0.1:5185',results=[],errors=[];
 await mkdir('test-results/immersive',{recursive:true});
@@ -16,8 +16,9 @@ async function open(browser,viewport,touch=false){
   return {context,page};
 }
 async function homeFit(page){
-  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'home horizontal overflow');
-  const rects=await page.locator('#board,#island-caption,.tile-hint,.board-controls,.home-intro,#create-room').evaluateAll(els=>els.map(el=>({id:el.id||el.className,rect:el.getBoundingClientRect().toJSON()})));
+  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1&&document.documentElement.scrollHeight<=innerHeight+1),'home page overflow');
+  const stage=await page.locator('#board').boundingBox();assert.ok(stage.x===0&&stage.y===0&&stage.width===page.viewportSize().width&&stage.height===page.viewportSize().height,'home stage must fill viewport');
+  const rects=await page.locator('#home-dock,.topbar,.home .board-controls').evaluateAll(els=>els.filter(el=>el.getClientRects().length).map(el=>({id:el.id||el.className,rect:el.getBoundingClientRect().toJSON()})));
   for(let i=0;i<rects.length;i++)for(let j=i+1;j<rects.length;j++){
     const a=rects[i],b=rects[j],overlap=Math.max(0,Math.min(a.rect.right,b.rect.right)-Math.max(a.rect.x,b.rect.x))*Math.max(0,Math.min(a.rect.bottom,b.rect.bottom)-Math.max(a.rect.y,b.rect.y));
     assert.ok(overlap<2,`home overlap ${a.id}/${b.id}`);
@@ -49,11 +50,11 @@ for(const [engine,type] of [['chromium',chromium],['webkit',webkit]]){
     for(const count of [3,4,5,6]){
       const {context,page}=await open(browser,{width:390,height:844},true);let view;
       page.on('websocket',ws=>ws.on('framereceived',({payload})=>{try{const m=JSON.parse(payload);if(m.type==='state')view=m.state;}catch{}}));
-      await page.locator('#nickname').fill(`练习${count}`);
+      await openEntry(page);await page.locator('#nickname').fill(`练习${count}`);
       await page.locator('#create-friendlyRobber').check();await page.locator('#create-harbormaster').check();
       await page.locator('#create-count-6').check();await page.locator('#create-count-3').check();
       assert.ok(await page.locator('#create-friendlyRobber').isChecked());assert.ok(await page.locator('#create-harbormaster').isChecked());
-      await page.getByRole('button',{name:'人机练习',exact:true}).click();
+      await page.locator('#entry-dialog [data-action="practice"]').click();
       assert.equal(view,undefined,'practice started before confirming count');
       await page.locator(`#practice-count-${count}`).check();
       assert.match(await page.locator('#practice-seats').innerText(),new RegExp(`电脑\\s*${count-1}`));
@@ -78,7 +79,7 @@ for(const [engine,type] of [['chromium',chromium],['webkit',webkit]]){
       await page.locator('#board [data-id]').first().click();
       // Let the existing bot scheduler finish the remaining setup placements.
       // Sending host commands during that burst correctly rejects a stale revision.
-      for(let i=0;i<300&&!(view.phase==='setup-settlement'&&view.turn===0&&view.setupIndex===count*2-1);i++)await page.waitForTimeout(20);
+      for(let i=0;i<1500&&!(view.phase==='setup-settlement'&&view.turn===0&&view.setupIndex===count*2-1);i++)await page.waitForTimeout(20);
       assert.ok(view.phase==='setup-settlement'&&view.turn===0&&view.setupIndex===count*2-1,'bots did not return setup to the human');
       await toggleBoard(page,'切换三维棋盘');
       await shot(page,`${engine}-game-${count}`);
@@ -87,7 +88,7 @@ for(const [engine,type] of [['chromium',chromium],['webkit',webkit]]){
     }
     // Live room settings retain incompatible choices and require an explicit fix.
     const {context,page}=await open(browser,{width:940,height:700});
-    await page.locator('#nickname').fill('规则检查');await page.locator('#create-count-5').check();await page.locator('#create-friendlyRobber').check();
+    await openEntry(page);await page.locator('#nickname').fill('规则检查');await page.locator('#create-count-5').check();await page.locator('#create-friendlyRobber').check();
     await page.getByRole('button',{name:'创建好友房间',exact:false}).click();await page.locator('#room-settings-form').waitFor();
     for(let i=0;i<4;i++){await page.getByRole('button',{name:'添加电脑玩家',exact:false}).click();await page.waitForTimeout(100);}
     await page.locator('#room-count-3').check();
@@ -102,4 +103,4 @@ for(const [engine,type] of [['chromium',chromium],['webkit',webkit]]){
 }
 assert.deepEqual(errors,[]);
 await writeFile('test-results/immersive/results.json',JSON.stringify({results,errors},null,2));
-console.log(`Immersive UI passed: ${results.length} screenshots, Chromium/WebKit, separated homepage regions and fitted ports, 150% text, 3–6 real practice/variants/reconnect/builds, incompatible room choices retained.`);
+console.log(`Immersive UI passed: ${results.length} screenshots, Chromium/WebKit, viewport homepage with compact overlays and fitted ports, 150% text, 3–6 real practice/variants/reconnect/builds, incompatible room choices retained.`);

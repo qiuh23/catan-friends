@@ -5,6 +5,7 @@ import { resourceIllustration } from './icons.js';
 import { BoardAssets, Batches, buildTerrain, clearLayer } from './terrain.js';
 import { boardFrame } from './board-frame.js';
 import { feedbackPoints, planActionCamera } from './action-camera.js';
+import { feedbackAnchor, mapViewKey } from './map-feedback.js';
 
 // Flat site silhouettes stay inside the vertex lane, away from number tokens.
 const siteOutline={settlement:[[-.17,-.13],[.17,-.13],[.17,.025],[0,.18],[-.17,.025]],city:[[-.20,-.14],[.20,-.14],[.20,.02],[.07,.02],[.07,.20],[-.08,.20],[-.08,.07],[-.20,.07]]};
@@ -110,6 +111,7 @@ export class Board {
       this.renderer.domElement.dataset.cameraFocus=this.focusAnimation?'moving':this.viewMode||'overview';
       this.renderer.domElement.dataset.cameraEvent=this.focusEvent||'';
       this.renderer.domElement.dataset.cameraView=JSON.stringify(this.camera.view);
+      this.onProjectionChange?.();
       if(this.focusAnimation)this.invalidate();
     });
   }
@@ -155,6 +157,34 @@ export class Board {
   }
   manualInput(){this.cancelFocus();this.viewMode='manual';this.onManual?.();}
   cancelFocus(){if(!this.focusAnimation)return;this.focusAnimation=null;this.invalidate();}
+  projectFeedbackTarget(target) {
+    const anchor=feedbackAnchor(this.board,target);if(!anchor||this.disposed)return null;
+    const rect=this.renderer.domElement.getBoundingClientRect(),container=this.container.getBoundingClientRect();
+    if(!rect.width||!rect.height)return null;
+    this.camera.updateMatrixWorld();
+    const projected=new THREE.Vector3(anchor.x,anchor.y,anchor.z).project(this.camera);
+    const x=rect.left-container.left+(projected.x+1)*rect.width/2,y=rect.top-container.top+(1-projected.y)*rect.height/2;
+    return {x,y,visible:Number.isFinite(x)&&Number.isFinite(y)&&projected.z>=-1&&projected.z<=1&&x>=0&&y>=0&&x<=container.width&&y<=container.height};
+  }
+  exportView() {
+    return {kind:'3d',mapKey:mapViewKey(this.board),position:this.camera.position.toArray(),target:this.controls.target.toArray(),
+      viewMode:this.viewMode,fitDistance:this.fitDistance,width:this.width,height:this.height,paddingKey:this.paddingKey,view:this.camera.view?{...this.camera.view}:null};
+  }
+  importView(view) {
+    if(view?.kind!=='3d'||view.mapKey!==mapViewKey(this.board)||![view.position,view.target].every(v=>Array.isArray(v)&&v.length===3&&v.every(Number.isFinite)))return false;
+    const position=new THREE.Vector3().fromArray(view.position),target=new THREE.Vector3().fromArray(view.target),distance=position.distanceTo(target);
+    if(distance<.1||distance>140)return false;
+    this.cancelFocus();this.focusEvent='';this.viewMode=view.viewMode||'overview';
+    this.camera.position.copy(position);this.controls.target.copy(target);
+    this.controls.maxDistance=Math.max(this.controls.maxDistance,distance*1.1);
+    if(Number.isFinite(view.fitDistance)&&view.fitDistance>0)this.fitDistance=view.fitDistance;
+    // fit() centres the projected island with an off-axis offset. Preserve it
+    // exactly on a renderer toggle; resize uses the current unobscured frame.
+    if(view.width===this.width&&view.height===this.height&&view.paddingKey===this.paddingKey&&view.view) {
+      this.camera.view={...view.view};this.camera.updateProjectionMatrix();
+    }else this.updateProjection();
+    this.controls.update();this.camera.updateMatrixWorld();this.invalidate();return true;
+  }
   siteMesh(marker,material,factor,order){
     const road=marker.userData.kind==='edge',mesh=new THREE.Mesh(this.assets.geometries[road?'box':`site-${this.mode}`],this.assets.materials.get(material));
     mesh.position.copy(marker.position);mesh.renderOrder=order;
@@ -354,7 +384,7 @@ export class Board {
     if(changed){this.renderer.shadowMap.needsUpdate=true;this.invalidate();}
   }
   dispose() {
-    if(this.disposed)return;this.disposed=true;this.stopFrame();this.events.abort();this.observer.disconnect();this.intersection.disconnect();this.controls.dispose();
+    if(this.disposed)return;this.disposed=true;this.onProjectionChange=null;this.stopFrame();this.events.abort();this.observer.disconnect();this.intersection.disconnect();this.controls.dispose();
     for(const group of [this.land,this.pieces,this.markers,this.selectionLayer,this.feedbackLayer])clearLayer(group);
     this.scene.clear();this.sun.shadow.dispose();this.assets.dispose();this.renderer.dispose();this.renderer.forceContextLoss();this.renderer.domElement.remove();
   }

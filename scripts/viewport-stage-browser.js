@@ -2,7 +2,7 @@ import { chromium } from 'playwright';
 import assert from 'node:assert/strict';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { createGame, addPlayer, act, botAction, viewFor, RESOURCES } from '../shared/game.js';
-import { openStagePanel, closeStagePanel, toggleBoard } from './browser-stage-helpers.js';
+import { openStagePanel, closeStagePanel, toggleBoard, openEntry } from './browser-stage-helpers.js';
 
 // Rare decision states are loopback-only protocol fixtures. The ordinary smoke
 // and multiplayer suites exercise the actual local Node room implementation.
@@ -46,7 +46,7 @@ async function open(count,viewport,{touch=true,insets=null}={}) {
       }catch(error){ws.send(JSON.stringify({type:'error',id:m.id,message:error.message}));}
     });
   });
-  await page.goto(url);await page.locator('#nickname').fill('海风');await page.getByRole('button',{name:'创建好友房间'}).click();
+  await page.goto(url);await openEntry(page);await page.locator('#nickname').fill('海风');await page.getByRole('button',{name:'创建好友房间'}).click();
   await page.locator('.playing #board canvas[data-render-stats]').waitFor();
   await page.waitForFunction(()=>JSON.parse(document.querySelector('#board canvas').dataset.renderStats).pieceBuilds>0);
   return {context,page,actions,get game(){return game;},setGame(next){game=next;publish();},setPaused(value){paused=value;publish();},publish,chat(text){chat=[...chat,{id:`peer-${revision}`,seq:chat.length+1,sentAt:Date.now(),name:'松林',text}];publish();}};
@@ -158,12 +158,12 @@ try {
   await page.keyboard.press('Escape');await page.locator('#stage-dialog[open]').waitFor({state:'hidden'});await page.locator('[data-action="focusTask"]').click();
   assert.equal(await page.locator('#discard-wood').inputValue(),'4','dismiss/reopen lost discard selection');
   client.chat('弃牌时也有消息');await settled(page);assert.equal(await page.locator('#discard-wood').inputValue(),'4');
-  await page.setViewportSize({width:390,height:844});await settled(page);await dialogFits(page);await page.screenshot({path:'docs/screenshots/viewport-after-discard.png',fullPage:true,scale:'css'});
+  await page.setViewportSize({width:390,height:844});await settled(page);await dialogFits(page);await page.screenshot({path:'docs/screenshots/map-first-discard.png',fullPage:true,scale:'css'});
   await page.getByRole('button',{name:'确认弃牌',exact:true}).click();await page.locator('#discard-form').waitFor({state:'hidden'});assert.equal(client.actions.at(-1).type,'discard');
 
   const trade=fixture(6);trade.turn=1;trade.offer={id:'offer-test',from:'p1',give:{wood:1,brick:0,sheep:0,wheat:0,ore:0},want:{wood:0,brick:1,sheep:0,wheat:0,ore:0}};
   const beforeTrade=client.actions.length;client.setGame(trade);await page.locator('#stage-dialog[open] .trade-offer').waitFor();await dialogFits(page);assert.equal(client.actions.length,beforeTrade,'trade automatically accepted');
-  await page.screenshot({path:'docs/screenshots/viewport-after-incoming-trade.png',fullPage:true,scale:'css'});
+  await page.screenshot({path:'docs/screenshots/map-first-incoming-trade.png',fullPage:true,scale:'css'});
   await page.keyboard.press('Escape');await page.locator('[data-action="focusTask"]').click();await page.getByRole('button',{name:'接受这笔交易'}).click();await page.locator('.trade-offer').waitFor({state:'hidden'});assert.equal(client.actions.at(-1).type,'acceptTrade');
 
   const steal=fixture(6);steal.phase='steal';steal.resumePhase='action';steal.robber=steal.board.tiles.find(t=>t.vertices.some(v=>steal.board.vertices[v].owner&&steal.board.vertices[v].owner!=='p0')).id;
