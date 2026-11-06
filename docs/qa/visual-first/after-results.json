@@ -1,0 +1,111 @@
+{
+  "scope": "Local Chromium emulation; protocol fixtures for six-player table states.",
+  "results": [
+    {
+      "name": "desktop",
+      "homeFits": true,
+      "entry": true,
+      "rooms": true,
+      "rules": true,
+      "drafts": true,
+      "keyboard": true
+    },
+    {
+      "name": "portrait",
+      "homeFits": true,
+      "entry": true,
+      "rooms": true,
+      "rules": true,
+      "drafts": true,
+      "keyboard": true
+    },
+    {
+      "name": "landscape",
+      "homeFits": true,
+      "entry": true,
+      "rooms": true,
+      "rules": true,
+      "drafts": true,
+      "keyboard": true
+    },
+    {
+      "name": "small",
+      "homeFits": true,
+      "entry": true,
+      "rooms": true,
+      "rules": true,
+      "drafts": true,
+      "keyboard": true
+    },
+    {
+      "name": "short-landscape",
+      "homeFits": true,
+      "entry": true,
+      "rooms": true,
+      "rules": true,
+      "drafts": true,
+      "keyboard": true
+    },
+    {
+      "name": "desktop",
+      "phase": "lobby",
+      "viewportFits": true
+    },
+    {
+      "name": "desktop",
+      "phase": "action",
+      "viewportFits": true
+    },
+    {
+      "name": "desktop",
+      "phase": "finished",
+      "viewportFits": true
+    },
+    {
+      "name": "portrait",
+      "phase": "lobby",
+      "viewportFits": true
+    },
+    {
+      "name": "portrait",
+      "phase": "action",
+      "viewportFits": true
+    },
+    {
+      "name": "portrait",
+      "phase": "finished",
+      "viewportFits": true
+    },
+    {
+      "name": "landscape",
+      "phase": "lobby",
+      "viewportFits": true
+    },
+    {
+      "name": "landscape",
+      "phase": "action",
+      "viewportFits": true
+    },
+    {
+      "name": "landscape",
+      "phase": "finished",
+      "viewportFits": true
+    },
+    {
+      "name": "short-landscape",
+      "phase": "lobby",
+      "viewportFits": true
+    },
+    {
+      "name": "short-landscape",
+      "phase": "action",
+      "viewportFits": true
+    },
+    {
+      "name": "short-landscape",
+      "phase": "finished",
+      "viewportFits": true
+    }
+  ],
+  "errors": []
+}

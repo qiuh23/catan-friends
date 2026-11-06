@@ -12,7 +12,7 @@ const app=await createServer({port:0,dataDir,siteEdition:edition,botDelay:10000}
 const browser=await chromium.launch({headless:true});
 await mkdir('test-results/site-edition',{recursive:true});
 try{
-  for(const viewport of [{width:1280,height:800},{width:844,height:390}]){
+  for(const viewport of [{width:1280,height:800},{width:390,height:844},{width:844,height:390}]){
     const context=await browser.newContext({viewport}),page=await context.newPage(),errors=[];
     page.on('pageerror',error=>errors.push(error.message));
     await page.addInitScript(()=>{localStorage.setItem('catan:name',JSON.stringify('旧自由昵称'));localStorage.setItem('siteEdition','global');sessionStorage.setItem('catan:drafts:home',JSON.stringify([['nickname','旧昵称'],['chat-message','旧聊天']]));});
@@ -36,6 +36,12 @@ try{
     await page.locator('[data-action="addBot"]').click();await page.waitForFunction(()=>document.querySelectorAll('.player-circle').length===3);
     await page.locator('[data-action="start"]').click();await page.locator('.turn-banner').waitFor();
     await page.screenshot({path:`test-results/site-edition/${edition}-${viewport.width}-game.png`});
+    await page.locator('#stage-tools [data-action="openSettings"]').click();await page.locator('#stage-dialog[open]').waitFor();
+    await page.screenshot({path:`test-results/site-edition/${edition}-${viewport.width}-settings.png`});
+    await page.locator('#stage-dialog [data-action="rules"]').click();await page.locator('#rules-dialog[open]').waitFor();
+    assert.equal((await page.locator('#rules-dialog').innerText()).includes('聊天仍可用'),!domestic);
+    await page.keyboard.press('Escape');await page.locator('#stage-dialog [data-action="closeStagePanel"]').click();
+    await page.waitForFunction(()=>!document.querySelector('dialog[open]')&&!history.state?.catanOverlay);
     const identity=await page.evaluate(()=>JSON.parse(localStorage.getItem('catan:last')));
     await page.reload();await page.locator('.turn-banner').waitFor();assert.equal((await page.evaluate(()=>JSON.parse(localStorage.getItem('catan:last')))).token,identity.token);
     if(domestic){assert.equal(await page.locator('[data-action="openChat"],#chat-message').count(),0);assert.ok(!await page.locator('body').innerText().then(t=>t.includes('旧自由昵称')));}
@@ -43,5 +49,5 @@ try{
     assert.ok(controls.every(r=>r.x>=-1&&r.y>=-1&&r.x+r.w<=viewport.width+1&&r.y+r.h<=viewport.height+1));
     assert.deepEqual(errors,[]);await context.close();
   }
-  console.log(`${edition}: desktop and mobile landscape nickname, room, bots, start and reload checks passed.`);
+  console.log(`${edition}: desktop, portrait and landscape nickname, room, bots, start and reload checks passed.`);
 }finally{await browser.close();await app.close();await rm(dataDir,{recursive:true,force:true});}
