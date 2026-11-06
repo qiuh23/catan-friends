@@ -24,10 +24,16 @@ async function expectedAnchor(client,target){
 async function anchored(client,event){
   const target=event.targets[0],actual=await notice(client.page).evaluate(el=>({target:el.dataset.target,...JSON.parse(el.dataset.anchor||'{}')}));
   assert.equal(actual.target,`${target.kind}:${target.id}`,'bubble guessed a different map target');const expected=await expectedAnchor(client,target);
-  assert.ok(Number.isFinite(actual.x)&&Number.isFinite(actual.y),'bubble has no projection coordinates');assert.ok(Math.hypot(actual.x-expected.x,actual.y-expected.y)<2,`bubble detached from target ${JSON.stringify({actual,expected})}`);return actual;
+  assert.ok(Number.isFinite(actual.x)&&Number.isFinite(actual.y),'bubble has no projection coordinates');assert.ok(Math.hypot(actual.x-expected.x,actual.y-expected.y)<2,`bubble detached from target ${JSON.stringify({actual,expected})}`);
+  if(!await client.page.locator('dialog[open]').count()){
+    const placement=await notice(client.page).evaluate(el=>{const r=el.getBoundingClientRect(),overlap=b=>Math.max(0,Math.min(r.right,b.right)-Math.max(r.left,b.left))*Math.max(0,Math.min(r.bottom,b.bottom)-Math.max(r.top,b.top));return {visible:getComputedStyle(el).visibility,bounds:r.toJSON(),width:innerWidth,height:innerHeight,blocked:[...document.querySelectorAll('.stage-primary,.stage-utilities,#player-orbit,#play-dock,.hand-tray,#turn-banner>div')].filter(node=>node.getClientRects().length).some(node=>overlap(node.getBoundingClientRect())>1),leader:!document.querySelector('#action-feedback-leader').hasAttribute('hidden')};});
+    assert.equal(placement.visible,'visible','action label disappeared instead of finding clear map space');assert.equal(placement.blocked,false,'action label covers HUD');assert.ok(placement.leader,'action label lacks its map leader');assert.ok(placement.bounds.left>=0&&placement.bounds.top>=0&&placement.bounds.right<=placement.width&&placement.bounds.bottom<=placement.height,'action label leaves viewport');
+  }
+  return actual;
 }
 async function expires(page,{timed=true}={}){
   await notice(page).waitFor({state:'hidden',timeout:1800});
+  assert.ok(await page.locator('#action-feedback-leader').evaluate(el=>el.hasAttribute('hidden')),'map leader stayed after the action notice');
   if(timed){const duration=await page.evaluate(()=>window.bubbleTiming.duration);assert.ok(duration>=1000&&duration<=1500,`bubble lifetime ${duration}ms outside 1–1.5s`);lifetimesMs.push(duration);}
   const targets=await page.locator('#board canvas,#board>svg').evaluate(el=>JSON.parse(el.dataset.feedbackTargets||'[]'));assert.deepEqual(targets,[],'highlight stayed active after the bubble');
 }

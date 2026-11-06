@@ -1,4 +1,5 @@
 const paths={
+  play:'m8 4 12 8-12 8Z',
   chat:'M8 18 3 21l1.2-5A8 8 0 1 1 8 18Z M8 9h.01 M12 9h.01 M16 9h.01',
   log:'M5 3h14v18H5Z M8 7h8 M8 11h8 M8 15h6',
   settings:'M9 3h6l1 4 4 1v8l-4 1-1 4H9l-1-4-4-1V8l4-1Z M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z',

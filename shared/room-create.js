@@ -2,8 +2,9 @@ import { normalizeOptions, ruleProfile } from './game.js';
 import { Room, fingerprint } from './room.js';
 import { UserError } from './errors.js';
 
-// Keep the HTTP creation contract identical in Node and Durable Objects. Older
-// clients can omit the total; newer clients select it before creating a room.
+// Keep Node and Durable Objects on one creation contract. Only practice needs
+// a total up front to fill bots; human lobbies choose their edition at start.
+// Legacy explicit totals/editions remain validated for older practice clients.
 export function roomCreationSettings(input) {
   if (!input || typeof input !== 'object' || Array.isArray(input)) throw new UserError('房间设置无效。');
   const options = normalizeOptions(input.options);

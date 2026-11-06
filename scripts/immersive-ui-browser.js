@@ -33,6 +33,7 @@ async function homeFit(page){
 }
 async function shot(page,name){await page.screenshot({path:`test-results/immersive/${name}.png`,fullPage:true,scale:'css'});results.push(name);console.log(name);}
 for(const [engine,type] of [['chromium',chromium],['webkit',webkit]]){
+  if(process.env.UI_ENGINE&&process.env.UI_ENGINE!==engine)continue;
   const browser=await type.launch({headless:true});
   try{
     for(const [name,viewport,touch] of (process.env.UI_PHASE==='practice'?[]:[
@@ -52,7 +53,8 @@ for(const [engine,type] of [['chromium',chromium],['webkit',webkit]]){
       page.on('websocket',ws=>ws.on('framereceived',({payload})=>{try{const m=JSON.parse(payload);if(m.type==='state')view=m.state;}catch{}}));
       await openEntry(page);await page.locator('#nickname').fill(`练习${count}`);
       await page.locator('#create-friendlyRobber').check();await page.locator('#create-harbormaster').check();
-      await page.locator('#create-count-6').check();await page.locator('#create-count-3').check();
+      assert.equal(await page.locator('input[name="create-count"]').count(),0,'friend rooms must not require predicting the player count');
+      assert.match(await page.locator('#create-rule-summary').innerText(),/3–6 人.*实际人数自动匹配/);
       assert.ok(await page.locator('#create-friendlyRobber').isChecked());assert.ok(await page.locator('#create-harbormaster').isChecked());
       await page.locator('#entry-dialog [data-action="practice"]').click();
       assert.equal(view,undefined,'practice started before confirming count');
@@ -86,16 +88,32 @@ for(const [engine,type] of [['chromium',chromium],['webkit',webkit]]){
       await openStagePanel(page,'openSettings');await page.getByRole('button',{name:'解散房间',exact:true}).click();await page.getByRole('button',{name:'确认解散',exact:true}).click();
       await page.locator('.table.home').waitFor().catch(async error=>{await shot(page,`${engine}-close-error`);console.log((await page.locator('body').innerText()).slice(-1800));throw error;});await context.close();
     }
-    // Live room settings retain incompatible choices and require an explicit fix.
+    // Live friend rooms accept six seats and derive the real rule set from the
+    // seated humans and bots; changing count must retain both chosen variants.
     const {context,page}=await open(browser,{width:940,height:700});
-    await openEntry(page);await page.locator('#nickname').fill('规则检查');await page.locator('#create-count-5').check();await page.locator('#create-friendlyRobber').check();
-    await page.getByRole('button',{name:'创建好友房间',exact:false}).click();await page.locator('#room-settings-form').waitFor();
-    for(let i=0;i<4;i++){await page.getByRole('button',{name:'添加电脑玩家',exact:false}).click();await page.waitForTimeout(100);}
-    await page.locator('#room-count-3').check();
-    assert.ok(await page.locator('#room-compatibility').isVisible());assert.ok(await page.locator('#room-friendlyRobber').isChecked());
-    assert.ok(await page.getByRole('button',{name:'保存规则 · 重新准备'}).isDisabled());
-    await page.locator('#room-count-6').check();assert.ok(await page.locator('#room-compatibility').isHidden());
-    await page.getByRole('button',{name:'保存规则 · 重新准备'}).click();
+    let roomView;page.on('websocket',ws=>ws.on('framereceived',({payload})=>{try{const m=JSON.parse(payload);if(m.type==='state')roomView=m.state;}catch{}}));
+    await openEntry(page);await page.locator('#nickname').fill('规则检查');await page.locator('#create-friendlyRobber').check();await page.locator('#create-harbormaster').check();
+    await page.getByRole('button',{name:'创建好友房间',exact:false}).click();await page.locator('.table.waiting').waitFor();
+    assert.ok(await page.locator('#play-dock [data-action="start"]').isDisabled(),'one person may not start');
+    for(let count=2;count<=6;count++){
+      await page.locator('#play-dock [data-action="addBot"]').click();await page.locator('#player-orbit [data-player]').nth(count-1).waitFor();
+      assert.match(await page.locator('.waiting-banner').innerText(),count>4?/5–6 人扩充/:/基础版/);
+      assert.equal(roomView.players.length,count);assert.ok(roomView.options.friendlyRobber&&roomView.options.harbormaster,'changing occupancy erased variants');
+      if(count===2)assert.ok(await page.locator('#play-dock [data-action="start"]').isDisabled(),'two people may not start');
+      if([4,5,6].includes(count)){
+        await page.locator('#play-dock [data-action="openSettings"]').click();await page.locator('#room-settings-form').waitFor();
+        assert.equal(await page.locator('input[name="room-count"]').count(),0,'waiting rooms must derive the count from actual seats');
+        assert.match(await page.locator('#room-rule-summary').innerText(),count>4?/5–6 人扩充/:/基础版/);
+        assert.ok(await page.locator('#room-friendlyRobber').isChecked());assert.ok(await page.locator('#room-harbormaster').isChecked());
+        assert.ok(await page.locator('#room-compatibility').isHidden(),'supported variants were declared incompatible');
+        await page.getByRole('button',{name:'保存规则 · 重新准备'}).click();await page.waitForTimeout(100);await closeStagePanel(page);
+      }
+    }
+    assert.ok(await page.locator('#play-dock [data-action="addBot"]').isDisabled(),'a seventh seat was offered');
+    await page.locator('#play-dock [data-action="start"]').click();await page.locator('canvas[data-site-shape="settlement"]').waitFor();
+    assert.equal(roomView.options.playerExpansion,'five-six-2025');assert.equal(roomView.board.tiles.length,30);assert.equal(roomView.deckCount,34);assert.equal(roomView.bank.wood,24);
+    assert.ok(roomView.options.friendlyRobber&&roomView.options.harbormaster);assert.equal(roomView.targetPoints,11);
+    await openStagePanel(page,'openSettings');
     await shot(page,`${engine}-room-rules`);
     await page.getByRole('button',{name:'解散房间',exact:true}).click();await page.getByRole('button',{name:'确认解散',exact:true}).click();
     await context.close();
@@ -103,4 +121,4 @@ for(const [engine,type] of [['chromium',chromium],['webkit',webkit]]){
 }
 assert.deepEqual(errors,[]);
 await writeFile('test-results/immersive/results.json',JSON.stringify({results,errors},null,2));
-console.log(`Immersive UI passed: ${results.length} screenshots, Chromium/WebKit, viewport homepage with compact overlays and fitted ports, 150% text, 3–6 real practice/variants/reconnect/builds, incompatible room choices retained.`);
+console.log(`Immersive UI passed: ${results.length} screenshots, ${process.env.UI_ENGINE||'Chromium/WebKit'}, viewport homepage with compact overlays and fitted ports, 150% text, 3–6 real practice/variants/reconnect/builds, automatic six-seat friend-room rules with retained variants.`);

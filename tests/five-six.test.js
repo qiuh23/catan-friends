@@ -29,11 +29,11 @@ test('2025 five-six profile has all additional components and exact number-token
   ]);
 });
 
-test('only five-six profile unlocks extra seats and starting requires five or six, preserving snake setup',()=>{
-  const base=createGame();for(let i=0;i<4;i++)addPlayer(base,`p${i}`,`玩家${i}`);assert.throws(()=>addPlayer(base,'p4','第五'),/4/);
-  const few=lobby(4);assert.throws(()=>act(few,'p0',{type:'start'}),/5–6/);
+test('waiting rooms accept six seats and choose the actual edition at start, preserving snake setup',()=>{
+  const base=createGame();for(let i=0;i<6;i++)addPlayer(base,`p${i}`,`玩家${i}`);assert.throws(()=>addPlayer(base,'p6','第七'),/6/);
+  const few=act(lobby(4),'p0',{type:'start'});assert.equal(few.options.playerExpansion,'base');assert.equal(few.board.tiles.length,19);assert.equal(few.deck.length,25);
   assert.throws(()=>addPlayer(lobby(),'p6','第七'),/6/);
-  assert.throws(()=>act(lobby(5),'p0',{type:'setOptions',options:{playerExpansion:'base'}}),/移出/);
+  assert.throws(()=>act(lobby(5),'p0',{type:'setOptions',options:{playerExpansion:'base'}}),/实际人数/);
   for(const n of [5,6]){
     let g=act(lobby(n),'p0',{type:'start'},rng()),order=[];
     while(g.phase.startsWith('setup')){const id=g.players[g.turn].id;if(g.phase==='setup-settlement')order.push(g.turn);g=act(g,id,botAction(g,id));}

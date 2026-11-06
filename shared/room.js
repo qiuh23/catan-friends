@@ -1,4 +1,4 @@
-import { createGame, addPlayer, act, viewFor, botAction, afford, total, ruleProfile } from './game.js';
+import { createGame, addPlayer, act, viewFor, botAction, afford, total, ruleProfile, optionsForPlayers } from './game.js';
 import { createRandomStream, validRandomStream } from './random.js';
 import { UserError } from './errors.js';
 import { CHAT_DAYS, CHAT_LIMIT, DAY } from './moderation.js';
@@ -122,7 +122,7 @@ export class Room {
     if(r.paused && !['chat','leave','close','resume','transferHost'].includes(a.type))throw new UserError('房主已暂停对局，请等待恢复。');
     if(a.type==='close'){this.close(undefined,now);return {type:'ack',id:message.id,ok:true};}
     if(a.type==='pause'){
-      if(r.practice || ['lobby','finished'].includes(g.phase))throw new UserError('只有进行中的真人房可以暂停。');
+      if(['lobby','finished'].includes(g.phase))throw new UserError('只有进行中的对局可以暂停。');
       r.paused=true;r.pauseOfflineAt=null;
     } else if(a.type==='resume'){r.paused=false;r.pauseOfflineAt=null;
     } else if(a.type==='transferHost'){
@@ -166,12 +166,12 @@ export class Room {
   }
   metadata(now=Date.now()) {
     const r=this.record;if(r.closed)return {closed:true,closeReason:r.closeReason,serverNow:now};
-    return {hostId:r.hostId,visibility:r.visibility,practice:r.practice,paused:r.paused,closed:false,minPlayers:ruleProfile(r.game).minPlayers,maxPlayers:ruleProfile(r.game).maxPlayers,expiresAt:this.deadline(),retentionReason:r.practice?'practice':r.paused?'paused':'host-offline',serverNow:now};
+    return {hostId:r.hostId,visibility:r.visibility,practice:r.practice,paused:r.paused,closed:false,minPlayers:r.game.phase==='lobby'?3:ruleProfile(r.game).minPlayers,maxPlayers:r.game.phase==='lobby'?6:ruleProfile(r.game).maxPlayers,expiresAt:this.deadline(),retentionReason:r.practice?'practice':r.paused?'paused':'host-offline',serverNow:now};
   }
   summary(code,now=Date.now()) {
     const r=this.record;if(r.closed || r.practice || r.visibility!=='public')return null;
     const profile=ruleProfile(r.game);
-    return {code,hostName:r.game.players.find(p=>p.id===r.hostId)?.name || '房主',phase:r.game.phase,status:r.paused?'paused':r.game.phase==='lobby'?(r.game.players.length>=profile.maxPlayers?'full':'waiting'):r.game.phase==='finished'?'finished':'playing',playerCount:r.game.players.length,minPlayers:profile.minPlayers,maxPlayers:profile.maxPlayers,options:r.game.options||{friendlyRobber:false,harbormaster:false,playerExpansion:'base'},targetPoints:r.game.options?.harbormaster?11:10,expiresAt:this.deadline(),revision:r.revision};
+    return {code,hostName:r.game.players.find(p=>p.id===r.hostId)?.name || '房主',phase:r.game.phase,status:r.paused?'paused':r.game.phase==='lobby'?(r.game.players.length>=6?'full':'waiting'):r.game.phase==='finished'?'finished':'playing',playerCount:r.game.players.length,minPlayers:r.game.phase==='lobby'?3:profile.minPlayers,maxPlayers:r.game.phase==='lobby'?6:profile.maxPlayers,options:r.game.phase==='lobby'?optionsForPlayers(r.game.options,r.game.players.length):r.game.options||{friendlyRobber:false,harbormaster:false,playerExpansion:'base'},targetPoints:r.game.options?.harbormaster?11:10,expiresAt:this.deadline(),revision:r.revision};
   }
   snapshot(id,online=[],now=Date.now()) {
     if(this.record.closed)return {type:'closed',message:this.record.closeReason};

@@ -22,10 +22,10 @@ async function settled(clients,revision){await Promise.all(clients.filter(c=>c.w
 async function list(){const response=await fetch(origin+'/api/rooms');assert.equal(response.status,200,await response.clone().text());return (await response.json()).rooms;}
 try{
   for(const count of [3,4,5,6]){
-    const options={playerExpansion:count>=5?'five-six-2025':'base',friendlyRobber:true,harbormaster:true};
+    const options={friendlyRobber:true,harbormaster:true};
     const token=crypto.randomUUID(),response=await fetch(origin+'/api/rooms',{method:'POST',body:JSON.stringify({token,name:`${count}人房主`,visibility:'public',options})});assert.equal(response.status,201,await response.clone().text());const {code}=await response.json();
     const clients=[await join(code,token)];for(let n=1;n<count;n++)clients.push(await join(code));await settled(clients,clients.at(-1).state.revision);
-    const entry=(await list()).find(v=>v.code===code);assert.equal(entry.playerCount,count);assert.equal(entry.maxPlayers,count>=5?6:4);assert.equal(entry.minPlayers,count>=5?5:3);assert.ok(!JSON.stringify(entry).match(/token|identities|hand|deck|receipts/));
+    const entry=(await list()).find(v=>v.code===code);assert.equal(entry.playerCount,count);assert.equal(entry.maxPlayers,6);assert.equal(entry.minPlayers,3);assert.equal(entry.options.playerExpansion,count>=5?'five-six-2025':'base');assert.ok(!JSON.stringify(entry).match(/token|identities|hand|deck|receipts/));
     for(const c of clients.slice(1)){const rev=await c.action({type:'ready',ready:true});await settled(clients,rev);}
     let rev=await clients[0].action({type:'start'});await settled(clients,rev);
     const intruder=await join(code);assert.equal(intruder.messages.at(-1).type,'error');

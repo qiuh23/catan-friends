@@ -44,7 +44,7 @@ async function join(code,token,name){
 try {
   await start();
   const tokens=Array.from({length:count},()=>crypto.randomUUID());
-  const response=await fetch(origin+'/api/rooms',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:tokens[0],name:'本地恢复房主',options:{playerExpansion:count>=5?'five-six-2025':'base'}})});assert.equal(response.status,201);
+  const response=await fetch(origin+'/api/rooms',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:tokens[0],name:'本地恢复房主'})});assert.equal(response.status,201);
   const {code}=await response.json(),names=Array.from({length:count},(_,i)=>`恢复玩家${i+1}`);
   const players=[];for(let i=0;i<count;i++)players.push(await join(code,tokens[i],names[i]));
   const [a]=players;await a.wait(message=>message.type==='state'&&message.state.players.length===count);
@@ -75,5 +75,18 @@ try {
     assert.deepEqual(mine.hand,previous.hand);assert.deepEqual(mine.dev,previous.dev);
     assert.ok(restored.players.filter(player=>player.id!==restored.me).every(player=>player.hand===undefined&&player.dev===undefined));assert.equal(restored.deck,undefined);
   }
-  console.log(`Local Worker restart passed: ${count} identities, profile, in-progress board/turn, private hands and persisted Durable Object state restored after process replacement.`);
+  const practiceToken=crypto.randomUUID(),practiceResponse=await fetch(origin+'/api/rooms',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:practiceToken,name:'暂停恢复练习',practice:true,playerCount:count,options:{friendlyRobber:true,harbormaster:true}})});
+  assert.equal(practiceResponse.status,201);const {code:practiceCode}=await practiceResponse.json(),practice=await join(practiceCode,practiceToken,'暂停恢复练习');
+  await practice.act({type:'buildSettlement',vertex:practice.state.state.legal.settlement[0]});
+  await practice.act({type:'buildRoad',edge:practice.state.state.legal.road[0]});
+  await practice.act({type:'pause'});const paused=structuredClone(practice.state);
+  await stop();await start();
+  const returning=await join(practiceCode,practiceToken,'暂停恢复练习');
+  assert.equal(returning.state.state.room.paused,true);assert.equal(returning.state.state.me,paused.state.me);
+  assert.deepEqual(returning.state.state.board,paused.state.board);assert.equal(returning.state.state.turn,paused.state.turn);
+  assert.equal(returning.state.state.phase,paused.state.phase);assert.deepEqual(returning.state.state.options,paused.state.options);
+  await delay(1200);assert.equal(returning.state.revision,paused.revision,'paused bot progressed after process restart');
+  await returning.act({type:'resume'});const resumedRevision=returning.state.revision;
+  await returning.wait(message=>message.type==='state'&&message.revision>resumedRevision);
+  console.log(`Local Worker restart passed: ${count} identities, automatic profile, in-progress board/turn, private hands, plus paused ${count}-seat practice remains frozen after restart and bots continue on resume.`);
 }finally{await stop();await rm(persistence,{recursive:true,force:true,maxRetries:20,retryDelay:100});}
