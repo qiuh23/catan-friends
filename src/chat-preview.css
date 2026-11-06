@@ -1,0 +1,11 @@
+.chat-preview { position:fixed;z-index:8;pointer-events:none; }
+.chat-preview[hidden] { display:none; }
+.chat-preview button { width:100%;display:grid;gap:4px;text-align:left;padding:9px 11px;border:1px solid #cbd7be;border-radius:12px;background:#f8faeff5;color:#294c46;box-shadow:0 4px 14px #173b3b20;pointer-events:auto; }
+.chat-preview strong { font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+.chat-preview span { font-size:12px;line-height:1.4;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden; }
+.chat-preview button:focus-visible { outline:3px solid #34796c;outline-offset:2px; }
+body:has(dialog[open]) .chat-preview { visibility:hidden!important; }
+
+.chat-preview[data-compact="true"] span { -webkit-line-clamp:1; }
+
+.chat-preview { --chat-safe-left:env(safe-area-inset-left,0px);--chat-safe-right:env(safe-area-inset-right,0px);--chat-safe-top:env(safe-area-inset-top,0px);--chat-safe-bottom:env(safe-area-inset-bottom,0px); }
