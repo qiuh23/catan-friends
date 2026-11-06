@@ -5,9 +5,27 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { repository, selectRelease } from '../scripts/deploy/gate.mjs';
-import { cloudAssistantCommand, marker, mayRollbackWorker, publicOrigin, signedArtifactURL } from '../scripts/deploy/release.mjs';
+import { cloudAssistantCommand, cloudflareRequest, marker, mayRollbackWorker, publicOrigin, signedArtifactURL } from '../scripts/deploy/release.mjs';
 
 const commit = 'a'.repeat(40), workflowId = 41;
+test('Cloudflare management reads survive transient 503, rate limiting and transport failures', async () => {
+  const waits = [], responses = [new Response('busy', {status:503}), new Response('limited', {status:429, headers:{'Retry-After':'3'}}), new TypeError('network failed'), Response.json({success:true})];
+  const fetchImpl = async (_url, init) => {assert.equal(init.method,'GET');assert(init.signal);const next=responses.shift();if(next instanceof Error)throw next;return next;};
+  const result=await cloudflareRequest('https://api.cloudflare.com/test',{method:'GET'},{fetchImpl,sleep:async ms=>waits.push(ms)});
+  assert.equal(result.status,200);assert.deepEqual(waits,[1000,3000,4000]);assert.equal(responses.length,0);
+});
+test('Cloudflare read retries are bounded and respect a capped Retry-After date', async () => {
+  let calls=0;const waits=[],now=Date.UTC(2026,10,6);
+  const result=await cloudflareRequest('https://api.cloudflare.com/test',{method:'GET'},{fetchImpl:async()=>{calls++;return new Response('busy',{status:503,headers:{'Retry-After':new Date(now+120000).toUTCString()}});},sleep:async ms=>waits.push(ms),now:()=>now});
+  assert.equal(result.status,503);assert.equal(calls,4);assert.deepEqual(waits,[30000,30000,30000]);
+});
+test('Cloudflare authorization failures and deployment mutations are never retried', async () => {
+  for(const [method,status] of [['GET',403],['POST',503]]){
+    let calls=0;const result=await cloudflareRequest('https://api.cloudflare.com/test',{method},{fetchImpl:async()=>{calls++;return new Response('failed',{status});},sleep:async()=>assert.fail('must not retry')});
+    assert.equal(result.status,status);assert.equal(calls,1);
+  }
+  let calls=0;await assert.rejects(cloudflareRequest('https://api.cloudflare.com/test',{method:'GET'},{fetchImpl:async()=>{calls++;throw new DOMException('timed out','TimeoutError');},sleep:async()=>{}}),/timed out/);assert.equal(calls,4);
+});
 function fixture() {
   const run = { id: 123, workflow_id: workflowId, name: 'Checks', path: '.github/workflows/checks.yml', event: 'push', status: 'completed', conclusion: 'success', head_branch: 'main', head_sha: commit, repository: { id: 17, full_name: repository }, head_repository: { id: 17, full_name: repository } };
   const artifacts = ['node', 'worker'].map((kind, i) => ({ id: i + 201, name: `${kind}-${commit}`, expired: false, digest: `sha256:${'b'.repeat(64)}`, workflow_run: { id: run.id, head_sha: commit, repository_id: 17, head_repository_id: 17 } }));

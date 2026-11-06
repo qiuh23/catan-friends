@@ -44,9 +44,29 @@ async function prepare(release) {
   await writeFile(join(deployer, 'package.json'), JSON.stringify({ name: 'trusted-catan-deployer', private: true }));
   await writeFile(resolve(process.env.RUNNER_TEMP, 'catan-wrangler.json'), JSON.stringify(worker));
 }
+/** Retry only management reads. Mutations need their existing guarded recovery. */
+export async function cloudflareRequest(url, init, { fetchImpl = fetch, sleep = ms => new Promise(resolve => setTimeout(resolve, ms)), now = Date.now } = {}) {
+  const read = (init.method ?? 'GET').toUpperCase() === 'GET', attempts = read ? 4 : 1;
+  for (let attempt = 0; attempt < attempts; attempt++) {
+    let response;
+    try { response = await fetchImpl(url, { ...init, signal: AbortSignal.timeout(20000) }); }
+    catch (error) {
+      if (attempt + 1 === attempts || !(error instanceof TypeError || ['AbortError', 'TimeoutError'].includes(error?.name))) throw error;
+      await sleep(1000 * 2 ** attempt);
+      continue;
+    }
+    if (attempt + 1 === attempts || !(response.status === 429 || response.status >= 500 && response.status <= 599)) return response;
+    const retryAfter = response.headers.get('retry-after');
+    const seconds = retryAfter === null || retryAfter.trim() === '' ? NaN : Number(retryAfter);
+    const requestedWait = Number.isFinite(seconds) ? seconds * 1000 : Date.parse(retryAfter) - now();
+    const wait = Math.min(30000, Math.max(1000 * 2 ** attempt, Number.isFinite(requestedWait) ? requestedWait : 0));
+    await response.body?.cancel().catch(() => {});
+    await sleep(wait);
+  }
+}
 async function cf(path, body) {
   if (!/^[a-f0-9]{32}$/i.test(process.env.CLOUDFLARE_ACCOUNT_ID ?? '') || !process.env.CLOUDFLARE_API_TOKEN) throw Error('Missing dedicated Cloudflare release credentials.');
-  return fetch(`https://api.cloudflare.com/client/v4/accounts/${process.env.CLOUDFLARE_ACCOUNT_ID}/workers/scripts/catan-friends${path}`, { method: body ? 'POST' : 'GET', headers: { Authorization: `Bearer ${process.env.CLOUDFLARE_API_TOKEN}`, ...(body ? { 'Content-Type': 'application/json' } : {}) }, body: body ? JSON.stringify(body) : undefined, signal: AbortSignal.timeout(20000) });
+  return cloudflareRequest(`https://api.cloudflare.com/client/v4/accounts/${process.env.CLOUDFLARE_ACCOUNT_ID}/workers/scripts/catan-friends${path}`, { method: body ? 'POST' : 'GET', headers: { Authorization: `Bearer ${process.env.CLOUDFLARE_API_TOKEN}`, ...(body ? { 'Content-Type': 'application/json' } : {}) }, body: body ? JSON.stringify(body) : undefined });
 }
 const cloudRecordPath = () => resolve(process.env.RUNNER_TEMP, 'catan-cloudflare-attempt.json');
 async function currentVersion() {
