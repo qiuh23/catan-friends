@@ -67,10 +67,10 @@ def safe_tar(raw,target,data):
         required={'release.json','dist/build-info.json','server/index.js','package.json','package-lock.json'}
         if not required.issubset(seen):raise ValueError('Missing release files.')
         release=json.load(archive.extractfile(next(m for m in members if m.name.removeprefix('./')=='release.json')))
-        expected={'schema':1,'stateSchema':3,'repository':REPOSITORY,'commit':data['commit'],'runId':data['runId'],'platform':'linux','arch':'x64','nodeMajor':24}
+        expected={'schema':1,'stateSchema':3,'repository':REPOSITORY,'commit':data['commit'],'runId':data['runId'],'platform':'linux','arch':'x64','nodeMajor':24,'siteEdition':'cn'}
         if release!=expected:raise ValueError('Unsupported release manifest.')
         build=json.load(archive.extractfile(next(m for m in members if m.name.removeprefix('./')=='dist/build-info.json')))
-        if build.get('schema')!=1 or build.get('repository')!=REPOSITORY or build.get('revision')!=data['commit']:raise ValueError('Frontend identity mismatch.')
+        if build.get('schema')!=1 or build.get('repository')!=REPOSITORY or build.get('revision')!=data['commit'] or build.get('siteEdition')!='cn':raise ValueError('Frontend identity mismatch.')
         for member in members:
             name=member.name.removeprefix('./');destination=target/name
             if member.isdir():destination.mkdir(parents=True,exist_ok=True,mode=0o755)
@@ -101,7 +101,7 @@ def probe(commit):
         try:
             health=json.loads(request('http://127.0.0.1:3005/api/health',16384))
             build=json.loads(request('http://127.0.0.1:3005/build-info.json',16384))
-            if health.get('ok') is True and health.get('game')=='catan-friends' and health.get('revision')==commit and build.get('revision')==commit:return
+            if health.get('ok') is True and health.get('game')=='catan-friends' and health.get('revision')==commit and build.get('revision')==commit and health.get('siteEdition')=='cn' and build.get('siteEdition')=='cn':return
         except Exception:pass
         time.sleep(.5)
     raise ValueError('Loopback release health failed.')
@@ -129,7 +129,7 @@ def rollback(data):
         path=Path(previous)
         if path.parent!=BASE/'releases' or not path.is_dir() or path.is_symlink():raise ValueError('Invalid previous release.')
         manifest=json.loads((path/'release.json').read_text())
-        if manifest.get('stateSchema')!=3:raise ValueError('Previous code cannot enforce private random/chat/moderation state. Install a compatible repair release; do not restore older game data.')
+        if manifest.get('stateSchema')!=3 or manifest.get('siteEdition')!='cn':raise ValueError('Previous code cannot enforce private random/chat/moderation state. Install a compatible repair release; do not restore older game data.')
         run('systemctl','stop','catan-friends')
         link('current',path);run('systemctl','start','catan-friends');probe(manifest['commit'])
         save_state({'commit':manifest['commit'],'runId':manifest['runId'],'current':str(path),'previous':None,'rolledBackAttempt':data['commit']})

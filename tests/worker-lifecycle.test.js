@@ -6,7 +6,7 @@ import { HOST_RETENTION, PAUSE_RETENTION, PRACTICE_RETENTION } from '../shared/r
 // Run the actual Durable Object handlers with persisted storage, socket attachments
 // and a deterministic clock. Real workerd smoke tests complement these boundaries.
 globalThis.WebSocketRequestResponsePair ||= class {};
-async function fixture(saved=new Map(),sockets=[],directoryEntries=new Map()) {
+async function fixture(saved=new Map(),sockets=[],directoryEntries=new Map(),edition='global') {
   const storage={
     async get(k){return structuredClone(saved.get(k));},
     async put(k,v){saved.set(k,structuredClone(v));},
@@ -15,15 +15,15 @@ async function fixture(saved=new Map(),sockets=[],directoryEntries=new Map()) {
     async transaction(fn){const before=structuredClone(saved);try{return await fn(storage);}catch(e){saved.clear();for(const [k,v]of before)saved.set(k,v);throw e;}}
   };
   const ctx={storage,getWebSockets:()=>sockets,setWebSocketAutoResponse(){},blockConcurrencyWhile(fn){this.ready=fn();}};
-  const env={ROOMS:{idFromName:x=>x,get(){return {async fetch(req){const d=await req.json();directoryEntries.set(d.code,d);return Response.json({ok:true});}};}}};
+  const env={SITE_EDITION:edition,ROOMS:{idFromName:x=>x,get(){return {async fetch(req){const d=await req.json();directoryEntries.set(d.code,d);return Response.json({ok:true});}};}}};
   const object=new CatanRoom(ctx,env);await ctx.ready;
   function socket(){
     let attachment={id:null,n:0,window:Date.now(),createdAt:Date.now()};
     const ws={readyState:1,messages:[],deserializeAttachment:()=>structuredClone(attachment),serializeAttachment(v){attachment=structuredClone(v);},send(raw){this.messages.push(JSON.parse(raw));},close(){this.readyState=3;}};sockets.push(ws);return ws;
   }
-  async function hello(token=crypto.randomUUID(),name='朋友'){const ws=socket();await object.webSocketMessage(ws,JSON.stringify({type:'hello',token,name}));return ws;}
+  async function hello(token=crypto.randomUUID(),name='朋友'){const ws=socket();await object.webSocketMessage(ws,JSON.stringify({type:'hello',token,...(edition==='cn'?{}:{name})}));return ws;}
   async function command(ws,action,extra={}){const id=crypto.randomUUID();await object.webSocketMessage(ws,JSON.stringify({type:'action',id,revision:object.room.record.revision,action,...extra}));return ws.messages.findLast(m=>m.id===id);}
-  return {object,saved,sockets,directoryEntries,hello,command,async create(input={}){const token=crypto.randomUUID();const response=await object.fetch(new Request('https://test/create?code=ABC234',{method:'POST',body:JSON.stringify({token,name:'房主',...input})}));assert.equal(response.status,201,await response.text());return {token,host:await hello(token,'房主')};}};
+  return {object,saved,sockets,directoryEntries,hello,command,async create(input={}){const token=crypto.randomUUID();const response=await object.fetch(new Request('https://test/create?code=ABC234',{method:'POST',body:JSON.stringify({token,...(edition==='cn'?{}:{name:'房主'}),...input})}));assert.equal(response.status,201,await response.text());return {token,host:await hello(token,'房主')};}};
 }
 async function clocked(fn){const original=Date.now;let time=1_000_000;Date.now=()=>time;try{await fn({advance:n=>{time+=n;},now:()=>time});}finally{Date.now=original;}}
 
@@ -59,3 +59,22 @@ test('Worker final valid connection controls offline time, serialized stale acti
   clock.advance(49*60*60*1000);replacement.serializeAttachment({...replacement.deserializeAttachment(),lastSeen:Date.now()});await f.object.alarm();assert.equal(f.object.room.record.closed,undefined);assert.equal(f.object.room.deadline(),null);
   const revision=f.object.room.record.revision;const result=await Promise.all([f.command(replacement,{type:'addBot'},{revision}),f.command(replacement,{type:'addBot'},{revision})]);assert.equal(result.filter(x=>x.type==='ack').length,1);assert.equal(result.filter(x=>x.type==='error').length,1);
 }));
+
+
+test('domestic Durable Object rejects communication before receipts and restores fixed identities without publishing legacy text',async()=>{
+  const legacyLedger={private:'untouched unsupported ledger'};const f=await fixture(new Map([['moderation',legacyLedger]]),[],new Map(),'cn'),{host,token}=await f.create();
+  const original=structuredClone(f.object.room.record),id=host.deserializeAttachment().id;
+  f.object.room.record.receipts.push({actor:id,id:'old-success'});
+  for(const action of [{type:'chat',text:'private old text'},{type:'phrase',phraseId:'hello'},{type:'emoji',emojiId:'smile'},{type:'ready',phraseId:'hello'}]){
+    await f.object.webSocketMessage(host,JSON.stringify({type:'action',id:'old-success',revision:0,action}));
+    assert.equal(host.messages.findLast(m=>m.id==='old-success').message,'当前站点不提供玩家交流功能。');
+  }
+  assert.equal(f.object.room.record.revision,original.revision);
+  assert.deepEqual(f.object.room.record.random,original.random);
+  const recovered=await fixture(f.saved,[],new Map(),'cn'),again=await recovered.hello(token,'cannot rename');
+  assert.equal(again.deserializeAttachment().id,id);
+  assert.deepEqual(recovered.object.room.record.game.players,original.game.players);
+  assert.deepEqual(again.messages.findLast(m=>m.type==='state').state.chat,[]);
+  assert.deepEqual(recovered.saved.get('moderation'),legacyLedger);
+  const retired=await recovered.object.fetch(new Request('https://test/stationmaster?code=ABC234',{method:'POST',body:'{}'}));assert.equal(retired.status,404);
+});

@@ -1,3 +1,4 @@
+import { DOMESTIC } from './site-config.js';
 import { newId } from './id.js';
 export class Connection {
   constructor(code,token,name,onState,onStatus,onError,onTerminal=()=>{}) {
@@ -9,7 +10,7 @@ export class Connection {
     this.onStatus(this.retry ? 'reconnecting' : 'connecting');
     const ws=this.ws=new WebSocket(`${location.protocol==='https:'?'wss:':'ws:'}//${location.host}/api/rooms/${this.code}/ws`);
     const timeout=setTimeout(()=>{if(ws.readyState!==WebSocket.OPEN)ws.close();},10000);
-    ws.onopen=()=>{clearTimeout(timeout);if(this.stopped||ws!==this.ws)return ws.close();ws.send(JSON.stringify({type:'hello',token:this.token,name:this.name}));};
+    ws.onopen=()=>{clearTimeout(timeout);if(this.stopped||ws!==this.ws)return ws.close();ws.send(JSON.stringify({type:'hello',token:this.token,...(DOMESTIC?{nicknameId:this.name}:{name:this.name})}));};
     ws.onmessage=event=>{
       if(this.stopped||ws!==this.ws)return;
       const m=JSON.parse(event.data);

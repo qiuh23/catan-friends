@@ -41,8 +41,8 @@ def backup():
                     if source.stat().st_size>64*1024**2:raise RuntimeError('Moderation file exceeds snapshot bound.')
                     raw=source.read_bytes();size+=len(raw)
                     if size>MAX_BYTES:raise RuntimeError('Snapshot exceeds backup budget.')
-                    record=json.loads(raw)
-                    if record.get('version')!=1 or not isinstance(record.get('audit'),list):raise RuntimeError('Unsupported moderation schema.')
+                    # Domestic audit is retired. Preserve historical bytes without
+                    # requiring the old ledger schema to be healthy.
                     (root/'moderation'/source.name).write_bytes(raw)
             config=root/'config';config.mkdir(mode=0o700)
             for name,source in {
@@ -53,7 +53,7 @@ def backup():
             }.items():
                 p=Path(source)
                 if p.is_file() and not p.is_symlink():(config/name).write_bytes(p.read_bytes())
-            (root/'snapshot.json').write_text(json.dumps({'schema':1,'stateSchema':3,'at':stamp,'rooms':len(list((root/'rooms').iterdir())),'consistency':'each file is an atomic saved revision; moderation is copied after rooms and must be reapplied on restore'})+'\n')
+            (root/'snapshot.json').write_text(json.dumps({'schema':1,'stateSchema':3,'at':stamp,'rooms':len(list((root/'rooms').iterdir())),'consistency':'each room file is an atomic saved revision; historical moderation is private archived data and is not loaded by domestic gameplay'})+'\n')
             temporary=target.with_suffix('.pending')
             try:
                 with tarfile.open(temporary,'w:gz') as archive:archive.add(root,arcname='snapshot',recursive=True)

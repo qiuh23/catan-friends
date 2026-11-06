@@ -3,10 +3,10 @@ import assert from 'node:assert/strict';
 import { gameLobbyURL, roomAvailability, remainingTime, rulesLabel, leaveDescription, mergeRoomPages } from '../src/room-ui.js';
 
 test('lobby return only uses the verified server destination and no identity',()=>{
-  assert.equal(gameLobbyURL('aliyun'),'https://magical-athlete-online.cn/');
+  assert.equal(gameLobbyURL('aliyun'),null); // Global test build exposes only its own lobby.
   assert.equal(gameLobbyURL('cloudflare'),'https://magical-athlete.qiuh23.workers.dev/lobby/');
   assert.equal(gameLobbyURL('local'),null);assert.equal(gameLobbyURL('https://evil.example'),null);
-  for(const backend of ['aliyun','cloudflare']){const url=new URL(gameLobbyURL(backend));assert.equal(url.search,'');assert.equal(url.hash,'');}
+  for(const backend of ['cloudflare']){const url=new URL(gameLobbyURL(backend));assert.equal(url.search,'');assert.equal(url.hash,'');}
 });
 test('public room list differentiates joining, full, playing and returning',()=>{
   const room={phase:'lobby',playerCount:3,maxPlayers:4};

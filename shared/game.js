@@ -276,7 +276,7 @@ export function viewFor(g, id) {
   const profile=ruleProfile(g);
   return { ...rest, ...(publicPresentation?{presentation:publicPresentation}:{}), options:g.phase==='lobby'?optionsForPlayers(g.options,g.players.length):normalizeOptions(g.options), profile,minPlayers:g.phase==='lobby'?3:profile.minPlayers,maxPlayers:g.phase==='lobby'?6:profile.maxPlayers,primaryTurn:g.primaryTurn??g.turn,pairStep:g.pairStep||'primary',targetPoints:targetPoints(g), harbormaster:g.harbormaster || null, deckCount:deck.length, me:id, legal:legal(g,id), players:players.map(p => {
     const {hand,dev} = p, publicPlayer={};
-    for(const key of ['id','name','color','bot','ready','knights','roadLength','harborPoints'])if(p[key]!==undefined)publicPlayer[key]=p[key];
+    for(const key of ['id','name','nicknameId','nicknameBadge','color','bot','ready','knights','roadLength','harborPoints'])if(p[key]!==undefined)publicPlayer[key]=p[key];
     return { ...publicPlayer, cards:total(hand), developmentCount:dev.length, points:points(g,p.id,p.id===id || g.phase==='finished'), ...(p.id===id ? {hand,dev} : {}) };
   }) };
 }

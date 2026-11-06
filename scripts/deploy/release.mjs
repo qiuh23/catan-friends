@@ -16,7 +16,7 @@ export function publicOrigin(value) {
   return url.origin;
 }
 export function marker(value, release, backendId) {
-  if (value?.ok !== true || value.game !== 'catan-friends' || value.backendId !== backendId || value.revision !== release.commit) throw Error('Public backend identity differs from checked release.');
+  if (value?.ok !== true || value.game !== 'catan-friends' || value.backendId !== backendId || value.revision !== release.commit || value.siteEdition !== (backendId==='aliyun'?'cn':'global')) throw Error('Public backend identity differs from checked release.');
 }
 async function artifactURL(artifact) {
   const response = await fetch(`https://api.github.com/repos/${repository}/actions/artifacts/${artifact.id}/zip`, { headers: { Authorization: `Bearer ${process.env.GITHUB_TOKEN}`, Accept: 'application/vnd.github+json' }, redirect: 'manual', signal: AbortSignal.timeout(20000) });
@@ -37,7 +37,7 @@ async function prepare(release) {
   const config = JSON.parse(await readFile('wrangler.jsonc', 'utf8'));
   // Target names, bindings and origins come from trusted main, never artifacts.
   if (config.name !== 'catan-friends' || config.durable_objects?.bindings?.find(item => item.name === 'ROOMS')?.class_name !== 'CatanRoom') throw Error('Unexpected trusted Worker target.');
-  const worker = { ...config, main: join(output, 'worker/index.js'), assets: { ...config.assets, directory: join(output, 'assets') }, vars: { ...config.vars, BUILD_SHA: release.commit, BACKEND_ID: 'cloudflare' } };
+  const worker = { ...config, main: join(output, 'worker/index.js'), assets: { ...config.assets, directory: join(output, 'assets') }, vars: { ...config.vars, BUILD_SHA: release.commit, BACKEND_ID: 'cloudflare', SITE_EDITION:'global' } };
   delete worker.$schema;
   const deployer = resolve(process.env.RUNNER_TEMP, 'catan-deployer');
   await mkdir(deployer, { recursive: true });
@@ -146,7 +146,7 @@ async function verify(release) {
         marker(await response.json(), release, backendId);
         const assets = await fetch(`${origin}/build-info.json`, { cache: 'no-store', signal: AbortSignal.timeout(10000) });
         const info = await assets.json();
-        if (!assets.ok || info.revision !== release.commit || info.repository !== repository) throw Error('Public assets do not match backend.');
+        if (!assets.ok || info.revision !== release.commit || info.repository !== repository || info.siteEdition !== (backendId==='aliyun'?'cn':'global')) throw Error('Public assets do not match backend.');
         const page = await fetch(`${origin}/`, { cache: 'no-store', signal: AbortSignal.timeout(10000) });
         if (!page.ok || !page.headers.get('content-type')?.includes('text/html')) throw Error('Public HTML is unavailable.');
         const html = await page.text();

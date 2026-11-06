@@ -13,9 +13,9 @@ test('invitations pin the source server, preserve legacy own-origin codes and ne
   assert.equal(readRoom('A-ABC234','aliyun'),'ABC234');
   assert.equal(readRoom('C-ABC234','cloudflare'),'ABC234');
   assert.equal(readRoom('ABC234','cloudflare'),'ABC234');
-  assert.throws(()=>readRoom('A-ABC234','cloudflare'),/另一台服务器/);
-  assert.throws(()=>readRoom('C-ABC234','aliyun'),/另一台服务器/);
-  assert.throws(()=>readInvitation('?room=A-ABC234&server=cloudflare','aliyun'),/不一致/);
+  assert.throws(()=>readRoom('A-ABC234','cloudflare'),/此邀请不属于当前站点/);
+  assert.throws(()=>readRoom('C-ABC234','aliyun'),/此邀请不属于当前站点/);
+  assert.throws(()=>readInvitation('?room=A-ABC234&server=cloudflare','aliyun'),/此邀请不属于当前站点/);
   assert.throws(()=>readInvitation('?room=A-ABC234&room=A-ZZZ999','aliyun'),/重复/);
   assert.throws(()=>readInvitation('?room=A-ABC234&watch=1','aliyun'),/不支持观战/);
   assert.throws(()=>readInvitation('?room=IO0123','aliyun'),/6 位/);
@@ -33,7 +33,7 @@ test('only explicit loopback proxy trust accepts a single valid X-Real-IP; arbit
   for(const invalid of ['198.51.100.3, 203.0.113.9','garbage','198.51.100.3:123',''])assert.equal(requestAddress(req('::1',{'x-real-ip':invalid}),'loopback'),'::1');
   assert.equal(requestAddress(req('::ffff:127.0.0.1',{'x-real-ip':'2001:db8::1'}),'loopback'),'2001:db8::1');
   assert.throws(()=>deploymentConfig({backendId:'aliyun'}),/PUBLIC_ORIGIN/);
-  assert.throws(()=>deploymentConfig({backendId:'aliyun',publicOrigin:'http://catan.example'}),/HTTPS/);
+  assert.throws(()=>deploymentConfig({backendId:'aliyun',siteEdition:'cn',publicOrigin:'http://catan.example'}),/HTTPS/);
   assert.throws(()=>deploymentConfig({trustProxy:'*'}),/TRUST_PROXY/);
   assert.equal(originAllowed({headers:{host:'catan.example',origin:'http://catan.example'}},'https://catan.example'),false);
   assert.equal(originAllowed({headers:{origin:'https://catan.example/'}},'https://catan.example'),false);
@@ -42,8 +42,8 @@ test('only explicit loopback proxy trust accepts a single valid X-Real-IP; arbit
 test('Aliyun exact Origin, proxy per-client limits, revision marker and no-room WebSocket probe',async()=>{
   const dir=await mkdtemp(path.join(os.tmpdir(),'catan-policy-'));
   const revision='a'.repeat(40);
-  await writeFile(path.join(dir,'build-info.json'),JSON.stringify({revision}));
-  const app=await createServer({host:'127.0.0.1',port:0,dataDir:path.join(dir,'data'),staticDir:dir,backendId:'aliyun',publicOrigin:'https://catan.example',trustProxy:'loopback'});
+  await writeFile(path.join(dir,'build-info.json'),JSON.stringify({revision,siteEdition:'cn'}));
+  const app=await createServer({host:'127.0.0.1',port:0,dataDir:path.join(dir,'data'),staticDir:dir,backendId:'aliyun',siteEdition:'cn',publicOrigin:'https://catan.example',trustProxy:'loopback'});
   const endpoint=`http://127.0.0.1:${app.port}`;
   try {
     assert.equal((await fetch(endpoint+'/api/rooms',{method:'POST',headers:{Origin:'http://catan.example'}})).status,403);
@@ -67,13 +67,16 @@ test('Aliyun exact Origin, proxy per-client limits, revision marker and no-room 
 });
 
 test('Worker requires its own canonical Origin and edge limiter, rejects failed or exhausted limits',async()=>{
-  const origin='https://catan-friends.qiuh23.workers.dev',base={BACKEND_ID:'cloudflare',PUBLIC_ORIGIN:origin,BUILD_SHA:'b'.repeat(40)};
+  const origin='https://catan-friends.qiuh23.workers.dev',base={SITE_EDITION:'global',ASSETS:{fetch:async()=>Response.json({siteEdition:'global'})},BACKEND_ID:'cloudflare',PUBLIC_ORIGIN:origin,BUILD_SHA:'b'.repeat(40)};
   const request=(pathname,headers={})=>new Request(origin+pathname,{headers});
   assert.equal((await worker.fetch(request('/api/rooms'),base)).status,503);
   assert.equal((await worker.fetch(request('/api/health',{Origin:'http://catan-friends.qiuh23.workers.dev'}),base)).status,403);
   assert.equal((await worker.fetch(new Request('https://different.example/api/health'),base)).status,503);
   const marker=await (await worker.fetch(request('/api/health'),base)).json();
   assert.equal(marker.backendId,'cloudflare');assert.equal(marker.revision,base.BUILD_SHA);
+  assert.equal((await worker.fetch(request('/api/health'),{...base,SITE_EDITION:'cn'})).status,503);
+  assert.equal((await worker.fetch(request('/api/health'),{...base,SITE_EDITION:undefined})).status,503);
+  assert.equal((await worker.fetch(request('/api/health'),{...base,ASSETS:{fetch:async()=>Response.json({siteEdition:'cn'})}})).status,503);
   let received;
   const limited={...base,CATAN_RATE_LIMITER:{async limit({key}){received=key;return {success:false};}}};
   assert.equal((await worker.fetch(request('/api/rooms',{'CF-Connecting-IP':'198.51.100.5'}),limited)).status,429);
