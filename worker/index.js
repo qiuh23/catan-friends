@@ -1,4 +1,6 @@
 import { Room, roomCode, fingerprint, ROOM_PATTERN } from '../shared/room.js';
+import { UserError,publicError } from '../shared/errors.js';
+import { securityConfig,adminAuthorized,emptyModeration,pruneModeration,applyModeration,disposition,inspectRoom,closedModeration } from '../shared/moderation.js';
 const json=(data,status=200)=>Response.json(data,{status,headers:{'Cache-Control':'no-store'}});
 const directory=env=>env.ROOMS.get(env.ROOMS.idFromName('__public_rooms_v1__'));
 export default {
@@ -13,6 +15,7 @@ export default {
     const marker={ok:true,game:'catan-friends',backendId,revision};
     if(url.pathname==='/api/health')return json(marker);
     if(url.pathname==='/api/deployment')return json({...marker,publicOrigin:publicOrigin||null});
+    if(url.pathname==='/api/security/contact')return json(securityConfig(env));
     if(url.pathname.startsWith('/api/')){
       if(!env.CATAN_RATE_LIMITER && backendId==='cloudflare')return json({error:'请求限流配置尚未就绪。'},503);
       if(env.CATAN_RATE_LIMITER){try{const result=await env.CATAN_RATE_LIMITER.limit({key:request.headers.get('CF-Connecting-IP')||'unknown'});if(!result.success)return json({error:'请求过于频繁，请稍后重试。'},429);}catch{return json({error:'限流服务暂不可用。'},503);}}
@@ -20,6 +23,12 @@ export default {
     if(url.pathname==='/api/connectivity/ws'){
       if(request.headers.get('Upgrade')?.toLowerCase()!=='websocket')return json({error:'需要 WebSocket 连接。'},426);
       const [client,server]=Object.values(new WebSocketPair());server.accept();server.send(JSON.stringify(marker));server.close(1000,'Connectivity checked');return new Response(null,{status:101,webSocket:client});
+    }
+    const admin=/^\/api\/stationmaster\/rooms\/([A-HJ-NP-Z2-9]{6})$/.exec(url.pathname);
+    if(admin){
+      if(!await adminAuthorized(request.headers.get('Authorization'),env))return json({error:'无站长权限或尚未配置。'},403);
+      if(request.method!=='POST')return json({error:'需要 POST 请求。'},405);
+      return env.ROOMS.get(env.ROOMS.idFromName(admin[1])).fetch(new Request(url.origin+'/stationmaster?code='+admin[1],request));
     }
     if(url.pathname==='/api/rooms' && request.method==='GET'){
       const cursor=url.searchParams.get('cursor');if(cursor && !ROOM_PATTERN.test(cursor))return json({error:'列表分页参数无效。'},400);
@@ -49,8 +58,11 @@ export class CatanRoom {
   constructor(ctx,env){
     this.ctx=ctx;this.env=env;this.queue=Promise.resolve();
     ctx.blockConcurrencyWhile(async()=>{
+      try{
       const record=await ctx.storage.get('room');this.code=await ctx.storage.get('code');this.room=record?new Room(record):null;
-      if(this.room){this.room.presence(this.online(),Date.now(),true);await this.persist();}
+      this.moderation=pruneModeration(await ctx.storage.get('moderation')||emptyModeration());
+      if(this.room){applyModeration(this.room,this.moderation);this.room.presence(this.online(),Date.now(),true);await this.persist();}
+      }catch{throw Error('ROOM_RECOVERY_FAILED');}
     });
     ctx.setWebSocketAutoResponse(new WebSocketRequestResponsePair('{"type":"ping"}','{"type":"pong"}'));
   }
@@ -62,7 +74,10 @@ export class CatanRoom {
   broadcast(){if(!this.room)return;const peers=this.peers(),online=this.online();for(const ws of peers){const state=this.room.snapshot(ws.deserializeAttachment().id,online);this.send(ws,state);if(state.type!=='state'){const s=ws.deserializeAttachment();s.id=null;ws.serializeAttachment(s);ws.close(4003,'Room membership ended');}}}
   async persist(){
     if(!this.room)return;
+    const moderation=this.room.record.closed?closedModeration(this.moderation||emptyModeration()):this.moderation;
     let next=this.room.deadline();
+    const expiry=this.moderation?.audit.filter(event=>!event.held).reduce((min,event)=>Math.min(min,event.expiresAt),Infinity);
+    if(Number.isFinite(expiry))next=Math.min(next??Infinity,expiry);
     if(!this.room.record.closed && this.peers().length){const wake=Date.now()+(this.room.nextBot()?900:30000);next=next===null?wake:Math.min(next,wake);}
     // Also collect sockets which upgraded but never authenticated.
     for(const ws of this.ctx.getWebSockets())if(ws.readyState===1 && !ws.deserializeAttachment()?.id){const wake=(ws.deserializeAttachment()?.createdAt??Date.now())+10000;next=next===null?wake:Math.min(next,wake);}
@@ -71,16 +86,19 @@ export class CatanRoom {
     // acknowledged only in memory or a live room without expiry scheduling.
     await this.ctx.storage.transaction(async()=>{
       await this.ctx.storage.put('room',this.room.record);
+      if(moderation)await this.ctx.storage.put('moderation',moderation);
       if(this.code)await this.ctx.storage.put('code',this.code);
       if(next!==null)await this.ctx.storage.setAlarm(Math.max(Date.now()+1,next));else await this.ctx.storage.deleteAlarm();
     });
+    this.moderation=moderation;
     if(this.code){
       const summary=this.room.summary(this.code);
       // A directory outage must not roll back an already persisted authoritative command.
-      try{const response=await directory(this.env).fetch(new Request('https://internal/directory',{method:'POST',body:JSON.stringify({code:this.code,summary,revision:this.room.record.revision})}));if(!response.ok)throw Error('Directory unavailable');}catch(error){console.error('Directory update failed:',error.message);try{await this.ctx.storage.setAlarm(Math.max(Date.now()+1,Math.min(this.room.deadline()??Infinity,Date.now()+30000)));}catch(retryError){console.error('Directory retry scheduling failed:',retryError.message);}}
+      try{const response=await directory(this.env).fetch(new Request('https://internal/directory',{method:'POST',body:JSON.stringify({code:this.code,summary,revision:this.room.record.revision})}));if(!response.ok)throw Error('Directory unavailable');}catch{console.error('DIRECTORY_UPDATE_FAILED');try{await this.ctx.storage.setAlarm(Math.max(Date.now()+1,Math.min(this.room.deadline()??Infinity,Date.now()+30000)));}catch{console.error('DIRECTORY_RETRY_FAILED');}}
     }
   }
   async check(){
+    if(this.room)applyModeration(this.room,this.moderation);
     if(this.room && !this.room.record.closed){
       const before=structuredClone(this.room.record);
       // Reads also reconcile socket leases. Otherwise a delayed alarm followed
@@ -105,6 +123,18 @@ export class CatanRoom {
         return json({codes:page.map(([key])=>key.slice(6)),nextCursor:visible.length>40?page.at(-1)[0].slice(6):null});
       }
       this.code ||= url.searchParams.get('code') || /^\/api\/rooms\/([A-HJ-NP-Z2-9]{6})\//.exec(url.pathname)?.[1];
+      if(url.pathname==='/stationmaster'){
+        if(!await adminAuthorized(request.headers.get('Authorization'),this.env))return json({error:'无站长权限或尚未配置。'},403);
+        if(request.method!=='POST')return json({error:'需要 POST 请求。'},405);
+        if(!this.room)return json({error:'房间不存在。'},404);
+        const raw=await request.text();if(raw.length>8192)throw new UserError('请求过大。');
+        const input=JSON.parse(raw),next=disposition(this.room,this.moderation,input,securityConfig(this.env));
+        // A separate durable key survives a room tombstone or restoration of an
+        // older game record. Commit the directive before applying the projection.
+        await this.ctx.storage.put('moderation',next.state);this.moderation=next.state;
+        applyModeration(this.room,this.moderation);this.room.presence(this.online());await this.persist();this.broadcast();
+        return json(input.action==='inspect'?inspectRoom(this.room,this.moderation):next.result);
+      }
       if(url.pathname==='/create'){
         if(this.room)return json({error:'房间码冲突，请重试。'},409);
         const raw=await request.text();if(raw.length>8192)throw Error('请求过大。');const input=JSON.parse(raw),hash=await fingerprint(input.token),room=new Room(),id=room.join(hash,input.name);
@@ -122,7 +152,7 @@ export class CatanRoom {
       if(request.headers.get('Upgrade')?.toLowerCase()!=='websocket')return json({error:'需要 WebSocket 连接。'},426);
       if(this.ctx.getWebSockets().filter(ws=>ws.readyState===1).length>=16)return json({error:'房间连接过多，请稍后重试。'},429);
       const [client,server]=Object.values(new WebSocketPair());this.ctx.acceptWebSocket(server);server.serializeAttachment({id:null,n:0,window:Date.now(),createdAt:Date.now()});await this.persist();return new Response(null,{status:101,webSocket:client});
-    }catch(error){return json({error:error.message},400);}
+    }catch(error){return json({error:publicError(error).message},error instanceof UserError?400:503);}
   });}
   webSocketMessage(ws,raw){return this.serial(async()=>{
     let message,before,oldSession;
@@ -144,14 +174,15 @@ export class CatanRoom {
       this.room.presence(this.online());await this.persist();this.send(ws,ack);this.broadcast();if(message.action?.type==='leave')ws.close(1000,'Left room');
     }catch(error){
       if(before){this.room.record=before;if(oldSession)ws.serializeAttachment({...ws.deserializeAttachment(),id:oldSession.id});}
-      const fatal=!ws.deserializeAttachment()?.id || this.room?.record.closed;this.send(ws,{type:'error',id:message?.id,code:error.code,message:error.message,fatal});if(fatal)ws.close(1008,'Join failed');else this.broadcast();
+      const fatal=!ws.deserializeAttachment()?.id || this.room?.record.closed;this.send(ws,{type:'error',id:typeof message?.id==='string'?message.id.slice(0,80):undefined,...publicError(error),fatal});if(fatal)ws.close(1008,'Join failed');else this.broadcast();
     }
   });}
-  webSocketClose(ws){return this.serial(async()=>{if(!this.room)return;const before=structuredClone(this.room.record);try{this.room.presence(this.online(ws));await this.persist();}catch(error){this.room.record=before;throw error;}this.broadcast();});}
+  webSocketClose(ws){return this.serial(async()=>{if(!this.room)return;const before=structuredClone(this.room.record);try{this.room.presence(this.online(ws));await this.persist();}catch{this.room.record=before;throw Error('ROOM_PRESENCE_COMMIT_FAILED');}this.broadcast();});}
   webSocketError(ws){ws.close(1011,'Connection error');return this.webSocketClose(ws);}
   alarm(){return this.serial(async()=>{
     if(!this.room)return;
+    this.moderation=pruneModeration(this.moderation||emptyModeration());
     for(const ws of this.ctx.getWebSockets())if(ws.readyState===1){if(!ws.deserializeAttachment()?.id && Date.now()-(ws.deserializeAttachment()?.createdAt??0)>=10000)ws.close(1008,'Authentication required');else if(ws.deserializeAttachment()?.id && Date.now()-this.seen(ws)>=90000)ws.close(4000,'Heartbeat timeout');}
-    const before=structuredClone(this.room.record);try{this.room.presence(this.online(),Date.now(),true);if(!this.room.record.closed && this.peers().length && this.room.nextBot())this.room.tick();await this.persist();}catch(error){this.room.record=before;throw error;}this.broadcast();
+    const before=structuredClone(this.room.record);try{this.room.presence(this.online(),Date.now(),true);if(!this.room.record.closed && this.peers().length && this.room.nextBot())this.room.tick();await this.persist();}catch{this.room.record=before;throw Error('ROOM_ALARM_COMMIT_FAILED');}this.broadcast();
   });}
 }

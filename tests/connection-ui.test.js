@@ -33,3 +33,27 @@ test('closed/revoked notifications stop retries and reject pending actions',asyn
     finally {full.close();}
   } finally {globalThis.WebSocket=original.WebSocket;globalThis.location=original.location;}
 });
+
+test('pending chat reconnect resends its original envelope and explicit retry can retain the message ID',async()=>{
+  const original={WebSocket:globalThis.WebSocket,location:globalThis.location};
+  class Socket {
+    static OPEN=1;
+    constructor(){this.readyState=1;this.sent=[];}
+    send(raw){if(this.fail)throw Error('local transport failure');this.sent.push(JSON.parse(raw));}
+    close(){this.readyState=3;this.onclose?.();}
+    receive(message){this.onmessage({data:JSON.stringify(message)});}
+  }
+  globalThis.WebSocket=Socket;globalThis.location={protocol:'http:',host:'127.0.0.1'};
+  const connection=new Connection('ABC234','secret','玩家',()=>{},()=>{},()=>{});
+  try{
+    await assert.rejects(connection.action({type:'chat',text:'尚未认证'}),/正在连接/);assert.equal(connection.pending.size,0);
+    connection.ws.onopen();connection.ws.receive({type:'state',revision:7,state:{}});
+    const pending=connection.action({type:'chat',text:'断线重试'},{id:'stable-message'}),first=connection.ws.sent.at(-1);
+    connection.ws.close();clearTimeout(connection.reconnectTimer);connection.connect();connection.ws.onopen();connection.ws.receive({type:'state',revision:99,state:{}});
+    assert.deepEqual(connection.ws.sent.at(-1),first,'a reconnect preserves both original ID and revision');
+    connection.ws.receive({type:'ack',id:'stable-message',ok:true});await pending;
+    connection.ws.fail=true;await assert.rejects(connection.action({type:'chat',text:'确认未知'},{id:'retry-after-failure'}),/发送失败/);assert.equal(connection.pending.size,0);
+    connection.ws.fail=false;const retried=connection.action({type:'chat',text:'确认未知'},{id:'retry-after-failure'});assert.equal(connection.ws.sent.at(-1).id,'retry-after-failure');
+    connection.ws.receive({type:'error',id:'retry-after-failure',message:'明确拒绝'});await assert.rejects(retried,error=>error.definitive===true);
+  }finally{connection.close();globalThis.WebSocket=original.WebSocket;globalThis.location=original.location;}
+});

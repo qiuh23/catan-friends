@@ -89,7 +89,7 @@ test('in-game leave keeps the seat and token; kick is pre-game only and shutdown
 test('legacy records migrate privately with a finite host deadline, preserving identities and base rules',()=>{
   const game=createGame();delete game.options;delete game.targetPoints;delete game.harbormaster;addPlayer(game,'original','原玩家');
   const record={version:1,game,identities:{originalHash:'original'},revision:1,receipts:[],chat:[],updatedAt:t0};
-  const room=new Room(record,t0+1000);assert.equal(room.record.version,2);assert.equal(room.record.visibility,'private');assert.equal(room.record.hostId,'original');assert.equal(room.deadline(),t0+HOST_RETENTION);
+  const room=new Room(record,t0+1000);assert.equal(room.record.version,3);assert.equal(room.record.visibility,'private');assert.equal(room.record.hostId,'original');assert.equal(room.deadline(),t0+HOST_RETENTION);
   assert.equal(room.join('originalHash','恢复',t0+1000),'original');assert.equal(room.snapshot('original').state.targetPoints,10);assert.equal(room.summary('ABCDEF'),null);
   const expired=new Room({...structuredClone(record),hostConnected:false,hostOfflineAt:t0},t0+HOST_RETENTION+1);assert.equal(expired.expire(t0+HOST_RETENTION+1),true);
 });

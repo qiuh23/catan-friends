@@ -59,7 +59,16 @@ async function currentVersion() {
 }
 async function previous() {
   const previousVersion = await currentVersion();
-  await writeFile(cloudRecordPath(), JSON.stringify({ previousVersion, attemptVersion: null }), { mode: 0o600 });
+  const previousStateSchema=previousVersion?await versionStateSchema(previousVersion):null;
+  await writeFile(cloudRecordPath(), JSON.stringify({ previousVersion, previousStateSchema, attemptVersion: null }), { mode: 0o600 });
+}
+async function versionStateSchema(version) {
+  const response=await cf(`/versions/${version}`);
+  if(!response.ok)throw Error('Cannot inspect previous Worker state compatibility.');
+  const body=await response.json();
+  if(!body.success || body.result?.id!==version)throw Error('Unexpected previous Worker version identity.');
+  const values=body.result.resources?.bindings?.filter(binding=>binding.name==='STATE_SCHEMA' && binding.type==='plain_text');
+  return values?.length===1 && values[0].text==='3'?3:null;
 }
 async function versionRevision(version) {
   const response = await cf(`/versions/${version}`);
@@ -77,12 +86,12 @@ async function recordWorker(release) {
   await writeFile(cloudRecordPath(), JSON.stringify({ ...record, attemptVersion: version }), { mode: 0o600 });
 }
 export function mayRollbackWorker(record, activeVersion, activeRevision, release) {
-  return Boolean(record?.previousVersion && record.attemptVersion && record.previousVersion !== record.attemptVersion && activeVersion === record.attemptVersion && activeRevision === release.commit);
+  return Boolean(record?.previousStateSchema===3 && record.previousVersion && record.attemptVersion && record.previousVersion !== record.attemptVersion && activeVersion === record.attemptVersion && activeRevision === release.commit);
 }
 async function rollbackWorker(release) {
   const record = JSON.parse(await readFile(cloudRecordPath(), 'utf8'));
-  if (!record.previousVersion || !record.attemptVersion) {
-    const message = 'Catan CF automatic rollback skipped: no prior version or no safely recorded attempt. Keep lobby disabled; inspect before any manual repair. No Worker or Durable Object state was deleted.';
+  if (!record.previousVersion || !record.attemptVersion || record.previousStateSchema!==3) {
+    const message = 'Catan CF automatic rollback skipped: no compatible schema-3 previous version or no safely recorded attempt. A compatible repair release is required. No Worker or Durable Object state was deleted.';
     console.log(message);
     if (process.env.GITHUB_STEP_SUMMARY) await appendFile(process.env.GITHUB_STEP_SUMMARY, message + '\n');
     return;

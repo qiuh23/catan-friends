@@ -1,5 +1,7 @@
 # 卡坦岛独立部署与生产审批手册
 
+> 2026-11-06：以下首次生产状态是历史记录。当前源码的接收/备份/兼容回滚格式已升级到 schema 3；生产主机上的这些脚本需要另行更新，不能仅合并代码。当前回读与迁移要求见 [本轮记录](random-chat-report-2026-11-06.md) 和 [运维步骤](random-chat-report-operations.md)。
+
 **2026-11-05 首次生产配置已按用户授权完成。** Catan 独立用户/目录/端口、固定接收器、备份/轮转/空间监测、DNS/HTTPS/Nginx、GitHub production 与专用 RAM role 已配置；受检查 main `1cebfe1cd7fbd328131f72acb488c3621554c0bd` 已从同一 [发布 42037701133](https://github.com/qiuh23/catan-friends/actions/runs/42037701133) 成功部署两端。国内服务 active 且 enabled，监听 `127.0.0.1:3005`，数据位于独立 `/var/lib/catan-friends`；卡坦岛证书有效至北京时间 **2027-02-03 20:31:43**。大厅入口仍关闭，完整联机/恢复/回滚验收进行中；后续 main 自动触发尚待实证。详见 [生产记录](production-rollout-2026-11-05.md)。
 
 下面的初查表是配置前的历史快照，不能当作当前缺失项。操作清单保留为新环境/重建和维护说明；进一步生产变更仍按授权范围执行，不能从本记录推定其他环境已经准备完成。
@@ -95,11 +97,11 @@ art/(athlete|wizard|catan)\.svg
 
 `Checks` 在 PR 和 main 上执行必要网络/部署契约测试、一次前端构建、Worker dry-run；只有 main push 生成 Node 与 Worker 两份不可变产物。`release.yml` 是卡坦岛两目标唯一自动发布入口，串行且不中途取消切换。它检查仓库/工作流 ID、成功 Checks、push/main、精确当前 main、唯一未过期产物与 GitHub SHA256，发布相同 SHA 的预构建包；ECS 不执行 npm 安装或编译。
 
-主机再次从 GitHub 公共只读 API核对当前 main、Checks workflow ID/run、仓库 numeric ID、artifact ID/digest/run 归属；API 不可用/限额时停止。下载仅允许 HTTPS GitHub Actions 的签名 Azure Blob 主机，无重定向、用户信息、非默认端口或 fragment。ZIP 必须只有 `catan.tar.gz` 和标准 SHA256 文件；tar 只准 `dist/server/shared/node_modules/package*.json/release.json`，拒绝链接、设备、路径逃逸、重复成员、`.data` 和异常体积。manifest 必须为 Linux x64/Node24/stateSchema1 和精确 SHA/run。包内脚本从不以 root 运行。
+主机再次从 GitHub 公共只读 API核对当前 main、Checks workflow ID/run、仓库 numeric ID、artifact ID/digest/run 归属；API 不可用/限额时停止。下载仅允许 HTTPS GitHub Actions 的签名 Azure Blob 主机，无重定向、用户信息、非默认端口或 fragment。ZIP 必须只有 `catan.tar.gz` 和标准 SHA256 文件；tar 只准 `dist/server/shared/node_modules/package*.json/release.json`，拒绝链接、设备、路径逃逸、重复成员、`.data` 和异常体积。manifest 必须为 Linux x64/Node24/stateSchema3 和精确 SHA/run。包内脚本从不以 root 运行。
 
 主机备份数据后切换 `current`，重启**卡坦岛**，验本地 health 与前端 revision；失败自动切回旧代码。远端链还验 HTTPS、前后端 SHA、backendId、无需建房的 WSS marker；失败走精确当前尝试的回滚。首次无旧代码时回滚停止卡坦岛并撤掉 current，独立站点返回不可用，不会改为其他游戏或跨服。GitHub 重跑 Checks 可能保留 run ID；同一 SHA/run 的旧目录只在与重新验证下载包的完整文件树/摘要一致时复用，不覆盖它。若该版本已经 current，验健康后幂等结束，保留原 previous；若上次已回滚，可重试这个已重新核验的不可变包。
 
-安装器从不删除/覆盖 `/var/lib/catan-friends`，不把存档放进 release。代码回滚只切代码；`stateSchema:1` 是兼容闸门，未来不兼容结构须先提供兼容方案/迁移审批，禁止只修改标签绕过校验。Cloudflare 版本回滚保持 DO namespace 与数据；首次无历史版本时自动删除 Worker 会影响资源，工作流应报告需要管理员处理并保持入口关闭。
+安装器从不删除/覆盖 `/var/lib/catan-friends`，不把存档放进 release。代码回滚只切代码；`stateSchema:3` 是当前源码兼容闸门，未来不兼容结构须先提供兼容方案/迁移审批，禁止只修改标签绕过校验。Cloudflare 版本回滚保持 DO namespace 与数据；首次无历史版本时自动删除 Worker 会影响资源，工作流应报告需要管理员处理并保持入口关闭。
 
 ## 40 GiB 空间、备份与告警
 

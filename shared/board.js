@@ -1,14 +1,12 @@
+import { createRandomStream, shuffle } from './random.js';
+import { UserError } from './errors.js';
+export { shuffle } from './random.js';
 export const RESOURCES = ['wood', 'brick', 'sheep', 'wheat', 'ore'];
 export const LABELS = { wood: '木材', brick: '砖块', sheep: '羊毛', wheat: '粮食', ore: '矿石', desert: '沙漠' };
 export const COLORS = ['#e57c54', '#5997d0', '#e6bd55', '#ae8bca', '#52a57b', '#a47b54'];
 export const emptyHand = (n = 0) => Object.fromEntries(RESOURCES.map(r => [r, n]));
 export const total = hand => RESOURCES.reduce((n, r) => n + (hand[r] || 0), 0);
-export function shuffle(a, random = Math.random) {
-  const b = [...a];
-  for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(random() * (i + 1)); [b[i], b[j]] = [b[j], b[i]]; }
-  return b;
-}
-export function createBoard(random = Math.random, options = {}) {
+export function createBoard(random = createRandomStream(), options = {}) {
   const tiles = [], vertices = [], edges = [], vertexMap = new Map(), edgeMap = new Map();
   const expanded=options.playerExpansion === 'five-six-2025';
   const terrain = shuffle(['wood','wood','wood','wood','brick','brick','brick','sheep','sheep','sheep','sheep','wheat','wheat','wheat','wheat','ore','ore','ore','desert', ...(expanded ? ['wood','wood','brick','brick','sheep','sheep','wheat','wheat','ore','ore','desert'] : [])], random);
@@ -56,6 +54,7 @@ export function createBoard(random = Math.random, options = {}) {
       for (const tile of tiles) tile.number = tile.resource === 'desert' ? 0 : numbers.pop();
       valid = edges.every(e => e.tiles.length < 2 || !e.tiles.every(i => [6,8].includes(tiles[i].number)));
     }
+    if (!valid) throw new UserError('地图生成达到重试上限，请重新开局。');
   }
   const coast = edges.filter(e => e.tiles.length === 1).sort((a,b) => {
     const angle = e => Math.atan2(vertices[e.a].z + vertices[e.b].z, vertices[e.a].x + vertices[e.b].x);

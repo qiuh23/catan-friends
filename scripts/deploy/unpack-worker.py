@@ -36,7 +36,7 @@ with zipfile.ZipFile(archive_path) as archive:
     if not {'release.json', 'worker/index.js', 'assets/index.html', 'assets/build-info.json'} <= names:
         raise ValueError('Incomplete Worker artifact')
 manifest = json.loads((root / 'release.json').read_text())
-if manifest != {'schema': 1, 'stateSchema': 1, 'repository': 'qiuh23/catan-friends', 'commit': commit, 'runId': int(run_id), 'platform': 'linux', 'arch': 'x64', 'nodeMajor': 24}:
+if manifest != {'schema': 1, 'stateSchema': 3, 'repository': 'qiuh23/catan-friends', 'commit': commit, 'runId': int(run_id), 'platform': 'linux', 'arch': 'x64', 'nodeMajor': 24}:
     raise ValueError('Worker release identity mismatch')
 marker = json.loads((root / 'assets/build-info.json').read_text())
 if marker.get('repository') != 'qiuh23/catan-friends' or marker.get('revision') != commit:

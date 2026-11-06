@@ -22,7 +22,7 @@ rm -rf -- "$WORK/node_modules/.bin"
 node --input-type=module - "$WORK" "$COMMIT" "$RUN_ID" <<'JS'
 import fs from 'node:fs';
 const [work,commit,runId] = process.argv.slice(2);
-fs.writeFileSync(`${work}/release.json`, JSON.stringify({schema:1,stateSchema:1,repository:'qiuh23/catan-friends',commit,runId:Number(runId),platform:'linux',arch:'x64',nodeMajor:24})+'\n');
+fs.writeFileSync(`${work}/release.json`, JSON.stringify({schema:1,stateSchema:3,repository:'qiuh23/catan-friends',commit,runId:Number(runId),platform:'linux',arch:'x64',nodeMajor:24})+'\n');
 JS
 mkdir -p "$OUTPUT/node" "$OUTPUT/worker/assets" "$OUTPUT/worker/worker"
 tar -czf "$OUTPUT/node/catan.tar.gz" -C "$WORK" dist server shared node_modules package.json package-lock.json release.json

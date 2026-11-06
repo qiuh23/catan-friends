@@ -67,7 +67,7 @@ def safe_tar(raw,target,data):
         required={'release.json','dist/build-info.json','server/index.js','package.json','package-lock.json'}
         if not required.issubset(seen):raise ValueError('Missing release files.')
         release=json.load(archive.extractfile(next(m for m in members if m.name.removeprefix('./')=='release.json')))
-        expected={'schema':1,'stateSchema':1,'repository':REPOSITORY,'commit':data['commit'],'runId':data['runId'],'platform':'linux','arch':'x64','nodeMajor':24}
+        expected={'schema':1,'stateSchema':3,'repository':REPOSITORY,'commit':data['commit'],'runId':data['runId'],'platform':'linux','arch':'x64','nodeMajor':24}
         if release!=expected:raise ValueError('Unsupported release manifest.')
         build=json.load(archive.extractfile(next(m for m in members if m.name.removeprefix('./')=='dist/build-info.json')))
         if build.get('schema')!=1 or build.get('repository')!=REPOSITORY or build.get('revision')!=data['commit']:raise ValueError('Frontend identity mismatch.')
@@ -129,6 +129,7 @@ def rollback(data):
         path=Path(previous)
         if path.parent!=BASE/'releases' or not path.is_dir() or path.is_symlink():raise ValueError('Invalid previous release.')
         manifest=json.loads((path/'release.json').read_text())
+        if manifest.get('stateSchema')!=3:raise ValueError('Previous code cannot enforce private random/chat/moderation state. Install a compatible repair release; do not restore older game data.')
         run('systemctl','stop','catan-friends')
         link('current',path);run('systemctl','start','catan-friends');probe(manifest['commit'])
         save_state({'commit':manifest['commit'],'runId':manifest['runId'],'current':str(path),'previous':None,'rolledBackAttempt':data['commit']})

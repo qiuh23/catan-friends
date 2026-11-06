@@ -1,8 +1,10 @@
 import { RESOURCES, LABELS, COLORS, emptyHand, total, shuffle, createBoard, settlementSites, roadSites, citySites, longestRoad } from './board.js';
+import { createRandomStream, randomIndex } from './random.js';
+import { UserError } from './errors.js';
 export { RESOURCES, LABELS, COLORS, total };
 export const COSTS = { road: { wood: 1, brick: 1 }, settlement: { wood: 1, brick: 1, sheep: 1, wheat: 1 }, city: { wheat: 2, ore: 3 }, development: { sheep: 1, wheat: 1, ore: 1 } };
 export const DEV_NAMES = { knight: '骑士', roadBuilding: '道路建设', plenty: '丰收', monopoly: '垄断', victory: '胜利点' };
-const fail = message => { throw new Error(message); };
+const fail = message => { throw new UserError(message); };
 const requireRule = (condition, message) => { if (!condition) fail(message); };
 export const afford = (hand, cost) => Object.entries(cost).every(([r,n]) => hand[r] >= n);
 export function normalizeOptions(options = {}) {
@@ -19,9 +21,9 @@ export function ruleProfile(value = {}) {
     : {id:'base',version:'2025',minPlayers:3,maxPlayers:4,resourceCount:19,landHexes:19,developmentCards:25,turnRule:'single'};
 }
 export function targetPoints(g) { return g.options?.harbormaster ? 11 : 10; }
-export function createGame(options = {}) {
+export function createGame(options = {}, seed) {
   const rules = normalizeOptions(options), profile=ruleProfile(rules);
-  return { version: 1, options: rules, targetPoints: rules.harbormaster ? 11 : 10, harbormaster: null, phase: 'lobby', players: [], board: null, turn: 0, primaryTurn:0, pairStep:'primary', turnNo: 0, dice: null, bank: emptyHand(profile.resourceCount), deck: [], robber: null, discards: {}, setupIndex: 0, setupVertex: null, playedDev: false, freeRoads: 0, resumePhase: null, longest: null, army: null, offer: null, winner: null, log: [] };
+  return { version: 1, random:createRandomStream(seed), options: rules, targetPoints: rules.harbormaster ? 11 : 10, harbormaster: null, phase: 'lobby', players: [], board: null, turn: 0, primaryTurn:0, pairStep:'primary', turnNo: 0, dice: null, bank: emptyHand(profile.resourceCount), deck: [], robber: null, discards: {}, setupIndex: 0, setupVertex: null, playedDev: false, freeRoads: 0, resumePhase: null, longest: null, army: null, offer: null, winner: null, log: [] };
 }
 export function addPlayer(g, id, name, bot = false) {
   requireRule(g.phase === 'lobby', '对局已经开始，不能加入新玩家。');
@@ -114,8 +116,11 @@ export function legal(g, id) {
   };
 }
 // All mutations run on a clone: a rejected command never partially changes the room.
-export function act(source, actorId, action, random = Math.random) {
+export function act(source, actorId, action, fixtureRandom) {
   const g = structuredClone(source), p = g.players.find(p => p.id === actorId);
+  // The stream is inside this clone: failed rules and persistence retries leave
+  // the original stream untouched. Legacy games get entropy once on room load.
+  const random = fixtureRandom || (g.random ??= createRandomStream());
   requireRule(p && action && typeof action.type === 'string','操作或玩家身份无效。');
   const type = action.type, host = (g.hostId || g.players[0]?.id) === actorId;
   if (type === 'ready') {
@@ -184,7 +189,7 @@ export function act(source, actorId, action, random = Math.random) {
     pay(g,p,COSTS.city); g.board.vertices[action.vertex].level = 2; log(g,`${p.name} 将村庄升级为城市。`); present(g,'city',actorId,`${p.name} 将村庄升级为城市。`,[{kind:'vertex',id:action.vertex}]); updateAwards(g);
   } else if (type === 'roll') {
     requireRule(g.phase === 'roll','当前不能掷骰。');
-    g.dice = [1+Math.floor(random()*6),1+Math.floor(random()*6)]; const sum = g.dice[0]+g.dice[1]; log(g,`${p.name} 掷出了 ${g.dice[0]} + ${g.dice[1]} = ${sum}。`);
+    g.dice = [1+randomIndex(6,random),1+randomIndex(6,random)]; const sum = g.dice[0]+g.dice[1]; log(g,`${p.name} 掷出了 ${g.dice[0]} + ${g.dice[1]} = ${sum}。`);
     if (sum === 7) {
       g.discards = Object.fromEntries(g.players.filter(v => total(v.hand)>7).map(v => [v.id,Math.floor(total(v.hand)/2)]));
       g.resumePhase = 'action'; g.phase = Object.keys(g.discards).length ? 'discard' : 'robber';
@@ -203,7 +208,7 @@ export function act(source, actorId, action, random = Math.random) {
   } else if (type === 'steal') {
     requireRule(sites.victims.includes(action.victim),'只能从相邻且有资源的对手处抽取一张牌。');
     const victim = g.players.find(v => v.id === action.victim), cards = RESOURCES.flatMap(r => Array(victim.hand[r]).fill(r));
-    const r = cards[Math.floor(random()*cards.length)]; victim.hand[r]--; p.hand[r]++; log(g,`${p.name} 从 ${victim.name} 手中抽取了一张资源牌。`); present(g,'steal',actorId,`${p.name} 从 ${victim.name} 手中抽取了一张资源牌。`,[{kind:'tile',id:g.robber}]); finishRobber(g);
+    const r = cards[randomIndex(cards.length,random)]; victim.hand[r]--; p.hand[r]++; log(g,`${p.name} 从 ${victim.name} 手中抽取了一张资源牌。`); present(g,'steal',actorId,`${p.name} 从 ${victim.name} 手中抽取了一张资源牌。`,[{kind:'tile',id:g.robber}]); finishRobber(g);
   } else if (type === 'bankTrade') {
     requireRule(g.phase === 'action' && RESOURCES.includes(action.give) && RESOURCES.includes(action.want) && action.give !== action.want,'请选择两种不同的资源。');
     const ratio = tradeRatio(g,actorId,action.give); requireRule(p.hand[action.give] >= ratio && g.bank[action.want] > 0,'手牌或银行库存不足。');
@@ -253,12 +258,17 @@ export function act(source, actorId, action, random = Math.random) {
   victory(g); return g;
 }
 export function viewFor(g, id) {
-  const {deck,players,presentation,...rest} = structuredClone(g);
+  const {deck,players,presentation} = structuredClone(g), rest={};
+  // Allowlist rather than spreading authority state (including future secrets).
+  for (const key of ['version','options','targetPoints','harbormaster','phase','board','turn','primaryTurn','pairStep','turnNo','dice','bank','robber','discards','setupIndex','setupVertex','playedDev','freeRoads','resumePhase','longest','army','offer','winner','log','hostId']) {
+    if (g[key]!==undefined) rest[key]=structuredClone(g[key]);
+  }
   // An explicit projection keeps future internal metadata out of public views.
   const publicPresentation = presentation ? {epoch:presentation.epoch,sequence:presentation.sequence,events:presentation.events.map(({id,kind,actorId,text,targets})=>({id,kind,actorId,text,targets:targets.map(({kind,id})=>({kind,id}))}))} : undefined;
   const profile=ruleProfile(g);
   return { ...rest, ...(publicPresentation?{presentation:publicPresentation}:{}), options:normalizeOptions(g.options), profile,minPlayers:profile.minPlayers,maxPlayers:profile.maxPlayers,primaryTurn:g.primaryTurn??g.turn,pairStep:g.pairStep||'primary',targetPoints:targetPoints(g), harbormaster:g.harbormaster || null, deckCount:deck.length, me:id, legal:legal(g,id), players:players.map(p => {
-    const {hand,dev,...publicPlayer} = p;
+    const {hand,dev} = p, publicPlayer={};
+    for(const key of ['id','name','color','bot','ready','knights','roadLength','harborPoints'])if(p[key]!==undefined)publicPlayer[key]=p[key];
     return { ...publicPlayer, cards:total(hand), developmentCount:dev.length, points:points(g,p.id,p.id===id || g.phase==='finished'), ...(p.id===id ? {hand,dev} : {}) };
   }) };
 }

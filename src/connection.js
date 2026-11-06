@@ -5,6 +5,7 @@ export class Connection {
   }
   connect(){
     if(this.stopped)return;
+    this.ready=false;
     this.onStatus(this.retry ? 'reconnecting' : 'connecting');
     const ws=this.ws=new WebSocket(`${location.protocol==='https:'?'wss:':'ws:'}//${location.host}/api/rooms/${this.code}/ws`);
     const timeout=setTimeout(()=>{if(ws.readyState!==WebSocket.OPEN)ws.close();},10000);
@@ -17,11 +18,11 @@ export class Connection {
         const type=m.code==='IDENTITY_REVOKED'?'removed':'closed';this.onStatus(type);this.onTerminal({type,message:m.message});ws.close();return;
       }
       if(m.type==='state') {
-        this.revision=m.revision;this.hasState=true;this.retry=0;this.onStatus('connected');this.onState(m.state,m.revision);
+        this.revision=m.revision;this.hasState=true;this.ready=true;this.retry=0;this.onStatus('connected');this.onState(m.state,m.revision);
         // Resend the original envelope, never invent a new action id after a disconnect.
-        for(const p of this.pending.values())if(!p.sent){ws.send(JSON.stringify(p.message));p.sent=true;}
+        for(const p of this.pending.values())if(!p.sent){try{ws.send(JSON.stringify(p.message));p.sent=true;}catch{ws.close();break;}}
       } else if(m.type==='ack' || m.type==='error' && m.id) {
-        const p=this.pending.get(m.id);if(p){clearTimeout(p.timeout);this.pending.delete(m.id);m.type==='ack'?p.resolve():p.reject(new Error(m.message));}
+        const p=this.pending.get(m.id);if(p){clearTimeout(p.timeout);this.pending.delete(m.id);m.type==='ack'?p.resolve():p.reject(Object.assign(new Error(m.message),{definitive:true}));}
       } else if(m.type==='error') {this.onError(m.message);if(m.fatal){this.stopped=true;this.onStatus('failed');ws.close();}}
       else if(m.type==='closed'||m.type==='removed'){this.stopped=true;this.onStatus(m.type);this.rejectPending(m.message||'房间身份已失效。');this.onTerminal(m);ws.close();}
       else if(m.type==='replaced'){this.stopped=true;this.onStatus('replaced');this.rejectPending('该座位已在另一个页面打开。');this.onError('该座位已在另一个页面打开。');ws.close();}
@@ -30,12 +31,14 @@ export class Connection {
     ws.onerror=()=>{};
     this.heartbeat=setInterval(()=>{if(ws.readyState===WebSocket.OPEN)ws.send('{"type":"ping"}');},20000);
   }
-  action(action){
-    if(this.ws.readyState!==WebSocket.OPEN || this.stopped)return Promise.reject(new Error('正在连接房间，请稍后再试。'));
-    const message={type:'action',id:newId(),revision:this.revision,action};
+  action(action,{id=newId()}={}){
+    if(this.ws.readyState!==WebSocket.OPEN || this.stopped || !this.ready)return Promise.reject(new Error('正在连接房间，请稍后再试。'));
+    if(this.pending.has(id))return Promise.reject(new Error('上一条消息仍在等待确认。'));
+    const message={type:'action',id,revision:this.revision,action};
     return new Promise((resolve,reject)=>{
       const timeout=setTimeout(()=>{this.pending.delete(message.id);reject(new Error('操作确认超时，请核对棋盘最新状态。'));if(this.ws.readyState===WebSocket.OPEN)this.ws.send('{"type":"sync"}');},15000);
-      this.pending.set(message.id,{message,resolve,reject,timeout,sent:true});this.ws.send(JSON.stringify(message));
+      this.pending.set(message.id,{message,resolve,reject,timeout,sent:true});
+      try{this.ws.send(JSON.stringify(message));}catch{clearTimeout(timeout);this.pending.delete(message.id);reject(new Error('消息发送失败，请稍后重试。'));}
     });
   }
   rejectPending(message){for(const p of this.pending.values()){clearTimeout(p.timeout);p.reject(new Error(message));}this.pending.clear();}

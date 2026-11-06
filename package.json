@@ -20,7 +20,10 @@
     "worker:check": "wrangler deploy --dry-run --outdir .local/worker",
     "deploy": "npm run build && wrangler deploy",
     "test:integration": "node scripts/integration-browser.js",
-    "test:worker:restart": "node scripts/worker-restart-smoke.js"
+    "test:worker:restart": "node scripts/worker-restart-smoke.js",
+    "test:secure-worker": "node scripts/secure-worker-smoke.js",
+    "test:chat-report:browser": "node scripts/chat-report-browser.js",
+    "test:node:restart": "node scripts/node-restart-smoke.js"
   },
   "dependencies": {
     "three": "^0.186.1",
