@@ -4,6 +4,7 @@ import { LABELS } from '../shared/board.js';
 import { resourceIllustration } from './icons.js';
 import { BoardAssets, Batches, buildTerrain, clearLayer } from './terrain.js';
 import { boardFrame } from './board-frame.js';
+import { feedbackPoints, planActionCamera } from './action-camera.js';
 
 export class Board {
   constructor(container,onSelect,onHover) {
@@ -17,25 +18,35 @@ export class Board {
     this.renderer.shadowMap.type=THREE.PCFSoftShadowMap;this.renderer.shadowMap.autoUpdate=false;
     container.append(this.renderer.domElement);
     const canvas=this.renderer.domElement;
-    canvas.setAttribute('aria-label','卡坦岛 3D 棋盘，拖动旋转，双指或滚轮缩放；也可切换二维棋盘用键盘落子');
+    canvas.setAttribute('aria-label','卡坦岛 3D 棋盘，拖动旋转，双指或滚轮缩放；加减键缩放，0 回到全局；也可切换二维棋盘用键盘落子');canvas.tabIndex=0;
     this.controls=new OrbitControls(this.camera,canvas);
     this.controls.enableDamping=!matchMedia('(prefers-reduced-motion:reduce)').matches;
     this.controls.enablePan=false;this.controls.minPolarAngle=.15;this.controls.maxPolarAngle=1.12;
     this.controls.addEventListener('change',()=>this.invalidate());
+    this.controls.addEventListener('start',()=>this.cancelFocus());
     this.scene.add(new THREE.HemisphereLight(0xfff9e9,0x78988c,2.3));
     this.sun=new THREE.DirectionalLight(0xffeed2,2.3);this.sun.position.set(-5,13,8);
     this.sun.shadow.mapSize.set(1024,1024);Object.assign(this.sun.shadow.camera,{left:-9,right:9,top:9,bottom:-9});
     this.sun.shadow.normalBias=.035;this.sun.shadow.bias=-.0001;this.scene.add(this.sun);
     this.seaBase=new THREE.Mesh(this.assets.geometries.sea,this.assets.material('sea'));
     this.seaBase.material.color.set(0xa7cdc7);this.seaBase.position.y=-.04;this.scene.add(this.seaBase);
-    this.land=new THREE.Group();this.pieces=new THREE.Group();this.markers=new THREE.Group();
-    this.scene.add(this.land,this.pieces,this.markers);
+    this.land=new THREE.Group();this.pieces=new THREE.Group();this.markers=new THREE.Group();this.feedbackLayer=new THREE.Group();
+    this.scene.add(this.land,this.pieces,this.markers,this.feedbackLayer);
     this.assets.materials.set('marker',new THREE.MeshBasicMaterial({color:0xffef9d,depthTest:false,depthWrite:false,toneMapped:false}));
     this.assets.materials.set('outline',new THREE.MeshBasicMaterial({color:0x234c43,depthTest:false,depthWrite:false,toneMapped:false}));
+    this.assets.materials.set('feedback',new THREE.MeshBasicMaterial({color:0x167781,depthTest:false,depthWrite:false,toneMapped:false,side:THREE.DoubleSide}));
+    this.assets.materials.set('feedback-rim',new THREE.MeshBasicMaterial({color:0xf8ffff,depthTest:false,depthWrite:false,toneMapped:false,side:THREE.DoubleSide}));
     this.raycaster=new THREE.Raycaster();this.pointer=new THREE.Vector2();this.pointers=new Set();
     this.events=new AbortController();const options={signal:this.events.signal};
+    canvas.addEventListener('pointerdown',()=>this.cancelFocus(),{...options,capture:true});
+    canvas.addEventListener('wheel',()=>this.manualInput(),{...options,capture:true,passive:true});
+    canvas.addEventListener('keydown',e=>{
+      if(!['+','=','-','0'].includes(e.key))return;e.preventDefault();this.manualInput();
+      if(e.key==='0')this.reset();else this.zoomBy(e.key==='-'?.8:1.25);
+    },options);
     canvas.addEventListener('pointerdown',e=>{
       this.pointers.add(e.pointerId);this.down=this.pointers.size===1?{id:e.pointerId,x:e.clientX,y:e.clientY}:null;
+      if(this.pointers.size===1)this.pointerManual=false;else this.manualInput();
     },options);
     canvas.addEventListener('pointercancel',e=>{this.pointers.delete(e.pointerId);this.down=null;},options);
     canvas.addEventListener('pointerup',e=>{
@@ -44,6 +55,7 @@ export class Board {
       const target=this.pick(e,e.pointerType==='touch');if(target)this.onSelect(target);
     },options);
     canvas.addEventListener('pointermove',e=>{
+      if(this.down&&this.pointers.has(e.pointerId)&&!this.pointerManual&&Math.hypot(e.clientX-this.down.x,e.clientY-this.down.y)>3){this.pointerManual=true;this.manualInput();}
       if(e.pointerType==='touch'||this.pointers.size)return;
       const hit=this.hit(e),data=hit?.object.userData,tile=data?.tile;
       canvas.style.cursor=this.pick(e,false,false)?'pointer':'grab';
@@ -60,12 +72,23 @@ export class Board {
   stopFrame() {cancelAnimationFrame(this.frame);this.frame=0;}
   invalidate() {
     if(this.disposed||this.frame||document.hidden||!this.visible)return;
-    this.frame=requestAnimationFrame(()=>{
-      this.frame=0;this.controls.update();this.renderer.render(this.scene,this.camera);this.metrics.renders++;
+    this.frame=requestAnimationFrame(now=>{
+      this.frame=0;
+      const shot=this.focusAnimation;
+      if(shot) {
+        const t=Math.min(1,(now-shot.start)/650),ease=t*t*(3-2*t);
+        this.controls.target.lerpVectors(shot.fromTarget,shot.target,ease);this.camera.position.lerpVectors(shot.from,shot.position,ease);
+        if(t===1)this.focusAnimation=null;
+      }
+      this.controls.update();this.renderer.render(this.scene,this.camera);this.metrics.renders++;
       const {calls,triangles}=this.renderer.info.render;
       this.renderer.domElement.dataset.renderStats=JSON.stringify({...this.metrics,calls,triangles,...this.renderer.info.memory,dpr:this.renderer.getPixelRatio(),shadows:this.renderer.shadowMap.enabled});
       this.renderer.domElement.dataset.camera=JSON.stringify(this.camera.position.toArray());
+      this.renderer.domElement.dataset.cameraTarget=JSON.stringify(this.controls.target.toArray());
+      this.renderer.domElement.dataset.cameraFocus=this.focusAnimation?'moving':this.viewMode||'overview';
+      this.renderer.domElement.dataset.cameraEvent=this.focusEvent||'';
       this.renderer.domElement.dataset.cameraView=JSON.stringify(this.camera.view);
+      if(this.focusAnimation)this.invalidate();
     });
   }
   resize() {
@@ -75,14 +98,14 @@ export class Board {
     const changed=w!==this.width||h!==this.height;
     this.width=w;this.height=h;this.renderer.setPixelRatio(dpr);this.renderer.setSize(w,h,false);
     this.renderer.shadowMap.enabled=!mobile;this.sun.castShadow=!mobile;this.renderer.shadowMap.needsUpdate=true;
-    if(changed){this.updateProjection();if(this.board)this.fit(true);else this.invalidate();}
+    if(changed){this.cancelFocus();this.updateProjection();if(this.board&&(!this.viewMode||this.viewMode==='overview'))this.fit(true);else this.invalidate();}
     else this.invalidate();
   }
-  setViewportPadding(padding={}) {
+  setViewportPadding(padding={},{preserveView=false}={}) {
     const key=JSON.stringify([padding.top||0,padding.right||0,padding.bottom||0,padding.left||0]);
     if(key===this.paddingKey)return;
-    this.paddingKey=key;this.padding=padding;this.updateProjection();
-    if(this.board)this.fit(true);else this.invalidate();
+    this.paddingKey=key;this.padding=padding;this.cancelFocus();this.updateProjection();
+    if(this.board&&!preserveView&&!this.reducedMotion&&(!this.viewMode||this.viewMode==='overview'))this.fit(true);else this.invalidate();
   }
   updateProjection() {
     if(!this.width||!this.height)return;
@@ -94,15 +117,52 @@ export class Board {
     this.camera.updateProjectionMatrix();
   }
   reset() {
+    this.cancelFocus();this.viewMode='overview';this.focusEvent='';
     const scale=this.boardScale||1;
     const portrait=(this.container?.clientWidth||this.width)<(this.container?.clientHeight||this.height);
-    this.camera.position.set(...(portrait?[.3*scale,16*scale,3*scale]:[14*scale,8*scale,.3*scale]));this.controls.target.set(0,0,0);
+    const offset=this.camera.position.clone().sub(this.controls.target);
+    if(offset.lengthSq()<1)offset.set(...(portrait?[.3*scale,16*scale,3*scale]:[14*scale,8*scale,.3*scale]));
+    this.controls.target.set(0,0,0);this.camera.position.copy(offset);this.updateProjection();
     this.fit(false);
   }
   zoomBy(factor) {
     if(!Number.isFinite(factor)||factor<=0)return;
-    const distance=Math.max(this.controls.minDistance,Math.min(this.controls.maxDistance,this.camera.position.length()/factor));
-    this.camera.position.setLength(distance);this.controls.update();this.invalidate();
+    this.manualInput();const offset=this.camera.position.clone().sub(this.controls.target);
+    const distance=Math.max(this.controls.minDistance,Math.min(this.controls.maxDistance,offset.length()/factor));
+    this.camera.position.copy(this.controls.target).add(offset.setLength(distance));this.controls.update();this.invalidate();
+  }
+  manualInput(){this.cancelFocus();this.viewMode='manual';this.onManual?.();}
+  cancelFocus(){this.focusAnimation=null;this.invalidate();}
+  setFeedback(event,{reducedMotion=this.reducedMotion??false}={}) {
+    this.feedback=event;this.reducedMotion=reducedMotion;this.controls.enableDamping=!reducedMotion;
+    const key=JSON.stringify(event?.targets||[]);if(key===this.feedbackKey)return;this.feedbackKey=key;
+    clearLayer(this.feedbackLayer);
+    for(const target of event?.targets||[]) {
+      const points=feedbackPoints(this.board,{targets:[target]});if(!points.length)continue;
+      if(target.kind==='edge') {
+        const a=points[0],b=points[1];
+        for(const [material,width,order] of [['feedback-rim',.29,23],['feedback',.19,24]]) {
+          const mesh=new THREE.Mesh(this.assets.geometries.box,this.assets.materials.get(material));
+          mesh.position.set((a.x+b.x)/2,.35,(a.z+b.z)/2);mesh.scale.set(Math.hypot(b.x-a.x,b.z-a.z)+.12,.025,width);mesh.rotation.y=-Math.atan2(b.z-a.z,b.x-a.x);mesh.renderOrder=order;this.feedbackLayer.add(mesh);
+        }
+      } else {
+        const p=target.kind==='tile'?this.board.tiles[target.id]:this.board.vertices[target.id],radius=target.kind==='tile'?.97:.32;
+        for(const [material,factor,order] of [['feedback-rim',1.12,23],['feedback',1,24]]) {
+          const mesh=new THREE.Mesh(this.assets.geometries.ring,this.assets.materials.get(material));mesh.position.set(p.x,.36,p.z);mesh.rotation.x=-Math.PI/2;mesh.scale.setScalar(radius*factor);mesh.renderOrder=order;this.feedbackLayer.add(mesh);
+        }
+      }
+    }
+    this.renderer.domElement.dataset.feedbackTargets=key;this.invalidate();
+  }
+  focusFeedback(event,{reducedMotion=false,manual=false}={}) {
+    if(this.disposed||this.pointers.size||reducedMotion&&!manual)return false;
+    const plan=planActionCamera(this.board,event,{position:this.camera.position,target:this.controls.target,fov:this.camera.fov,frame:this.viewportFrame,scale:this.boardScale||1,minDistance:this.controls.minDistance,maxDistance:this.controls.maxDistance});
+    if(!plan)return false;
+    this.cancelFocus();this.controls.update();this.updateProjection();this.viewMode='focused';this.focusEvent=String(event.id||'');
+    const position=new THREE.Vector3(plan.position.x,plan.position.y,plan.position.z),target=new THREE.Vector3(plan.target.x,plan.target.y,plan.target.z);
+    if(reducedMotion) {this.camera.position.copy(position);this.controls.target.copy(target);this.controls.update();}
+    else this.focusAnimation={start:performance.now(),from:this.camera.position.clone(),fromTarget:this.controls.target.clone(),position,target};
+    this.invalidate();return true;
   }
   fit(preserveZoom=false) {
     const scale=this.boardScale||1,f=this.viewportFrame||boardFrame(this.width,this.height);
@@ -126,7 +186,7 @@ export class Board {
     this.fitDistance=this.camera.position.length();
     this.camera.position.multiplyScalar(relativeZoom);
     this.controls.maxDistance=Math.max(24*scale,this.camera.position.length()*1.4);
-    this.controls.minDistance=5*scale;this.controls.update();this.invalidate();
+    this.controls.minDistance=6*scale;this.controls.update();this.invalidate();
   }
   hit(e) {
     const rect=this.renderer.domElement.getBoundingClientRect();
@@ -241,7 +301,7 @@ export class Board {
   }
   dispose() {
     if(this.disposed)return;this.disposed=true;this.stopFrame();this.events.abort();this.observer.disconnect();this.intersection.disconnect();this.controls.dispose();
-    for(const group of [this.land,this.pieces,this.markers])clearLayer(group);
+    for(const group of [this.land,this.pieces,this.markers,this.feedbackLayer])clearLayer(group);
     this.scene.clear();this.sun.shadow.dispose();this.assets.dispose();this.renderer.dispose();this.renderer.forceContextLoss();this.renderer.domElement.remove();
   }
 }
