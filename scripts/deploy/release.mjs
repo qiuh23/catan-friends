@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { appendFile, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -128,6 +128,24 @@ async function assertCurrent(release) {
   const current = await resolveRelease(release.runId);
   if (!current || JSON.stringify(current) !== JSON.stringify(release) || execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim() !== release.commit) throw Error('Release became stale or the trusted control checkout does not match current checked main.');
 }
+export function transientCloudflareCommand(output) {
+  if (/authentication error|unauthorized|forbidden|permission denied|configuration error|validation error|invalid (?:configuration|binding|argument)|\[code:\s*(?:10000|10005|10023)\]/i.test(output)) return false;
+  return /(?:\bHTTP(?: status)?|\bstatus(?: code)?|->)\s*[:=]?\s*(?:429|5\d\d)\b|\b(?:429 Too Many Requests|50[0234] (?:Service Unavailable|Bad Gateway|Gateway Timeout|Internal Server Error))\b|fetch failed|ECONNRESET|ETIMEDOUT|no healthy upstream|upstream connect error|network connection lost/i.test(output);
+}
+/** A fixed artifact may be retried only while it remains the exact checked main. */
+export async function runWorkerDeploy(release, { directory = resolve(process.env.RUNNER_TEMP, 'catan-deployer'), config = resolve(process.env.RUNNER_TEMP, 'catan-wrangler.json'), checkCurrent = () => assertCurrent(release), execute = args => spawnSync(process.execPath, [resolve(directory, 'node_modules/wrangler/bin/wrangler.js'), ...args], {cwd:directory,env:process.env,encoding:'utf8',timeout:240000,maxBuffer:4*1024*1024}), sleep = ms => new Promise(resolve => setTimeout(resolve, ms)), report = text => process.stdout.write(text) } = {}) {
+  const args = ['deploy', '--no-bundle', '--config', config];
+  for (let attempt = 0; attempt < 4; attempt++) {
+    await checkCurrent();
+    const result = execute(args), output = String(result.stdout ?? '') + String(result.stderr ?? '');
+    if (output) report(output);
+    if (result.status === 0) return;
+    // A local process failure is not evidence that Cloudflare is unavailable.
+    if (result.error || !transientCloudflareCommand(output) || attempt === 3) throw Error('Fixed Catan Worker deployment failed; inspect its preceding output.');
+    report(`Cloudflare temporary failure; retry ${attempt + 1}/3 with the same checked Catan artifact.\n`);
+    await sleep(2000 * 2 ** attempt);
+  }
+}
 export function cloudAssistantCommand(encoded) {
   if (!/^[A-Za-z0-9+/]+={0,2}$/.test(encoded) || encoded.length > 32000) throw Error('Invalid bounded deployment request.');
   return `#!/usr/bin/env bash\nset -euo pipefail\nprintf '%s\\n' '${encoded}' | sudo -- /usr/local/sbin/catan-friends-deploy\n`;
@@ -198,6 +216,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   const action = process.argv[2], release = JSON.parse(await readFile(process.env.RELEASE_RECORD, 'utf8'));
   if (action === 'prepare') await prepare(release);
   else if (action === 'assert-current') await assertCurrent(release);
+  else if (action === 'deploy-worker') await runWorkerDeploy(release);
   else if (action === 'previous') await previous();
   else if (action === 'record-worker') await recordWorker(release);
   else if (action === 'rollback-worker') await rollbackWorker(release);

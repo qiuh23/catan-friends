@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { repository, selectRelease } from '../scripts/deploy/gate.mjs';
-import { cloudAssistantCommand, cloudflareRequest, marker, mayRollbackWorker, publicOrigin, signedArtifactURL } from '../scripts/deploy/release.mjs';
+import { cloudAssistantCommand, cloudflareRequest, marker, mayRollbackWorker, publicOrigin, runWorkerDeploy, signedArtifactURL, transientCloudflareCommand } from '../scripts/deploy/release.mjs';
 
 const commit = 'a'.repeat(40), workflowId = 41;
 test('Cloudflare management reads survive transient 503, rate limiting and transport failures', async () => {
@@ -25,6 +25,18 @@ test('Cloudflare authorization failures and deployment mutations are never retri
     assert.equal(result.status,status);assert.equal(calls,1);
   }
   let calls=0;await assert.rejects(cloudflareRequest('https://api.cloudflare.com/test',{method:'GET'},{fetchImpl:async()=>{calls++;throw new DOMException('timed out','TimeoutError');},sleep:async()=>{}}),/timed out/);assert.equal(calls,4);
+});
+test('fixed Wrangler retries transient provider errors against the same artifact and rechecks current main', async () => {
+  const calls=[],waits=[];let checks=0;
+  await runWorkerDeploy({commit},{directory:'.local/tool',config:'/fixed/catan-wrangler.json',checkCurrent:async()=>{checks++;},execute:args=>{calls.push([...args]);return calls.length===1?{status:1,stderr:'GET /accounts/id/workers/scripts/catan-friends/deployments -> 503 Service Unavailable'}:{status:0};},sleep:async ms=>waits.push(ms),report:()=>{}});
+  assert.equal(checks,2);assert.equal(calls.length,2);assert.deepEqual(calls[0],['deploy','--no-bundle','--config','/fixed/catan-wrangler.json']);assert.deepEqual(calls[1],calls[0]);assert.deepEqual(waits,[2000]);
+});
+test('fixed Wrangler stops on superseded main, permanent errors and exhausted retry budget', async () => {
+  for(const output of ['Authentication error [code:10000] HTTP 503','Configuration error: invalid binding','Validation error: asset upload failed','permission denied','missing wrangler executable'])assert.equal(transientCloudflareCommand(output),false);
+  let calls=0,checks=0;
+  await assert.rejects(runWorkerDeploy({commit},{directory:'.local/tool',config:'/fixed/config',checkCurrent:async()=>{if(++checks===2)throw Error('superseded main');},execute:()=>{calls++;return {status:1,stderr:'upstream connect error'};},sleep:async()=>{},report:()=>{}}),/superseded/);assert.equal(calls,1);
+  calls=0;await assert.rejects(runWorkerDeploy({commit},{directory:'.local/tool',config:'/fixed/config',checkCurrent:async()=>{},execute:()=>{calls++;return {status:1,stderr:'HTTP 503'};},sleep:async()=>{},report:()=>{}}),/deployment failed/);assert.equal(calls,4);
+  calls=0;await assert.rejects(runWorkerDeploy({commit},{directory:'.local/tool',config:'/fixed/config',checkCurrent:async()=>{},execute:()=>{calls++;return {status:1,stderr:'Configuration error'};},sleep:async()=>assert.fail('must not retry'),report:()=>{}}),/deployment failed/);assert.equal(calls,1);
 });
 function fixture() {
   const run = { id: 123, workflow_id: workflowId, name: 'Checks', path: '.github/workflows/checks.yml', event: 'push', status: 'completed', conclusion: 'success', head_branch: 'main', head_sha: commit, repository: { id: 17, full_name: repository }, head_repository: { id: 17, full_name: repository } };
@@ -99,4 +111,6 @@ test('production credentials stay behind the default-off main gate and trusted c
   assert.doesNotMatch(checks, /secrets\.|playwright install|npm run test:browser/);
   const lock = JSON.parse(await readFile(new URL('../package-lock.json', import.meta.url), 'utf8'));
   assert.match(workflow, new RegExp(`wranglerVersion: ${lock.packages['node_modules/wrangler'].version.replaceAll('.', '\\.')}`));
+  assert.match(workflow, /command: --version/);
+  assert.match(workflow, /run: node scripts\/deploy\/release\.mjs deploy-worker/);
 });
