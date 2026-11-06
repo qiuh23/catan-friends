@@ -6,6 +6,8 @@ import { BoardAssets, Batches, buildTerrain, clearLayer } from './terrain.js';
 import { boardFrame } from './board-frame.js';
 import { feedbackPoints, planActionCamera } from './action-camera.js';
 import { feedbackAnchor, mapViewKey } from './map-feedback.js';
+import { addRoad, addBuilding } from './pieces.js';
+import { ORBIT_SECONDS, showcasePose, showcaseEnvelope } from './home-showcase.js';
 
 function gableRoof(){
   const geometry=new THREE.BufferGeometry();
@@ -36,7 +38,7 @@ export class Board {
     this.controls=new OrbitControls(this.camera,canvas);
     this.controls.enableDamping=!matchMedia('(prefers-reduced-motion:reduce)').matches;
     this.controls.enablePan=false;this.controls.minPolarAngle=.15;this.controls.maxPolarAngle=1.12;
-    this.controls.addEventListener('change',()=>this.invalidate());
+    this.controls.addEventListener('change',()=>{if(!this.homeShowcase||!this.ambientEnabled)this.invalidate();});
     this.controls.addEventListener('start',()=>this.cancelFocus());
     this.scene.add(new THREE.HemisphereLight(0xfff9e9,0x78988c,2.3));
     this.sun=new THREE.DirectionalLight(0xffeed2,2.3);this.sun.position.set(-5,13,8);
@@ -55,7 +57,7 @@ export class Board {
     this.assets.materials.set('pieces',new THREE.MeshStandardMaterial({color:0xffffff,roughness:.65,metalness:.035,flatShading:true}));
     this.raycaster=new THREE.Raycaster();this.pointer=new THREE.Vector2();this.pointers=new Set();
     this.events=new AbortController();const options={signal:this.events.signal};
-    canvas.addEventListener('pointerdown',()=>{this.stopAmbient(true);this.cancelFocus();},{...options,capture:true});
+    canvas.addEventListener('pointerdown',()=>{if(this.homeShowcase)this.manualInput();else this.cancelFocus();},{...options,capture:true});
     canvas.addEventListener('wheel',()=>this.manualInput(),{...options,capture:true,passive:true});
     canvas.addEventListener('keydown',e=>{
       if(!['+','=','-','0'].includes(e.key))return;e.preventDefault();this.manualInput();
@@ -89,26 +91,61 @@ export class Board {
   }
   stopFrame() {cancelAnimationFrame(this.frame);this.frame=0;}
   setAmbient(enabled,{reducedMotion=false}={}) {
-    const was=this.ambientEnabled;this.ambientEnabled=Boolean(enabled)&&!reducedMotion;
+    this.ambientEnabled=Boolean(enabled)&&this.homeShowcase&&!reducedMotion;
+    this.controls.enableDamping=!reducedMotion&&!this.ambientEnabled;
+    if(reducedMotion&&this.demoParts){this.homeTime=21;this.animateDemo(21);this.invalidate();}
     if(!this.ambientEnabled){this.stopAmbient();return;}
-    if(!was&&!this.ambientInterrupted){this.ambientOffset=this.camera.position.clone().sub(this.controls.target);this.ambientOrigin=this.controls.target.clone();this.ambientPhase=0;}
     this.scheduleAmbient();
   }
   stopAmbient(interrupted=false) {
     clearTimeout(this.ambientTimer);this.ambientTimer=0;
+    this.ambientLast=0;
     if(interrupted)this.ambientInterrupted=true;
     if(this.renderer?.domElement)this.renderer.domElement.dataset.ambient='stopped';
   }
   scheduleAmbient() {
-    if(this.disposed||!this.ambientEnabled||this.ambientInterrupted||this.ambientTimer||document.hidden||!this.visible||!this.ambientOffset)return;
+    if(this.disposed||!this.homeShowcase||!this.ambientEnabled||this.ambientInterrupted||this.ambientTimer||document.hidden||!this.visible)return;
     this.renderer.domElement.dataset.ambient='running';
-    // Eight modest updates per second; no continuous render loop on the home
-    // scene, and a bounded two-degree sway never accumulates into a new view.
+    this.ambientLast=performance.now();
+    // One capped clock for the camera and the tiny reusable demonstration.
+    // Hidden pages/modal dialogs schedule nothing and resume without catch-up.
     this.ambientTimer=setTimeout(()=>{
-      this.ambientTimer=0;this.ambientPhase=(this.ambientPhase||0)+.125;
-      const offset=this.ambientOffset.clone().applyAxisAngle(new THREE.Vector3(0,1,0),Math.sin(this.ambientPhase/18)*.035);
-      this.controls.target.copy(this.ambientOrigin);this.camera.position.copy(this.ambientOrigin).add(offset);this.invalidate();this.scheduleAmbient();
-    },125);
+      this.ambientTimer=0;
+      const dt=Math.min(.1,(performance.now()-this.ambientLast)/1000);
+      this.homeTime+=dt;this.homeAngle+=dt*Math.PI*2/ORBIT_SECONDS;
+      const radius=this.camera.position.distanceTo(this.controls.target),polar=.78;
+      this.controls.target.set(0,0,0);
+      this.camera.position.set(Math.sin(this.homeAngle)*Math.sin(polar)*radius,Math.cos(polar)*radius,Math.cos(this.homeAngle)*Math.sin(polar)*radius);
+      this.animateDemo(this.homeTime);this.invalidate();this.scheduleAmbient();
+    },1000/(this.mobile?20:24));
+  }
+  resumeShowcase() {
+    if(!this.homeShowcase)return;
+    this.ambientInterrupted=false;this.reset({defaultOrientation:true});this.scheduleAmbient();
+  }
+  clearDemo() {
+    if(this.demoLayer){clearLayer(this.demoLayer);this.scene.remove(this.demoLayer);}
+    this.demoLayer=null;this.demoParts=null;
+    if(this.renderer)this.renderer.domElement.dataset.demo='none';
+  }
+  buildDemo(state) {
+    this.clearDemo();const layer=this.demoLayer=new THREE.Group(),color=state.players[0].color,b=state.board;
+    this.scene.add(layer);const vertex=b.vertices[state.homeDemo.vertex];
+    const building=level=>{const group=new THREE.Group(),batch=new Batches(this.assets);addBuilding(batch,{x:0,z:0,level},color);batch.finish(group);group.position.set(vertex.x,0,vertex.z);layer.add(group);return group;};
+    const village=building(1),city=building(2);
+    const roads=state.homeDemo.roads.map(({from,to})=>{
+      const a=b.vertices[from],v=b.vertices[to],group=new THREE.Group(),batch=new Batches(this.assets);
+      addRoad(batch,{x:0,z:0},{x:1,z:0},color);batch.finish(group);group.position.set(a.x,0,a.z);group.rotation.y=-Math.atan2(v.z-a.z,v.x-a.x);layer.add(group);return group;
+    });
+    this.demoParts={village,city,roads};this.animateDemo(0);
+  }
+  animateDemo(time) {
+    if(!this.demoParts)return;const pose=showcasePose(time),{village,city,roads}=this.demoParts;
+    for(const [group,amount] of [[village,pose.village],[city,pose.city]]) {
+      group.visible=amount>.001;group.scale.set(1,Math.max(.001,amount),1);group.position.y=.27*(1-amount);
+    }
+    roads.forEach((group,i)=>{group.visible=pose.roads[i]>.001;group.scale.x=Math.max(.001,pose.roads[i]);});
+    this.renderer.domElement.dataset.demo=JSON.stringify({time,pose});
   }
   invalidate() {
     if(this.disposed||this.frame||document.hidden||!this.visible)return;
@@ -146,7 +183,7 @@ export class Board {
     const key=JSON.stringify([padding.top||0,padding.right||0,padding.bottom||0,padding.left||0]);
     if(key===this.paddingKey)return;
     this.paddingKey=key;this.padding=padding;this.cancelFocus();this.updateProjection();
-    if(this.board&&!preserveView&&!this.reducedMotion&&(!this.viewMode||this.viewMode==='overview'))this.fit(true);else this.invalidate();
+    if(this.board&&!preserveView&&(!this.viewMode||this.viewMode==='overview')&&(this.homeShowcase||!this.reducedMotion))this.fit(!this.homeShowcase);else this.invalidate();
   }
   updateProjection() {
     if(!this.width||!this.height)return;
@@ -162,7 +199,8 @@ export class Board {
     const scale=this.boardScale||1;
     const portrait=(this.container?.clientWidth||this.width)<(this.container?.clientHeight||this.height);
     const offset=this.camera.position.clone().sub(this.controls.target);
-    if(defaultOrientation||offset.lengthSq()<1)offset.set(...(portrait?[.3*scale,16*scale,3*scale]:[14*scale,8*scale,.3*scale]));
+    if(this.homeShowcase){this.homeAngle=defaultOrientation ? .25 : this.homeAngle;offset.set(Math.sin(this.homeAngle)*Math.sin(.78),Math.cos(.78),Math.cos(this.homeAngle)*Math.sin(.78)).multiplyScalar(16);}
+    else if(defaultOrientation||offset.lengthSq()<1)offset.set(...(portrait?[.3*scale,16*scale,3*scale]:[14*scale,8*scale,.3*scale]));
     this.controls.target.set(0,0,0);this.camera.position.copy(offset);this.updateProjection();
     this.fit(false);
   }
@@ -283,9 +321,9 @@ export class Board {
     const relativeZoom=preserveZoom&&this.fitDistance?this.camera.position.length()/this.fitDistance:1;
     for(let i=0;i<14;i++) {
       this.camera.lookAt(this.controls.target);this.camera.updateMatrixWorld();
-      const points=(this.fitPoints||[]).map(p=>new THREE.Vector3(p.x,p.y,p.z));
+      const points=(this.homeShowcase?this.homeFitPoints:this.fitPoints||[]).map(p=>new THREE.Vector3(p.x,p.y,p.z));
       const right=new THREE.Vector3().setFromMatrixColumn(this.camera.matrixWorld,0),up=new THREE.Vector3().setFromMatrixColumn(this.camera.matrixWorld,1);
-      for(const p of this.portBounds||[])for(const dx of [-.46,.46])for(const dy of [-.23,.23])points.push(new THREE.Vector3(p.x,p.y,p.z).addScaledVector(right,dx).addScaledVector(up,dy));
+      if(!this.homeShowcase)for(const p of this.portBounds||[])for(const dx of [-.46,.46])for(const dy of [-.23,.23])points.push(new THREE.Vector3(p.x,p.y,p.z).addScaledVector(right,dx).addScaledVector(up,dy));
       const projected=points.map(p=>p.project(this.camera));
       const minX=Math.min(...projected.map(p=>p.x)),maxX=Math.max(...projected.map(p=>p.x)),minY=Math.min(...projected.map(p=>p.y)),maxY=Math.max(...projected.map(p=>p.y));
       // Perspective makes the near coast larger. Center its actual projected
@@ -301,8 +339,6 @@ export class Board {
     this.camera.position.multiplyScalar(relativeZoom);
     this.controls.maxDistance=Math.max(24*scale,this.camera.position.length()*1.4);
     this.controls.minDistance=6*scale;this.controls.update();
-    // Orientation/viewport changes must not be undone by the next ambient tick.
-    if(this.ambientEnabled&&!this.ambientInterrupted){this.ambientOffset=this.camera.position.clone().sub(this.controls.target);this.ambientOrigin=this.controls.target.clone();this.ambientPhase=0;}
     this.invalidate();
   }
   hit(e) {
@@ -379,6 +415,13 @@ export class Board {
   }
   set(state,mode) {
     const b=state.board;if(!b||this.disposed)return;this.board=b;this.mode=mode;
+    const sceneChanged=Boolean(state.homeDemo)!==Boolean(this.homeShowcase);
+    if(sceneChanged){
+      this.stopAmbient();this.ambientEnabled=false;this.ambientInterrupted=false;this.clearDemo();
+      this.homeShowcase=Boolean(state.homeDemo);this.homeTime=0;this.homeAngle=.25;this.viewMode='overview';
+      this.homeFitPoints=this.homeShowcase?showcaseEnvelope(b):null;
+      this.pieceKey=null;
+    }
     const key=JSON.stringify([b.tiles.map(t=>[t.id,t.x,t.z,t.resource,t.number]),b.vertices.map(v=>[v.x,v.z]),b.ports]);
     let changed=false;
     if(key!==this.landKey) {
@@ -403,35 +446,15 @@ export class Board {
       // portrait game and leave most of the available play area empty.
       this.fitPoints=[...b.vertices.map(v=>({x:v.x,y:.4,z:v.z})),...b.tiles.map(t=>({x:t.x,y:1,z:t.z}))];this.reset({defaultOrientation:true});
     }
+    if(sceneChanged){if(this.homeShowcase)this.buildDemo(state);this.reset({defaultOrientation:true});changed=true;}
     const colors=state.players.map(p=>[p.id,p.color]);
     const pieceKey=JSON.stringify([b.edges.map(e=>e.owner),b.vertices.map(v=>[v.owner,v.level]),colors,state.robber]);
     if(pieceKey!==this.pieceKey) {
       this.pieceKey=pieceKey;clearLayer(this.pieces);this.metrics.pieceBuilds++;changed=true;
       const batch=new Batches(this.assets),color=id=>state.players.find(p=>p.id===id)?.color||'#e57c54';
-      const shade=(value,light)=>new THREE.Color(value).offsetHSL(0,0,light).getHex();
       const add=(shape,c,x,y,z,sx,sy,sz,r=0)=>batch.add(shape,c,x,y,z,sx,sy,sz,r,'pieces');
-      for(const edge of b.edges.filter(e=>e.owner)) {
-        const a=b.vertices[edge.a],v=b.vertices[edge.b],x=(a.x+v.x)/2,z=(a.z+v.z)/2,r=-Math.atan2(v.z-a.z,v.x-a.x);
-        add('box',0x203a3e,x,.31,z,.84,.055,.21,r);add('box',0xfff6df,x,.35,z,.81,.05,.17,r);
-        add('box',color(edge.owner),x,.40,z,.77,.09,.125,r);add('box',shade(color(edge.owner),.15),x,.451,z,.69,.012,.035,r);
-      }
-      for(const v of b.vertices.filter(v=>v.owner)) {
-        const owner=color(v.owner),dark=0x203a3e,ivory=0xfff5da;
-        add('cylinder',dark,v.x,.29,v.z,v.level===2?.235:.205,.04,v.level===2?.235:.205);
-        add('cylinder',ivory,v.x,.315,v.z,v.level===2?.215:.185,.035,v.level===2?.215:.185);
-        if(v.level===2){
-          // A compact stepped tower silhouette contrasts with the village roof.
-          add('box',dark,v.x,.35,v.z,.37,.045,.29);add('box',owner,v.x,.475,v.z,.33,.255,.255);
-          add('box',owner,v.x-.075,.59,v.z,.17,.40,.255);
-          add('box',ivory,v.x-.075,.80,v.z,.205,.045,.30);add('box',shade(owner,.08),v.x-.075,.83,v.z,.17,.035,.26);
-          add('box',ivory,v.x+.105,.625,v.z,.18,.04,.285);add('box',shade(owner,.08),v.x+.105,.65,v.z,.15,.035,.25);
-          add('box',dark,v.x-.075,.64,v.z+.132,.055,.085,.012);add('box',dark,v.x+.08,.44,v.z+.132,.065,.12,.012);
-        }else{
-          add('box',dark,v.x,.35,v.z,.29,.04,.27);add('box',owner,v.x,.465,v.z,.27,.23,.25);
-          add('box',dark,v.x,.585,v.z,.35,.025,.31);add('roof',shade(owner,-.07),v.x,.665,v.z,.33,.17,.29);
-          add('box',ivory,v.x,.56,v.z+.132,.27,.025,.012);add('box',dark,v.x,.415,v.z+.132,.065,.12,.014);
-        }
-      }
+      if(!this.homeShowcase)for(const edge of b.edges.filter(e=>e.owner))addRoad(batch,b.vertices[edge.a],b.vertices[edge.b],color(edge.owner));
+      if(!this.homeShowcase)for(const v of b.vertices.filter(v=>v.owner))addBuilding(batch,v,color(v.owner));
       if(state.robber!==null&&state.robber!==undefined) {
         const t=b.tiles[state.robber];add('cone',0x283e38,t.x,.53,t.z+.4,.14,.4,.14);add('wool',0x283e38,t.x,.8,t.z+.4,.09,.10,.09);
       }
@@ -459,7 +482,7 @@ export class Board {
     if(changed){this.renderer.shadowMap.needsUpdate=true;this.invalidate();}
   }
   dispose() {
-    if(this.disposed)return;this.disposed=true;this.onProjectionChange=null;this.stopFrame();this.stopAmbient();this.events.abort();this.observer.disconnect();this.intersection.disconnect();this.controls.dispose();
+    if(this.disposed)return;this.disposed=true;this.onProjectionChange=null;this.stopFrame();this.stopAmbient();this.clearDemo();this.events.abort();this.observer.disconnect();this.intersection.disconnect();this.controls.dispose();
     for(const group of [this.land,this.pieces,this.markers,this.selectionLayer,this.feedbackLayer])clearLayer(group);
     this.scene.clear();this.sun.shadow.dispose();this.assets.dispose();this.renderer.dispose();this.renderer.forceContextLoss();this.renderer.domElement.remove();
   }

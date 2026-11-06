@@ -137,7 +137,9 @@ export class FlatBoard {
     this.onProjectionChange?.();
   }
   set(state,mode){
-    const b=state.board;if(!b)return;this.state=state;this.mode=mode;
+    const b=state.board;if(!b)return;
+    if(Boolean(state.homeDemo)!==Boolean(this.homeShowcase)){this.zoom=1;this.pan={x:0,y:0};this.homeShowcase=Boolean(state.homeDemo);}
+    this.state=state;this.mode=mode;
     const mapKey=mapViewKey(b);if(mapKey!==this.mapKey){this.mapKey=mapKey;this.followZoomBaseline=null;}
     const landscape=this.container.clientWidth>this.container.clientHeight;
     if(this.landscape!==undefined&&this.landscape!==landscape)this.pan=landscape?{x:this.pan.y,y:-this.pan.x}:{x:-this.pan.y,y:this.pan.x};

@@ -1,0 +1,422 @@
+{
+  "results": [
+    {
+      "engine": "chromium",
+      "name": "desktop",
+      "width": 1440,
+      "height": 1000,
+      "orbitBearings": 24,
+      "projectedPoints": 130464,
+      "minGap": 61.39595841376757,
+      "gestures": true,
+      "modal": true,
+      "visibilitySimulation": true,
+      "reducedMotion": true,
+      "rendererCleanup": true
+    },
+    {
+      "engine": "chromium",
+      "name": "laptop",
+      "width": 1366,
+      "height": 768,
+      "orbitBearings": 24,
+      "projectedPoints": 130464,
+      "minGap": 41.52484518402588,
+      "gestures": true,
+      "modal": true,
+      "visibilitySimulation": true,
+      "reducedMotion": true,
+      "rendererCleanup": true
+    },
+    {
+      "engine": "chromium",
+      "name": "portrait",
+      "width": 390,
+      "height": 844,
+      "orbitBearings": 24,
+      "projectedPoints": 130464,
+      "minGap": 15.309610339019628,
+      "gestures": true,
+      "modal": true,
+      "visibilitySimulation": true,
+      "reducedMotion": true,
+      "rendererCleanup": true
+    },
+    {
+      "engine": "chromium",
+      "name": "small",
+      "width": 320,
+      "height": 568,
+      "orbitBearings": 24,
+      "projectedPoints": 130464,
+      "minGap": 13.472957276026477,
+      "gestures": true,
+      "modal": true,
+      "visibilitySimulation": true,
+      "reducedMotion": true,
+      "rendererCleanup": true
+    },
+    {
+      "engine": "chromium",
+      "name": "landscape",
+      "width": 844,
+      "height": 390,
+      "orbitBearings": 24,
+      "projectedPoints": 130464,
+      "minGap": 21.249616315897185,
+      "gestures": true,
+      "modal": true,
+      "visibilitySimulation": true,
+      "reducedMotion": true,
+      "rendererCleanup": true
+    },
+    {
+      "engine": "chromium",
+      "name": "short-landscape",
+      "width": 667,
+      "height": 320,
+      "orbitBearings": 24,
+      "projectedPoints": 130464,
+      "minGap": 13.654994183243446,
+      "gestures": true,
+      "modal": true,
+      "visibilitySimulation": true,
+      "reducedMotion": true,
+      "rendererCleanup": true
+    },
+    {
+      "engine": "chromium",
+      "liveSeconds": 92.41010000062012,
+      "liveStart": {
+        "memory": {
+          "geometries": 9,
+          "textures": 17
+        },
+        "landBuilds": 1,
+        "pieceBuilds": 1,
+        "assets": 24,
+        "textures": 16,
+        "children": 9,
+        "time": 0.5970000002384186,
+        "angle": 0.26250353876628085,
+        "renders": 12
+      },
+      "liveEnd": {
+        "memory": {
+          "geometries": 9,
+          "textures": 17
+        },
+        "landBuilds": 1,
+        "pieceBuilds": 1,
+        "assets": 24,
+        "textures": 16,
+        "children": 9,
+        "time": 92.41010000062012,
+        "angle": 2.1854326085296285,
+        "renders": 1692
+      },
+      "acceleratedCycles": 12,
+      "accelerated": [
+        {
+          "geometries": 9,
+          "textures": 17,
+          "children": 9,
+          "landBuilds": 1,
+          "pieceBuilds": 1
+        },
+        {
+          "geometries": 9,
+          "textures": 17,
+          "children": 9,
+          "landBuilds": 1,
+          "pieceBuilds": 1
+        },
+        {
+          "geometries": 9,
+          "textures": 17,
+          "children": 9,
+          "landBuilds": 1,
+          "pieceBuilds": 1
+        },
+        {
+          "geometries": 9,
+          "textures": 17,
+          "children": 9,
+          "landBuilds": 1,
+          "pieceBuilds": 1
+        },
+        {
+          "geometries": 9,
+          "textures": 17,
+          "children": 9,
+          "landBuilds": 1,
+          "pieceBuilds": 1
+        },
+        {
+          "geometries": 9,
+          "textures": 17,
+          "children": 9,
+          "landBuilds": 1,
+          "pieceBuilds": 1
+        },
+        {
+          "geometries": 9,
+          "textures": 17,
+          "children": 9,
+          "landBuilds": 1,
+          "pieceBuilds": 1
+        },
+        {
+          "geometries": 9,
+          "textures": 17,
+          "children": 9,
+          "landBuilds": 1,
+          "pieceBuilds": 1
+        },
+        {
+          "geometries": 9,
+          "textures": 17,
+          "children": 9,
+          "landBuilds": 1,
+          "pieceBuilds": 1
+        },
+        {
+          "geometries": 9,
+          "textures": 17,
+          "children": 9,
+          "landBuilds": 1,
+          "pieceBuilds": 1
+        },
+        {
+          "geometries": 9,
+          "textures": 17,
+          "children": 9,
+          "landBuilds": 1,
+          "pieceBuilds": 1
+        },
+        {
+          "geometries": 9,
+          "textures": 17,
+          "children": 9,
+          "landBuilds": 1,
+          "pieceBuilds": 1
+        }
+      ],
+      "writes": 0,
+      "sockets": 0
+    },
+    {
+      "engine": "webkit",
+      "name": "desktop",
+      "width": 1440,
+      "height": 1000,
+      "orbitBearings": 24,
+      "projectedPoints": 130464,
+      "minGap": 61.39595841376712,
+      "gestures": true,
+      "modal": true,
+      "visibilitySimulation": true,
+      "reducedMotion": true,
+      "rendererCleanup": true
+    },
+    {
+      "engine": "webkit",
+      "name": "laptop",
+      "width": 1366,
+      "height": 768,
+      "orbitBearings": 24,
+      "projectedPoints": 130464,
+      "minGap": 41.524845184025736,
+      "gestures": true,
+      "modal": true,
+      "visibilitySimulation": true,
+      "reducedMotion": true,
+      "rendererCleanup": true
+    },
+    {
+      "engine": "webkit",
+      "name": "portrait",
+      "width": 390,
+      "height": 844,
+      "orbitBearings": 24,
+      "projectedPoints": 130464,
+      "minGap": 15.309610339020196,
+      "gestures": true,
+      "modal": true,
+      "visibilitySimulation": true,
+      "reducedMotion": true,
+      "rendererCleanup": true
+    },
+    {
+      "engine": "webkit",
+      "name": "small",
+      "width": 320,
+      "height": 568,
+      "orbitBearings": 24,
+      "projectedPoints": 130464,
+      "minGap": 13.472957276026591,
+      "gestures": true,
+      "modal": true,
+      "visibilitySimulation": true,
+      "reducedMotion": true,
+      "rendererCleanup": true
+    },
+    {
+      "engine": "webkit",
+      "name": "landscape",
+      "width": 844,
+      "height": 390,
+      "orbitBearings": 24,
+      "projectedPoints": 130464,
+      "minGap": 21.24961631589707,
+      "gestures": true,
+      "modal": true,
+      "visibilitySimulation": true,
+      "reducedMotion": true,
+      "rendererCleanup": true
+    },
+    {
+      "engine": "webkit",
+      "name": "short-landscape",
+      "width": 667,
+      "height": 320,
+      "orbitBearings": 24,
+      "projectedPoints": 130464,
+      "minGap": 13.654994183243673,
+      "gestures": true,
+      "modal": true,
+      "visibilitySimulation": true,
+      "reducedMotion": true,
+      "rendererCleanup": true
+    },
+    {
+      "engine": "webkit",
+      "liveSeconds": 92.73800000000111,
+      "liveStart": {
+        "memory": {
+          "geometries": 9,
+          "textures": 17
+        },
+        "landBuilds": 1,
+        "pieceBuilds": 1,
+        "assets": 24,
+        "textures": 16,
+        "children": 9,
+        "time": 0.581,
+        "angle": 0.2621684355449044,
+        "renders": 10
+      },
+      "liveEnd": {
+        "memory": {
+          "geometries": 9,
+          "textures": 17
+        },
+        "landBuilds": 1,
+        "pieceBuilds": 1,
+        "assets": 24,
+        "textures": 16,
+        "children": 9,
+        "time": 92.73800000000111,
+        "angle": 2.192300130057438,
+        "renders": 1516
+      },
+      "acceleratedCycles": 12,
+      "accelerated": [
+        {
+          "geometries": 9,
+          "textures": 17,
+          "children": 9,
+          "landBuilds": 1,
+          "pieceBuilds": 1
+        },
+        {
+          "geometries": 9,
+          "textures": 17,
+          "children": 9,
+          "landBuilds": 1,
+          "pieceBuilds": 1
+        },
+        {
+          "geometries": 9,
+          "textures": 17,
+          "children": 9,
+          "landBuilds": 1,
+          "pieceBuilds": 1
+        },
+        {
+          "geometries": 9,
+          "textures": 17,
+          "children": 9,
+          "landBuilds": 1,
+          "pieceBuilds": 1
+        },
+        {
+          "geometries": 9,
+          "textures": 17,
+          "children": 9,
+          "landBuilds": 1,
+          "pieceBuilds": 1
+        },
+        {
+          "geometries": 9,
+          "textures": 17,
+          "children": 9,
+          "landBuilds": 1,
+          "pieceBuilds": 1
+        },
+        {
+          "geometries": 9,
+          "textures": 17,
+          "children": 9,
+          "landBuilds": 1,
+          "pieceBuilds": 1
+        },
+        {
+          "geometries": 9,
+          "textures": 17,
+          "children": 9,
+          "landBuilds": 1,
+          "pieceBuilds": 1
+        },
+        {
+          "geometries": 9,
+          "textures": 17,
+          "children": 9,
+          "landBuilds": 1,
+          "pieceBuilds": 1
+        },
+        {
+          "geometries": 9,
+          "textures": 17,
+          "children": 9,
+          "landBuilds": 1,
+          "pieceBuilds": 1
+        },
+        {
+          "geometries": 9,
+          "textures": 17,
+          "children": 9,
+          "landBuilds": 1,
+          "pieceBuilds": 1
+        },
+        {
+          "geometries": 9,
+          "textures": 17,
+          "children": 9,
+          "landBuilds": 1,
+          "pieceBuilds": 1
+        }
+      ],
+      "writes": 0,
+      "sockets": 0
+    },
+    {
+      "realNodeHumanCreateJoinAndStart": true,
+      "waitingCameraReset": true,
+      "realNodePractice": true,
+      "returnHome": true,
+      "homeFeedback": false
+    }
+  ],
+  "errors": []
+}
