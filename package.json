@@ -8,7 +8,7 @@
   },
   "scripts": {
     "dev": "node server/dev.js",
-    "build": "vite build && node scripts/build-info.mjs",
+    "build": "node scripts/build-site.mjs global",
     "start": "node server/index.js",
     "test": "node --test tests/*.test.js",
     "test:browser": "node scripts/browser-smoke.js",
@@ -28,7 +28,10 @@
     "test:worker:restart": "node scripts/worker-restart-smoke.js",
     "test:secure-worker": "node scripts/secure-worker-smoke.js",
     "test:chat-report:browser": "node scripts/chat-report-browser.js",
-    "test:node:restart": "node scripts/node-restart-smoke.js"
+    "test:node:restart": "node scripts/node-restart-smoke.js",
+    "build:cn": "node scripts/build-site.mjs cn",
+    "build:global": "node scripts/build-site.mjs global",
+    "test:site": "node --test tests/site-policy.test.js tests/worker-lifecycle.test.js tests/integration-policy.test.js tests/deploy-release.test.js"
   },
   "dependencies": {
     "three": "^0.186.1",

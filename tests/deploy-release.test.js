@@ -29,8 +29,9 @@ test('artifact downloads and public probes reject credentials, redirects and wro
   for (const url of ['http://productionresultssa12.blob.core.windows.net/a', 'https://productionresultssa12.blob.core.windows.net.evil.test/a', 'https://user@productionresultssa12.blob.core.windows.net/a', 'https://productionresultssa12.blob.core.windows.net/a#x', 'https://example.test/a']) assert.throws(() => signedArtifactURL(url));
   assert.equal(publicOrigin('https://catan.example.test'), 'https://catan.example.test');
   for (const origin of ['http://catan.example.test', 'https://catan.example.test/path', 'https://user@catan.example.test', 'https://catan.example.test/']) assert.throws(() => publicOrigin(origin));
-  marker({ ok: true, game: 'catan-friends', backendId: 'aliyun', revision: commit }, { commit }, 'aliyun');
+  marker({ ok: true, game: 'catan-friends', backendId: 'aliyun', siteEdition:'cn', revision: commit }, { commit }, 'aliyun');
   assert.throws(() => marker({ ok: true, game: 'catan-friends', backendId: 'cloudflare', revision: commit }, { commit }, 'aliyun'));
+  assert.throws(() => marker({ ok: true, game:'catan-friends',backendId:'aliyun',siteEdition:'global',revision:commit },{commit},'aliyun'));
   assert.throws(() => marker({ ok: true, game: 'catan-friends', backendId: 'aliyun', revision: 'c'.repeat(40) }, { commit }, 'aliyun'));
 });
 test('Worker rollback refuses a newer or external release and an unrecorded first deployment', () => {
@@ -55,9 +56,9 @@ test('Worker extraction rejects traversal, symlinks, duplicate members and manif
   const temporary = await mkdtemp(path.join(tmpdir(), 'catan-worker-validation-'));
   const python = process.platform === 'win32' ? 'python' : 'python3';
   try {
-    const maker = `import json,sys,zipfile,stat\nfrom pathlib import Path\nroot,sha=sys.argv[1:]\nmanifest={'schema':1,'stateSchema':3,'repository':'qiuh23/catan-friends','commit':sha,'runId':123,'platform':'linux','arch':'x64','nodeMajor':24}\nfor kind in ['valid','traversal','symlink','duplicate','manifest']:\n with zipfile.ZipFile(Path(root)/(kind+'.zip'),'w') as z:\n  m=dict(manifest)\n  if kind=='manifest': m['commit']='c'*40\n  z.writestr('release.json',json.dumps(m));z.writestr('worker/index.js','export default {}');z.writestr('assets/index.html','<html>');z.writestr('assets/build-info.json',json.dumps({'repository':'qiuh23/catan-friends','revision':sha}))\n  if kind=='traversal': z.writestr('assets/../../escaped','bad')\n  if kind=='duplicate': z.writestr('assets/index.html','duplicate')\n  if kind=='symlink':\n   i=zipfile.ZipInfo('assets/link');i.create_system=3;i.external_attr=(stat.S_IFLNK|0o777)<<16;z.writestr(i,'../../escaped')\n`;
+    const maker = `import json,sys,zipfile,stat\nfrom pathlib import Path\nroot,sha=sys.argv[1:]\nmanifest={'schema':1,'stateSchema':3,'repository':'qiuh23/catan-friends','commit':sha,'runId':123,'platform':'linux','arch':'x64','nodeMajor':24,'siteEdition':'global'}\nfor kind in ['valid','traversal','symlink','duplicate','manifest','edition']:\n with zipfile.ZipFile(Path(root)/(kind+'.zip'),'w') as z:\n  m=dict(manifest)\n  if kind=='manifest': m['commit']='c'*40\n  if kind=='edition': m['siteEdition']='cn'\n  z.writestr('release.json',json.dumps(m));z.writestr('worker/index.js','export default {}');z.writestr('assets/index.html','<html>');z.writestr('assets/build-info.json',json.dumps({'repository':'qiuh23/catan-friends','revision':sha,'siteEdition':'global'}))\n  if kind=='traversal': z.writestr('assets/../../escaped','bad')\n  if kind=='duplicate': z.writestr('assets/index.html','duplicate')\n  if kind=='symlink':\n   i=zipfile.ZipInfo('assets/link');i.create_system=3;i.external_attr=(stat.S_IFLNK|0o777)<<16;z.writestr(i,'../../escaped')\n`;
     execFileSync(python, ['-c', maker, temporary, commit], { stdio: 'pipe' });
-    for (const kind of ['valid', 'traversal', 'symlink', 'duplicate', 'manifest']) {
+    for (const kind of ['valid', 'traversal', 'symlink', 'duplicate', 'manifest', 'edition']) {
       const result = spawnSync(python, ['scripts/deploy/unpack-worker.py', path.join(temporary, `${kind}.zip`), path.join(temporary, `${kind}-out`), commit, '123'], { encoding: 'utf8' });
       assert.equal(result.status === 0, kind === 'valid', `${kind}: ${result.stderr}`);
     }

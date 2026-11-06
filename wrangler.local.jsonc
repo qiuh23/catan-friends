@@ -35,7 +35,8 @@
     "REPORT_CONTACT": "qiutian0808@163.com",
     "MODERATION_RETENTION_DAYS": "90",
     "BACKEND_ID": "local",
-    "PUBLIC_ORIGIN": ""
+    "PUBLIC_ORIGIN": "",
+    "SITE_EDITION": "global"
   },
   "ratelimits": [
     {

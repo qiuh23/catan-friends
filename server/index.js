@@ -1,3 +1,4 @@
+import { siteEdition as resolveSiteEdition, rejectCommunication } from '../shared/site-policy.js';
 import http from 'node:http';
 import { readFile, writeFile, mkdir, readdir } from 'node:fs/promises';
 import path from 'node:path';
@@ -13,12 +14,15 @@ import { renameWithRetry } from './file-store.js';
 
 const root=fileURLToPath(new URL('../',import.meta.url));
 const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.svg':'image/svg+xml','.png':'image/png','.woff2':'font/woff2'};
-export async function createServer({port=Number(process.env.PORT)||3005,host=process.env.HOST||'0.0.0.0',dataDir=process.env.DATA_DIR||path.join(root,'.data'),staticDir=process.env.STATIC_DIR||path.join(root,'dist'),backendId=process.env.BACKEND_ID||'local',publicOrigin=process.env.PUBLIC_ORIGIN||'',trustProxy=process.env.TRUST_PROXY||'',development=false,botDelay=900,now=Date.now,security=process.env}={}) {
+export async function createServer({port=Number(process.env.PORT)||3005,host=process.env.HOST||'0.0.0.0',dataDir=process.env.DATA_DIR||path.join(root,'.data'),staticDir=process.env.STATIC_DIR||path.join(root,'dist'),backendId=process.env.BACKEND_ID||'local',publicOrigin=process.env.PUBLIC_ORIGIN||'',trustProxy=process.env.TRUST_PROXY||'',siteEdition=process.env.SITE_EDITION,development=false,botDelay=900,now=Date.now,security=process.env}={}) {
+  if(process.env.NODE_ENV==='production'&&(!siteEdition||backendId==='local'))throw new Error('Production requires SITE_EDITION.');
+  const edition=resolveSiteEdition(siteEdition,backendId);
   const config=deploymentConfig({backendId,publicOrigin,trustProxy});
+  if(!development && backendId!=='local'){const assets=JSON.parse(await readFile(path.join(staticDir,'build-info.json'),'utf8'));if(assets.siteEdition!==edition)throw new Error('Frontend SITE_EDITION does not match server.');}
   let revision=process.env.BUILD_SHA||null;
   try {revision ||= JSON.parse(await readFile(path.join(staticDir,'build-info.json'),'utf8')).revision;}catch{}
   if(revision&&!/^[a-f0-9]{40}$/.test(revision))throw new Error('Invalid build revision.');
-  const marker={ok:true,game:'catan-friends',backendId:config.backendId,revision};
+  const marker={ok:true,game:'catan-friends',backendId:config.backendId,siteEdition:edition,revision};
   await mkdir(dataDir,{recursive:true});
   const moderation=new ModerationStore(path.join(dataDir,'moderation')),policy=securityConfig(security);
   const rooms=new Map(), loading=new Map(), sockets=new Map(), timers=new Map(), deadlines=new Map(), queues=new Map(), rates=new Map();
@@ -26,14 +30,14 @@ export async function createServer({port=Number(process.env.PORT)||3005,host=pro
   const vite=development ? await (await import('vite')).createServer({root,server:{middlewareMode:true},appType:'spa'}) : null;
   const serial=(code,fn)=>{const p=(queues.get(code)||Promise.resolve()).then(fn); queues.set(code,p.catch(()=>{})); return p;};
   const save=async(code,room)=>{
-    if(room.record.closed){const previous=await moderation.read(code);if(previous.audit.length || previous.hiddenChat.length || Object.keys(previous.names).length || previous.restricted.length){const next=closedModeration(previous);if(next!==previous)await moderation.write(code,next);}}
+    if(edition!=='cn'&&room.record.closed){const previous=await moderation.read(code);if(previous.audit.length || previous.hiddenChat.length || Object.keys(previous.names).length || previous.restricted.length){const next=closedModeration(previous);if(next!==previous)await moderation.write(code,next);}}
     const file=path.join(dataDir,`${code}.json`);await writeFile(`${file}.tmp`,JSON.stringify(room.record));await renameWithRetry(`${file}.tmp`,file);
   };
   async function getRoom(code) {
-    if(rooms.has(code)){const room=rooms.get(code);applyModeration(room,await moderation.read(code));return room;}
+    if(rooms.has(code)){const room=rooms.get(code);if(edition!=='cn')applyModeration(room,await moderation.read(code));return room;}
     if(loading.has(code)) return loading.get(code);
     const p=(async()=>{ let record; try { record=JSON.parse(await readFile(path.join(dataDir,`${code}.json`),'utf8')); } catch { throw new UserError('房间不存在，请检查邀请码。'); }
-      const room=new Room(record,now());applyModeration(room,await moderation.read(code));room.presence([],now(),true);rooms.set(code,room);try{if(!record.closed || !record.closeReason)await save(code,room);}catch(error){rooms.delete(code);throw error;}armDeadline(code);return room;
+      const room=new Room(record,now(),edition);if(edition!=='cn')applyModeration(room,await moderation.read(code));room.presence([],now(),true);rooms.set(code,room);try{if(!record.closed || !record.closeReason)await save(code,room);}catch(error){rooms.delete(code);throw error;}armDeadline(code);return room;
     })(); loading.set(code,p); try { return await p; } finally { loading.delete(code); }
   }
   const roomSockets=code=>[...sockets].filter(([ws,s])=>s.code===code && s.id && ws.readyState===WebSocket.OPEN);
@@ -47,7 +51,7 @@ export async function createServer({port=Number(process.env.PORT)||3005,host=pro
   async function presence(code,recover=false,notify=true){const room=rooms.get(code);if(!room)return;if(room.record.closed){broadcast(code);armDeadline(code);return;}const before=structuredClone(room.record);try{room.presence(roomSockets(code).map(([,s])=>s.id),now(),recover);await save(code,room);}catch(error){room.record=before;throw error;}if(notify || before.hostConnected!==room.record.hostConnected || room.record.closed)broadcast(code);armDeadline(code);}
   async function sweep(){
     for(const name of await readdir(dataDir))if(/^[A-HJ-NP-Z2-9]{6}\.json$/.test(name))await serial(name.slice(0,-5),async()=>{const code=name.slice(0,-5);try{await getRoom(code);await presence(code,true);}catch{console.error('ROOM_RECOVERY_FAILED');}});
-    for(const code of await moderation.codes())await serial(code,()=>moderation.prune(code,now()));
+    if(edition!=='cn')for(const code of await moderation.codes())await serial(code,()=>moderation.prune(code,now()));
   }
   function schedule(code) {
     if(stopping || timers.has(code) || !roomSockets(code).length || !rooms.get(code)?.nextBot()) return;
@@ -69,9 +73,10 @@ export async function createServer({port=Number(process.env.PORT)||3005,host=pro
         if(!rate(requestAddress(req,config.trustProxy))) return json(res,429,{error:'请求过于频繁，请稍后重试。'});
         if(url.pathname==='/api/health') return json(res,200,marker);
         if(url.pathname==='/api/deployment') return json(res,200,{...marker,publicOrigin:config.publicOrigin||null});
-        if(url.pathname==='/api/security/contact')return json(res,200,policy);
+        if(url.pathname==='/api/security/contact')return edition==='cn'?json(res,404,{error:'接口不存在。'}):json(res,200,policy);
         const admin=/^\/api\/stationmaster\/rooms\/([A-HJ-NP-Z2-9]{6})$/.exec(url.pathname);
         if(admin) {
+          if(edition==='cn')return json(res,404,{error:'接口不存在。'});
           if(!await adminAuthorized(req.headers.authorization,security))return json(res,403,{error:'无站长权限或尚未配置。'});
           if(req.method!=='POST')return json(res,405,{error:'需要 POST 请求。'});
           const input=await body(req),code=admin[1];
@@ -90,7 +95,7 @@ export async function createServer({port=Number(process.env.PORT)||3005,host=pro
           return json(res,200,{rooms:page,nextCursor:visible.length>40?page.at(-1).code:null,serverNow:now()});
         }
         if(url.pathname==='/api/rooms' && req.method==='POST') {
-          const room=await createRoomFromInput(await body(req),now());let code;
+          const room=await createRoomFromInput(await body(req),now(),edition);let code;
           // Reserve the name with an exclusive initial write, including tombstones.
           // Two simultaneous creates must never overwrite each other's identity.
           for(let tries=0;tries<8;tries++){const candidate=roomCode();try{await writeFile(path.join(dataDir,`${candidate}.json`),JSON.stringify(room.record),{flag:'wx'});code=candidate;break;}catch(error){if(error.code!=='EEXIST')throw error;}}
@@ -127,12 +132,12 @@ export async function createServer({port=Number(process.env.PORT)||3005,host=pro
       try {
         if(Date.now()-session.window>10000){session.window=Date.now();session.n=0;}
         if(++session.n>60) throw new Error('操作过于频繁。');
-        message=JSON.parse(raw.toString());const room=await getRoom(code);await presence(code,true,false);
+        message=JSON.parse(raw.toString());rejectCommunication(edition,message);const room=await getRoom(code);await presence(code,true,false);
         if(room.expire(now())){await save(code,room);broadcast(code);}room.assertOpen(now());
         if(!session.id) {
           if(message.type!=='hello') throw new Error('请先加入房间。');
           const hash=await fingerprint(message.token), before=structuredClone(room.record);
-          try {session.id=room.join(hash,message.name,now());room.presence(roomSockets(code).map(([,s])=>s.id),now());await save(code,room);} catch(e){room.record=before;session.id=null;throw e;}
+          try {session.id=room.join(hash,message.name,now(),message.nicknameId);room.presence(roomSockets(code).map(([,s])=>s.id),now());await save(code,room);} catch(e){room.record=before;session.id=null;throw e;}
           clearTimeout(helloTimeout);
           for(const [other,s] of roomSockets(code)) if(other!==ws && s.id===session.id) {send(other,{type:'replaced'});other.close(4001,'Session replaced');}
           broadcast(code);armDeadline(code);schedule(code);return;

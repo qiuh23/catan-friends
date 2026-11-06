@@ -1,5 +1,8 @@
 # 卡坦岛自动发布与一次性配置
 
+> 现行站点方案：国内 `SITE_EDITION=cn`，固定建筑/艺术昵称且完全禁用玩家交流、交流处置及访问/连接安全审计，保留故障和游戏数据；海外 `SITE_EDITION=global` 保留自定义昵称/聊天。两站入口、身份与邀请码独立。国内需安装 `access_log off` 的 Nginx 模板和仅故障日志的轮转配置，停用本游戏旧审计任务；现有备份/磁盘故障监测继续保留，历史私有审计不删。下述旧聊天/昵称/安全审计行为仅适用于海外，历史部署快照不证明新方案已上线。构建、接收器更新与验证见 [站点策略](site-editions.md)。
+
+
 > 2026-11-06：当前源码升级至 state schema 3，新增 `CATAN_STATE_SCHEMA=3` 准备门禁，并要求先更新主机接收器/备份脚本。下文首次发布描述为历史快照；当前线上回读见 [本轮记录](random-chat-report-2026-11-06.md)，迁移与兼容回滚见 [运维步骤](random-chat-report-operations.md)。
 
 **2026-11-05 21:41 首次发布快照（北京时间）：** [PR #1](https://github.com/qiuh23/catan-friends/pull/1) 已按用户授权合并，main `1cebfe1cd7fbd328131f72acb488c3621554c0bd` 的 [Checks 42036916669](https://github.com/qiuh23/catan-friends/actions/runs/42036916669) 与 [首次双端发布 42037701133](https://github.com/qiuh23/catan-friends/actions/runs/42037701133) 成功；两端公网 SHA/HTTPS/资源/WSS 已回读。production environment、专用 RAM role/policy 与加密 CF secret 已配置；仓库 `CATAN_PRODUCTION_ENABLED=true`。首次发布为手动选择当前 main 的成功 push Checks；后续 main 的自动 `workflow_run` 尚待下一次发布实证。大厅卡坦岛入口仍关闭，完整验收进行中。详见 [生产记录](production-rollout-2026-11-05.md)。
@@ -12,7 +15,7 @@
 
 Checks 仅运行针对性的网络/部署/入口契约、Vite 构建和 Worker dry-run。完整规则/多浏览器测试在本地执行。只有 main push 生成两个一天保留期的产物：`node-<完整SHA>` 和 `worker-<完整SHA>`，包含当前提交和 Checks run 的发布清单。发布器使用受信 main 控制代码，校验仓库与仓库数字 ID、workflow 数字 ID、push/main、成功状态、当前 main SHA、唯一产物、GitHub ZIP SHA-256、内部清单及解包边界；排队后、CF 发布前、Node 安装前和主机切换前再次核对。PR/fork/手动 Checks、旧 main、过期或替换产物均不能发布。
 
-生产发布串行且不取消正在切换的服务。Node 只装预构建 Linux Node24 生产依赖；主机不运行 npm 安装/构建脚本。Worker 使用已验证 bundle 和相同静态资源 `--no-bundle` 发布，不重建应用代码。目标硬编码为 catan-friends，不能通过 payload 选择其他游戏、服务、任意命令或数据目录。
+生产发布串行且不取消正在切换的服务。Node 只装预构建 Linux Node24 生产依赖；主机不运行 npm 安装/构建脚本。Worker 使用已验证 bundle 和海外静态资源 `--no-bundle` 发布，不重建应用代码。目标硬编码为 catan-friends，不能通过 payload 选择其他游戏、服务、任意命令或数据目录。
 
 大厅属于运动会仓库，继续使用原 `Checks → Deploy checked backends` 更新两大厅。卡坦岛更新不会调用运动会或巫师牌部署。巫师牌已有按服务器返回大厅的链接，无需修改它或增加 PR。
 

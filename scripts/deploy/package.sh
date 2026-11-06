@@ -10,8 +10,13 @@ OUTPUT=${3:?fresh absolute output directory}
 node --input-type=module - "$COMMIT" <<'JS'
 import fs from 'node:fs';
 const marker = JSON.parse(fs.readFileSync('dist/build-info.json'));
-if (marker.revision !== process.argv[2] || marker.repository !== 'qiuh23/catan-friends') throw Error('Built assets do not match checked source.');
+if (marker.revision !== process.argv[2] || marker.repository !== 'qiuh23/catan-friends' || marker.siteEdition !== 'global') throw Error('Built assets do not match checked source.');
 JS
+mkdir -p "$OUTPUT/node" "$OUTPUT/worker/assets" "$OUTPUT/worker/worker"
+cp -R dist/. "$OUTPUT/worker/assets/"
+cp .local/worker/index.js "$OUTPUT/worker/worker/index.js"
+# Same checked source, two explicitly different site builds.
+npm run build:cn
 WORK=$(mktemp -d)
 trap 'rm -rf -- "$WORK"' EXIT
 cp package.json package-lock.json "$WORK/"
@@ -22,11 +27,12 @@ rm -rf -- "$WORK/node_modules/.bin"
 node --input-type=module - "$WORK" "$COMMIT" "$RUN_ID" <<'JS'
 import fs from 'node:fs';
 const [work,commit,runId] = process.argv.slice(2);
-fs.writeFileSync(`${work}/release.json`, JSON.stringify({schema:1,stateSchema:3,repository:'qiuh23/catan-friends',commit,runId:Number(runId),platform:'linux',arch:'x64',nodeMajor:24})+'\n');
+fs.writeFileSync(`${work}/release.json`, JSON.stringify({schema:1,stateSchema:3,repository:'qiuh23/catan-friends',commit,runId:Number(runId),platform:'linux',arch:'x64',nodeMajor:24,siteEdition:'cn'})+'\n');
 JS
-mkdir -p "$OUTPUT/node" "$OUTPUT/worker/assets" "$OUTPUT/worker/worker"
 tar -czf "$OUTPUT/node/catan.tar.gz" -C "$WORK" dist server shared node_modules package.json package-lock.json release.json
 (cd "$OUTPUT/node" && sha256sum catan.tar.gz > catan.tar.gz.sha256)
-cp -R dist/. "$OUTPUT/worker/assets/"
-cp .local/worker/index.js "$OUTPUT/worker/worker/index.js"
-cp "$WORK/release.json" "$OUTPUT/worker/release.json"
+node --input-type=module - "$WORK/release.json" "$OUTPUT/worker/release.json" <<'JS'
+import fs from 'node:fs';
+const marker=JSON.parse(fs.readFileSync(process.argv[2]));
+fs.writeFileSync(process.argv[3],JSON.stringify({...marker,siteEdition:'global'})+'\n');
+JS

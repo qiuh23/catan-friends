@@ -1,3 +1,4 @@
+import { siteEdition, rejectCommunication } from '../shared/site-policy.js';
 import { Room, roomCode, fingerprint, ROOM_PATTERN } from '../shared/room.js';
 import { createRoomFromInput } from '../shared/room-create.js';
 import { UserError,publicError } from '../shared/errors.js';
@@ -8,15 +9,17 @@ export default {
   async fetch(request,env) {
     const url=new URL(request.url),origin=request.headers.get('Origin');
     const backendId=env.BACKEND_ID||'local',publicOrigin=env.PUBLIC_ORIGIN||'';
-    if(!['local','cloudflare'].includes(backendId)||backendId==='cloudflare'&&!publicOrigin)return json({error:'服务器入口配置不完整。'},503);
+    if(!env.BACKEND_ID||!['local','cloudflare'].includes(backendId)||backendId==='cloudflare'&&!publicOrigin)return json({error:'服务器入口配置不完整。'},503);
     if(publicOrigin){try{const expected=new URL(publicOrigin);if(expected.origin!==publicOrigin||expected.protocol!=='https:'||expected.username||expected.password||publicOrigin!==url.origin)throw Error();}catch{return json({error:'服务器入口配置与当前来源不一致。'},503);}}
     if(url.pathname.startsWith('/api/') && origin && origin!==(publicOrigin||url.origin))return json({error:'不允许的请求来源。'},403);
+    let edition;try{edition=siteEdition(env.SITE_EDITION,backendId);}catch{return json({error:'站点模式配置缺失或与发布目标不一致。'},503);}
+    if(backendId!=='local'){try{const info=await (await env.ASSETS.fetch(new Request(url.origin+'/build-info.json'))).json();if(info.siteEdition!==edition)throw Error();}catch{return json({error:'前端与服务端站点模式不一致。'},503);}}
     const revision=env.BUILD_SHA||null;
     if(revision&&!/^[a-f0-9]{40}$/.test(revision))return json({error:'发布版本配置无效。'},503);
-    const marker={ok:true,game:'catan-friends',backendId,revision};
+    const marker={ok:true,game:'catan-friends',backendId,siteEdition:edition,revision};
     if(url.pathname==='/api/health')return json(marker);
     if(url.pathname==='/api/deployment')return json({...marker,publicOrigin:publicOrigin||null});
-    if(url.pathname==='/api/security/contact')return json(securityConfig(env));
+    if(url.pathname==='/api/security/contact')return edition==='cn'?json({error:'接口不存在。'},404):json(securityConfig(env));
     if(url.pathname.startsWith('/api/')){
       if(!env.CATAN_RATE_LIMITER && backendId==='cloudflare')return json({error:'请求限流配置尚未就绪。'},503);
       if(env.CATAN_RATE_LIMITER){try{const result=await env.CATAN_RATE_LIMITER.limit({key:request.headers.get('CF-Connecting-IP')||'unknown'});if(!result.success)return json({error:'请求过于频繁，请稍后重试。'},429);}catch{return json({error:'限流服务暂不可用。'},503);}}
@@ -27,6 +30,7 @@ export default {
     }
     const admin=/^\/api\/stationmaster\/rooms\/([A-HJ-NP-Z2-9]{6})$/.exec(url.pathname);
     if(admin){
+      if(edition==='cn')return json({error:'接口不存在。'},404);
       if(!await adminAuthorized(request.headers.get('Authorization'),env))return json({error:'无站长权限或尚未配置。'},403);
       if(request.method!=='POST')return json({error:'需要 POST 请求。'},405);
       return env.ROOMS.get(env.ROOMS.idFromName(admin[1])).fetch(new Request(url.origin+'/stationmaster?code='+admin[1],request));
@@ -57,12 +61,12 @@ export default {
 };
 export class CatanRoom {
   constructor(ctx,env){
-    this.ctx=ctx;this.env=env;this.queue=Promise.resolve();
+    this.ctx=ctx;this.env=env;this.siteEdition=siteEdition(env.SITE_EDITION,env.BACKEND_ID||'local');this.queue=Promise.resolve();
     ctx.blockConcurrencyWhile(async()=>{
       try{
-      const record=await ctx.storage.get('room');this.code=await ctx.storage.get('code');this.room=record?new Room(record):null;
-      this.moderation=pruneModeration(await ctx.storage.get('moderation')||emptyModeration());
-      if(this.room){applyModeration(this.room,this.moderation);this.room.presence(this.online(),Date.now(),true);await this.persist();}
+      const record=await ctx.storage.get('room');this.code=await ctx.storage.get('code');this.room=record?new Room(record,Date.now(),this.siteEdition):null;
+      this.moderation=this.siteEdition==='cn'?null:pruneModeration(await ctx.storage.get('moderation')||emptyModeration());
+      if(this.room){if(this.siteEdition!=='cn')applyModeration(this.room,this.moderation);this.room.presence(this.online(),Date.now(),true);await this.persist();}
       }catch{throw Error('ROOM_RECOVERY_FAILED');}
     });
     ctx.setWebSocketAutoResponse(new WebSocketRequestResponsePair('{"type":"ping"}','{"type":"pong"}'));
@@ -75,7 +79,7 @@ export class CatanRoom {
   broadcast(){if(!this.room)return;const peers=this.peers(),online=this.online();for(const ws of peers){const state=this.room.snapshot(ws.deserializeAttachment().id,online);this.send(ws,state);if(state.type!=='state'){const s=ws.deserializeAttachment();s.id=null;ws.serializeAttachment(s);ws.close(4003,'Room membership ended');}}}
   async persist(){
     if(!this.room)return;
-    const moderation=this.room.record.closed?closedModeration(this.moderation||emptyModeration()):this.moderation;
+    const moderation=this.siteEdition==='cn'?null:this.room.record.closed?closedModeration(this.moderation||emptyModeration()):this.moderation;
     let next=this.room.deadline();
     const expiry=this.moderation?.audit.filter(event=>!event.held).reduce((min,event)=>Math.min(min,event.expiresAt),Infinity);
     if(Number.isFinite(expiry))next=Math.min(next??Infinity,expiry);
@@ -99,7 +103,7 @@ export class CatanRoom {
     }
   }
   async check(){
-    if(this.room)applyModeration(this.room,this.moderation);
+    if(this.room&&this.siteEdition!=='cn')applyModeration(this.room,this.moderation);
     if(this.room && !this.room.record.closed){
       const before=structuredClone(this.room.record);
       // Reads also reconcile socket leases. Otherwise a delayed alarm followed
@@ -125,6 +129,7 @@ export class CatanRoom {
       }
       this.code ||= url.searchParams.get('code') || /^\/api\/rooms\/([A-HJ-NP-Z2-9]{6})\//.exec(url.pathname)?.[1];
       if(url.pathname==='/stationmaster'){
+        if(this.siteEdition==='cn')return json({error:'接口不存在。'},404);
         if(!await adminAuthorized(request.headers.get('Authorization'),this.env))return json({error:'无站长权限或尚未配置。'},403);
         if(request.method!=='POST')return json({error:'需要 POST 请求。'},405);
         if(!this.room)return json({error:'房间不存在。'},404);
@@ -138,7 +143,7 @@ export class CatanRoom {
       }
       if(url.pathname==='/create'){
         if(this.room)return json({error:'房间码冲突，请重试。'},409);
-        const raw=await request.text();if(raw.length>8192)throw new UserError('请求过大。');const room=await createRoomFromInput(JSON.parse(raw));
+        const raw=await request.text();if(raw.length>8192)throw new UserError('请求过大。');const room=await createRoomFromInput(JSON.parse(raw),Date.now(),this.siteEdition);
         this.room=room;try{await this.persist();}catch(error){this.room=null;throw error;}return json({code:this.code},201);
       }
       if(!await this.check()){
@@ -159,9 +164,9 @@ export class CatanRoom {
       if(typeof raw!=='string'||raw.length>8192)throw Error('消息过大。');
       const session=ws.deserializeAttachment();oldSession={...session};
       if(Date.now()-session.window>10000){session.window=Date.now();session.n=0;}if(++session.n>60)throw Error('操作过于频繁。');ws.serializeAttachment(session);
-      message=JSON.parse(raw);if(!await this.check())throw Error(this.room?.record.closeReason || '房间已关闭。');before=structuredClone(this.room.record);session.lastSeen=Date.now();ws.serializeAttachment(session);
+      message=JSON.parse(raw);rejectCommunication(this.siteEdition,message);if(!await this.check())throw Error(this.room?.record.closeReason || '房间已关闭。');before=structuredClone(this.room.record);session.lastSeen=Date.now();ws.serializeAttachment(session);
       if(!session.id){
-        if(message.type!=='hello')throw Error('请先加入房间。');session.id=this.room.join(await fingerprint(message.token),message.name);ws.serializeAttachment(session);
+        if(message.type!=='hello')throw Error('请先加入房间。');session.id=this.room.join(await fingerprint(message.token),message.name,Date.now(),message.nicknameId);ws.serializeAttachment(session);
         this.room.presence(this.online());await this.persist();
         for(const other of this.peers())if(other!==ws && other.deserializeAttachment().id===session.id){this.send(other,{type:'replaced'});other.close(4001,'Session replaced');}
         this.broadcast();return;
@@ -180,7 +185,7 @@ export class CatanRoom {
   webSocketError(ws){ws.close(1011,'Connection error');return this.webSocketClose(ws);}
   alarm(){return this.serial(async()=>{
     if(!this.room)return;
-    this.moderation=pruneModeration(this.moderation||emptyModeration());
+    if(this.siteEdition!=='cn')this.moderation=pruneModeration(this.moderation||emptyModeration());
     for(const ws of this.ctx.getWebSockets())if(ws.readyState===1){if(!ws.deserializeAttachment()?.id && Date.now()-(ws.deserializeAttachment()?.createdAt??0)>=10000)ws.close(1008,'Authentication required');else if(ws.deserializeAttachment()?.id && Date.now()-this.seen(ws)>=90000)ws.close(4000,'Heartbeat timeout');}
     const before=structuredClone(this.room.record);try{this.room.presence(this.online(),Date.now(),true);if(!this.room.record.closed && this.peers().length && this.room.nextBot())this.room.tick();await this.persist();}catch{this.room.record=before;throw Error('ROOM_ALARM_COMMIT_FAILED');}this.broadcast();
   });}

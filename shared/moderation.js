@@ -29,6 +29,7 @@ export function closedModeration(state) {
   return {...state,closed:true,hiddenChat:[],names:{},restricted:[]};
 }
 export function applyModeration(room,state) {
+  if(room.siteEdition==='cn'){room.enforceSitePolicy();return;}
   room.moderation=state;
   if(!state || room.record.closed)return;
   if(state.closed){room.close('站长已关闭房间。');return;}
@@ -50,6 +51,7 @@ export function inspectRoom(room,state,now=Date.now()) {
 // This ledger is stored independently of the game record. Never copy requests,
 // authentication material, exceptions, hands or the random stream into it.
 export function disposition(room,source,input,config,now=Date.now()) {
+  if(room.siteEdition==='cn')throw new UserError('当前站点不提供交流处置或安全审计。');
   if(!config.adminReady)throw new UserError('站长权限或处置记录留存期限尚未配置。');
   if(!input || typeof input!=='object' || Array.isArray(input))throw new UserError('处置格式无效。');
   const {action,id,reason,messageId,memberId,eventId,held}=input;

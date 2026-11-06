@@ -35,3 +35,9 @@
 @media(max-width:640px){.playing #right-panel{gap:8px}.secondary-panel{margin-top:0}.secondary-panel .activity-log{max-height:180px}.secondary-panel .chat-log{max-height:160px}.secondary-panel summary small.chat-unread:not(:empty){color:var(--accent);font-weight:600}}
 
 @media(min-width:1191px){.home #right-panel{max-height:calc(100dvh - 76px);overflow-y:auto;align-self:start}.home .board-area{height:calc(100dvh - 76px);min-height:720px;max-height:1000px}}
+
+.fixed-nickname { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px; }
+.fixed-nickname strong { font-size:22px; white-space:nowrap; }
+.domestic-site .player-circle .circle-face { font-size:12px; white-space:nowrap; }
+.circle-bot { position:absolute; top:-10px; right:-9px; border-radius:4px; padding:1px 3px; background:#315b54; color:#fff; font-size:9px; }
+.domestic-site .player-info strong { white-space:normal; overflow:visible; }

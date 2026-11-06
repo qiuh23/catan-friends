@@ -35,7 +35,8 @@
     "REPORT_CONTACT": "qiutian0808@163.com",
     "MODERATION_RETENTION_DAYS": "90",
     "BACKEND_ID": "cloudflare",
-    "PUBLIC_ORIGIN": "https://catan-friends.qiuh23.workers.dev"
+    "PUBLIC_ORIGIN": "https://catan-friends.qiuh23.workers.dev",
+    "SITE_EDITION": "global"
   },
   "ratelimits": [
     {

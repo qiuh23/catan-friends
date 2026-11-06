@@ -29,7 +29,7 @@ install -d -o root -g root -m 0755 /opt/catan-friends /opt/catan-friends/release
 install -d -o root -g catan-friends -m 0750 /etc/catan-friends
 install -d -o catan-friends -g catan-friends -m 0700 /var/lib/catan-friends
 install -d -o root -g adm -m 0750 /var/log/catan-friends
-for LOG in app.log network.log nginx-error.log; do
+for LOG in app.log nginx-error.log; do
     [[ ! -L /var/log/catan-friends/$LOG ]]
     [[ -e /var/log/catan-friends/$LOG ]] || install -o root -g adm -m 0640 /dev/null "/var/log/catan-friends/$LOG"
     chown root:adm "/var/log/catan-friends/$LOG"

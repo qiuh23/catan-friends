@@ -18,9 +18,9 @@ export function roomCreationSettings(input) {
   return { practice: input.practice === true, playerCount, options, visibility: input.visibility ?? 'public' };
 }
 
-export async function createRoomFromInput(input, now = Date.now()) {
+export async function createRoomFromInput(input, now = Date.now(), edition = 'global') {
   const settings = roomCreationSettings(input), hash = await fingerprint(input.token);
-  const room = new Room(undefined, now), id = room.join(hash, input.name, now);
+  const room = new Room(undefined, now, edition), id = room.join(hash, input.name, now, input.nicknameId);
   const command = action => room.handle(id, { id: crypto.randomUUID(), revision: room.record.revision, action }, now);
   room.record.practice = settings.practice;
   command({ type: 'configure', visibility: settings.visibility, options: settings.options });

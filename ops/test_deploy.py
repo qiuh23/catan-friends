@@ -9,12 +9,12 @@ deploy=importlib.util.module_from_spec(spec);spec.loader.exec_module(deploy)
 SHA='a'*40
 OTHER='b'*40
 IDENTITY={'action':'install','commit':SHA,'runId':12,'artifactId':34,'artifactUrl':'https://productionresultssa1.blob.core.windows.net/actions/result?sig=withheld','artifactSha256':'c'*64}
-MANIFEST={'schema':1,'stateSchema':3,'repository':'qiuh23/catan-friends','commit':SHA,'runId':12,'platform':'linux','arch':'x64','nodeMajor':24}
+MANIFEST={'schema':1,'stateSchema':3,'repository':'qiuh23/catan-friends','commit':SHA,'runId':12,'platform':'linux','arch':'x64','nodeMajor':24,'siteEdition':'cn'}
 
 def encoded(data):return base64.b64encode(json.dumps(data).encode())
 
 def bundle(extra=None,manifest=None):
-    files={'release.json':json.dumps(manifest or MANIFEST).encode(),'dist/build-info.json':json.dumps({'schema':1,'repository':'qiuh23/catan-friends','revision':SHA}).encode(),'server/index.js':b'// app','package.json':b'{}','package-lock.json':b'{}'}
+    files={'release.json':json.dumps(manifest or MANIFEST).encode(),'dist/build-info.json':json.dumps({'schema':1,'repository':'qiuh23/catan-friends','revision':SHA,'siteEdition':'cn'}).encode(),'server/index.js':b'// app','package.json':b'{}','package-lock.json':b'{}'}
     out=io.BytesIO()
     with tarfile.open(fileobj=out,mode='w:gz') as archive:
         for name,raw in files.items():
@@ -60,6 +60,7 @@ class InstallerSafety(unittest.TestCase):
         for member in members:
             with tempfile.TemporaryDirectory() as temp,self.subTest(member=member.name,kind=member.type),self.assertRaises(ValueError):deploy.safe_tar(bundle(member),Path(temp),IDENTITY)
         with tempfile.TemporaryDirectory() as temp,self.assertRaises(ValueError):deploy.safe_tar(bundle(manifest={**MANIFEST,'stateSchema':2}),Path(temp),IDENTITY)
+        with tempfile.TemporaryDirectory() as temp,self.assertRaises(ValueError):deploy.safe_tar(bundle(manifest={**MANIFEST,'siteEdition':'global'}),Path(temp),IDENTITY)
 
     def test_public_provenance_rejects_stale_or_wrong_sources(self):
         main={'object':{'sha':SHA}}

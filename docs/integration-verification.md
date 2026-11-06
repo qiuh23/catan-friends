@@ -1,5 +1,8 @@
 # 卡坦岛集成验证与生产待办（2026-11-05）
 
+> 历史验收：其中涉及国内自由昵称、聊天及跨站入口的方案已被 [独立站点策略](site-editions.md) 替代。本文件保留当时证据，不代表新策略已经发布或验收。
+
+
 ## 当前交付状态
 
 Fork：[qiuh23/catan-friends](https://github.com/qiuh23/catan-friends)，原作者与 parent 为 [Jack15678/catan-friends](https://github.com/Jack15678/catan-friends)。起点为 upstream/main `b0db91f99be03bd5f30b66d32ba0afc7addc80cd`；保留原提交历史，不添加许可证。用户确认作者为朋友并明确要求跳过邮件授权核对；无需继续查邮件。
