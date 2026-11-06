@@ -1,7 +1,7 @@
 import { chromium } from 'playwright';
 import { Vector3 } from 'three';
 import assert from 'node:assert/strict';
-import { boardCamera, toggleBoard, openStagePanel } from './browser-stage-helpers.js';
+import { boardCamera, toggleBoard, openStagePanel, openEntry } from './browser-stage-helpers.js';
 const url=process.env.TEST_URL||'http://127.0.0.1:5175',browser=await chromium.launch({headless:true});
 const errors=[];
 async function open(context){
@@ -12,8 +12,8 @@ async function open(context){
 try{
   const contexts=await Promise.all([0,1,2].map(()=>browser.newContext({viewport:{width:1440,height:960}}))),clients=[];
   for(const context of contexts)clients.push(await open(context));
-  const [a,b,c]=clients;await a.page.goto(url);await a.page.locator('#nickname').fill('房主');await a.page.getByRole('button',{name:'创建好友房间'}).click();await a.wait(s=>s.phase==='lobby');const room=new URL(a.page.url()).searchParams.get('room');
-  for(const [i,client] of [b,c].entries()){await client.page.goto(`${url}/?room=${room}`);await client.page.locator('#nickname').fill(`朋友${i+1}`);await client.page.getByRole('button',{name:'加入房间',exact:true}).click();await client.wait(s=>s.players.length>=2);await client.page.getByRole('button',{name:'我准备好了'}).click();await client.wait(s=>s.players.find(p=>p.id===s.me).ready);}
+  const [a,b,c]=clients;await a.page.goto(url);await openEntry(a.page);await a.page.locator('#nickname').fill('房主');await a.page.getByRole('button',{name:'创建好友房间'}).click();await a.wait(s=>s.phase==='lobby');const room=new URL(a.page.url()).searchParams.get('room');
+  for(const [i,client] of [b,c].entries()){await client.page.goto(`${url}/?room=${room}`);await openEntry(client.page);await client.page.locator('#nickname').fill(`朋友${i+1}`);await client.page.getByRole('button',{name:'加入房间',exact:true}).click();await client.wait(s=>s.players.length>=2);await client.page.getByRole('button',{name:'我准备好了'}).click();await client.wait(s=>s.players.find(p=>p.id===s.me).ready);}
   await a.wait(s=>s.players.length===3&&s.players.slice(1).every(p=>p.ready));await a.page.getByRole('button',{name:'开始探索'}).click();await a.wait(s=>s.phase==='setup-settlement');
   // Project a legal intersection into the real 3D canvas, then click through the raycaster.
   const bounds=await a.page.locator('#board canvas').boundingBox(),v=a.state.board.vertices[a.state.legal.settlement[0]];

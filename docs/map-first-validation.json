@@ -1,0 +1,352 @@
+{
+  "date": "2026-11-06",
+  "baseMain": "6ae4339ede2a3b58f6c0369dc7a79607ed206a8a",
+  "scope": "Local browser viewport/touch/keyboard-space simulations, no physical mobile device validation",
+  "unitTests": {
+    "passed": 131,
+    "skipped": 0,
+    "failed": 0
+  },
+  "layouts": [
+    {
+      "name": "chromium-home-desktop1920",
+      "width": 1920,
+      "height": 1080,
+      "scrollWidth": 1920,
+      "scrollHeight": 1080,
+      "scrollY": 0
+    },
+    {
+      "name": "chromium-3-desktop1920",
+      "width": 1920,
+      "height": 1080,
+      "scrollWidth": 1920,
+      "scrollHeight": 1080,
+      "scrollY": 0
+    },
+    {
+      "name": "chromium-6-desktop1920",
+      "width": 1920,
+      "height": 1080,
+      "scrollWidth": 1920,
+      "scrollHeight": 1080,
+      "scrollY": 0
+    },
+    {
+      "name": "chromium-home-desktop1366",
+      "width": 1366,
+      "height": 768,
+      "scrollWidth": 1366,
+      "scrollHeight": 768,
+      "scrollY": 0
+    },
+    {
+      "name": "chromium-3-desktop1366",
+      "width": 1366,
+      "height": 768,
+      "scrollWidth": 1366,
+      "scrollHeight": 768,
+      "scrollY": 0
+    },
+    {
+      "name": "chromium-6-desktop1366",
+      "width": 1366,
+      "height": 768,
+      "scrollWidth": 1366,
+      "scrollHeight": 768,
+      "scrollY": 0
+    },
+    {
+      "name": "chromium-home-portrait",
+      "width": 390,
+      "height": 844,
+      "scrollWidth": 390,
+      "scrollHeight": 844,
+      "scrollY": 0
+    },
+    {
+      "name": "chromium-3-portrait",
+      "width": 390,
+      "height": 844,
+      "scrollWidth": 390,
+      "scrollHeight": 844,
+      "scrollY": 0
+    },
+    {
+      "name": "chromium-6-portrait",
+      "width": 390,
+      "height": 844,
+      "scrollWidth": 390,
+      "scrollHeight": 844,
+      "scrollY": 0
+    },
+    {
+      "name": "chromium-6-flat-portrait",
+      "width": 390,
+      "height": 844,
+      "scrollWidth": 390,
+      "scrollHeight": 844,
+      "scrollY": 0
+    },
+    {
+      "name": "chromium-home-landscape",
+      "width": 844,
+      "height": 390,
+      "scrollWidth": 844,
+      "scrollHeight": 390,
+      "scrollY": 0
+    },
+    {
+      "name": "chromium-3-landscape",
+      "width": 844,
+      "height": 390,
+      "scrollWidth": 844,
+      "scrollHeight": 390,
+      "scrollY": 0
+    },
+    {
+      "name": "chromium-6-landscape",
+      "width": 844,
+      "height": 390,
+      "scrollWidth": 844,
+      "scrollHeight": 390,
+      "scrollY": 0
+    },
+    {
+      "name": "chromium-home-short-landscape",
+      "width": 667,
+      "height": 320,
+      "scrollWidth": 667,
+      "scrollHeight": 320,
+      "scrollY": 0
+    },
+    {
+      "name": "chromium-3-short-landscape",
+      "width": 667,
+      "height": 320,
+      "scrollWidth": 667,
+      "scrollHeight": 320,
+      "scrollY": 0
+    },
+    {
+      "name": "chromium-6-short-landscape",
+      "width": 667,
+      "height": 320,
+      "scrollWidth": 667,
+      "scrollHeight": 320,
+      "scrollY": 0
+    },
+    {
+      "name": "chromium-safe-area-portrait",
+      "width": 390,
+      "height": 844,
+      "scrollWidth": 390,
+      "scrollHeight": 844,
+      "scrollY": 0
+    },
+    {
+      "name": "chromium-safe-area-landscape",
+      "width": 667,
+      "height": 375,
+      "scrollWidth": 667,
+      "scrollHeight": 375,
+      "scrollY": 0
+    },
+    {
+      "name": "webkit-home-desktop1920",
+      "width": 1920,
+      "height": 1080,
+      "scrollWidth": 1920,
+      "scrollHeight": 1080,
+      "scrollY": 0
+    },
+    {
+      "name": "webkit-3-desktop1920",
+      "width": 1920,
+      "height": 1080,
+      "scrollWidth": 1920,
+      "scrollHeight": 1080,
+      "scrollY": 0
+    },
+    {
+      "name": "webkit-6-desktop1920",
+      "width": 1920,
+      "height": 1080,
+      "scrollWidth": 1920,
+      "scrollHeight": 1080,
+      "scrollY": 0
+    },
+    {
+      "name": "webkit-home-desktop1366",
+      "width": 1366,
+      "height": 768,
+      "scrollWidth": 1366,
+      "scrollHeight": 768,
+      "scrollY": 0
+    },
+    {
+      "name": "webkit-3-desktop1366",
+      "width": 1366,
+      "height": 768,
+      "scrollWidth": 1366,
+      "scrollHeight": 768,
+      "scrollY": 0
+    },
+    {
+      "name": "webkit-6-desktop1366",
+      "width": 1366,
+      "height": 768,
+      "scrollWidth": 1366,
+      "scrollHeight": 768,
+      "scrollY": 0
+    },
+    {
+      "name": "webkit-home-portrait",
+      "width": 390,
+      "height": 844,
+      "scrollWidth": 390,
+      "scrollHeight": 844,
+      "scrollY": 0
+    },
+    {
+      "name": "webkit-3-portrait",
+      "width": 390,
+      "height": 844,
+      "scrollWidth": 390,
+      "scrollHeight": 844,
+      "scrollY": 0
+    },
+    {
+      "name": "webkit-6-portrait",
+      "width": 390,
+      "height": 844,
+      "scrollWidth": 390,
+      "scrollHeight": 844,
+      "scrollY": 0
+    },
+    {
+      "name": "webkit-home-landscape",
+      "width": 844,
+      "height": 390,
+      "scrollWidth": 844,
+      "scrollHeight": 390,
+      "scrollY": 0
+    },
+    {
+      "name": "webkit-3-landscape",
+      "width": 844,
+      "height": 390,
+      "scrollWidth": 844,
+      "scrollHeight": 390,
+      "scrollY": 0
+    },
+    {
+      "name": "webkit-6-landscape",
+      "width": 844,
+      "height": 390,
+      "scrollWidth": 844,
+      "scrollHeight": 390,
+      "scrollY": 0
+    },
+    {
+      "name": "webkit-home-short-landscape",
+      "width": 667,
+      "height": 320,
+      "scrollWidth": 667,
+      "scrollHeight": 320,
+      "scrollY": 0
+    },
+    {
+      "name": "webkit-3-short-landscape",
+      "width": 667,
+      "height": 320,
+      "scrollWidth": 667,
+      "scrollHeight": 320,
+      "scrollY": 0
+    },
+    {
+      "name": "webkit-6-short-landscape",
+      "width": 667,
+      "height": 320,
+      "scrollWidth": 667,
+      "scrollHeight": 320,
+      "scrollY": 0
+    }
+  ],
+  "layoutPageErrors": [],
+  "bubbleCases": [
+    "road-3d-1366",
+    "city-3d-1920",
+    "robber-3d-390",
+    "settlement-3d-844",
+    "road-2d-390",
+    "city-2d-1366",
+    "robber-2d-667",
+    "settlement-2d-390",
+    "actor-development",
+    "reduced-motion"
+  ],
+  "bubbleLifetimesMs": [
+    1256.3,
+    1262.6,
+    1262.0,
+    1251.4,
+    1258.1,
+    1254.8,
+    1256.6,
+    1265.8,
+    1250.7,
+    1252.3,
+    1258.9,
+    1260.0
+  ],
+  "bubblePageErrors": [],
+  "viewRecovery": [
+    {
+      "name": "desktop",
+      "viewport": {
+        "width": 1366,
+        "height": 768
+      },
+      "rendererRoundTrip": true,
+      "flatRefresh": true,
+      "manualFollowPreserved": true,
+      "reconnect": true,
+      "threeDRefresh": true,
+      "nextActionKeepsView": true
+    },
+    {
+      "name": "portrait",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "rendererRoundTrip": true,
+      "flatRefresh": true,
+      "manualFollowPreserved": true,
+      "reconnect": true,
+      "threeDRefresh": true,
+      "nextActionKeepsView": true
+    },
+    {
+      "name": "short-landscape",
+      "viewport": {
+        "width": 667,
+        "height": 320
+      },
+      "rendererRoundTrip": true,
+      "flatRefresh": true,
+      "manualFollowPreserved": true,
+      "reconnect": true,
+      "threeDRefresh": true,
+      "nextActionKeepsView": true
+    }
+  ],
+  "unverified": [
+    "Physical iOS/Safari and Android devices",
+    "Native system keyboards and rotation",
+    "Device GPU, thermal and battery behavior",
+    "Mobile networks",
+    "Production rollout of this PR"
+  ]
+}

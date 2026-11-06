@@ -4,7 +4,7 @@ import {mkdtemp,mkdir,rm} from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import {createServer} from '../server/index.js';
-import {openStagePanel,closeStagePanel,toggleBoard} from './browser-stage-helpers.js';
+import { openStagePanel,closeStagePanel,toggleBoard, openEntry } from './browser-stage-helpers.js';
 const dataDir=await mkdtemp(path.join(os.tmpdir(),'catan-chat-ui-'));
 const app=await createServer({port:0,host:'127.0.0.1',dataDir,security:{}}),url=`http://127.0.0.1:${app.port}`;
 const browser=await chromium.launch({headless:true}),errors=[];await mkdir('test-results',{recursive:true});
@@ -31,8 +31,8 @@ try{
   const a=await client(),b=await client(),c=await client();await a.page.goto(url);await a.page.getByRole('button',{name:'隐私 / 举报',exact:true}).click();
   await a.page.getByText('qiutian0808@163.com · 用邮件举报',{exact:true}).waitFor();assert.match(await a.page.locator('#report-copy').innerText(),/90 天/);assert.match(await a.page.locator('#report-copy').innerText(),/尚未启用/);
   const mail=await a.page.locator('#report-mail').getAttribute('href');assert.ok(mail.startsWith('mailto:qiutian0808@163.com?'));assert.ok(!mail.includes('token'));await a.page.getByRole('button',{name:'关闭举报说明'}).click();
-  await a.page.locator('#nickname').fill('房主');await a.page.getByRole('button',{name:'创建好友房间'}).click();await a.wait(s=>s.phase==='lobby');const room=new URL(a.page.url()).searchParams.get('room');
-  for(const [i,player] of [b,c].entries()){await player.page.goto(`${url}/?room=${room}`);await player.page.locator('#nickname').fill('朋友'+(i+1));await player.page.getByRole('button',{name:'加入房间',exact:true}).click();await player.wait(s=>s.players.length>=2);await player.page.getByRole('button',{name:'我准备好了'}).click();await player.wait(s=>s.players.find(p=>p.id===s.me).ready);}
+  await openEntry(a.page);await a.page.locator('#nickname').fill('房主');await a.page.getByRole('button',{name:'创建好友房间'}).click();await a.wait(s=>s.phase==='lobby');const room=new URL(a.page.url()).searchParams.get('room');
+  for(const [i,player] of [b,c].entries()){await player.page.goto(`${url}/?room=${room}`);await openEntry(player.page);await player.page.locator('#nickname').fill('朋友'+(i+1));await player.page.getByRole('button',{name:'加入房间',exact:true}).click();await player.wait(s=>s.players.length>=2);await player.page.getByRole('button',{name:'我准备好了'}).click();await player.wait(s=>s.players.find(p=>p.id===s.me).ready);}
   await a.wait(s=>s.players.length===3&&s.players.slice(1).every(p=>p.ready));await a.page.getByRole('button',{name:'开始探索'}).click();await a.wait(s=>s.phase==='setup-settlement');
   await toggleBoard(a.page,'切换二维棋盘');for(const player of [b,c])await openStagePanel(player.page,'openChat');
   await b.page.locator('#chat-message').fill('乙与落子同时发送');await c.page.locator('#chat-message').fill('丙与落子同时发送');

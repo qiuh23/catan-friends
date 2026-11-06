@@ -1,5 +1,12 @@
 import { PerspectiveCamera } from 'three';
 
+export async function openEntry(page) {
+  const trigger=page.locator('[data-action="openEntry"]');
+  await page.locator('#nickname').waitFor({state:'attached'});
+  if(!await page.locator('#nickname').isVisible())await trigger.click();
+  await page.locator('#nickname').waitFor({state:'visible'});
+}
+
 // Exercise the same visible controls as players, including the settings drawer.
 export async function closeStagePanel(page) {
   if (await page.locator('#stage-dialog[open]').count()) {

@@ -4,6 +4,7 @@ import { resourceIllustration } from './icons.js';
 import { terrain } from './terrain.js';
 import { boardFrame } from './board-frame.js';
 import { feedbackPoints } from './action-camera.js';
+import { feedbackAnchor, mapViewKey } from './map-feedback.js';
 
 const buildingPath=(kind,x,y,scale=1)=>{
   const points=kind==='city'?[[-12,9],[12,9],[12,-2],[4,-2],[4,-13],[-5,-13],[-5,-5],[-12,-5]]:[[-9,8],[9,8],[9,-1],[0,-10],[-9,-1]];
@@ -58,6 +59,20 @@ export class FlatBoard {
     const svg=this.container.querySelector('svg');if(svg)svg.dataset.selectedSite=el?`${this.mode==='road'?'edge':'vertex'}:${el.dataset.id}`:'';
   }
   point(x,z){return this.landscape?{x:z*50+300,y:-x*50+290}:{x:x*50+300,y:z*50+290};}
+  projectFeedbackTarget(target) {
+    const anchor=feedbackAnchor(this.state?.board,target),svg=this.container.querySelector('svg'),matrix=svg?.getScreenCTM();
+    if(!anchor||!matrix)return null;
+    const local=this.point(anchor.x,anchor.z),screen=new DOMPoint(local.x,local.y).matrixTransform(matrix),rect=this.container.getBoundingClientRect();
+    const x=screen.x-rect.left,y=screen.y-rect.top;
+    return {x,y,visible:Number.isFinite(x)&&Number.isFinite(y)&&x>=0&&y>=0&&x<=rect.width&&y<=rect.height};
+  }
+  exportView(){return {kind:'2d',mapKey:mapViewKey(this.state?.board),zoom:this.zoom,pan:{...this.pan},landscape:this.landscape};}
+  importView(view) {
+    if(view?.kind!=='2d'||view.mapKey!==mapViewKey(this.state?.board)||!Number.isFinite(view.zoom)||view.zoom<1||view.zoom>4||!Number.isFinite(view.pan?.x)||!Number.isFinite(view.pan?.y))return false;
+    this.cancelFocus();this.zoom=view.zoom;this.pan={...view.pan};
+    if(view.landscape!==this.landscape)this.pan=this.landscape?{x:this.pan.y,y:-this.pan.x}:{x:-this.pan.y,y:this.pan.x};
+    this.resize();return true;
+  }
   setFeedback(event,{reducedMotion=this.reducedMotion??false}={}) {
     this.feedback=event;this.reducedMotion=reducedMotion;
     const svg=this.container.querySelector('svg');if(!svg||!this.state?.board)return;
@@ -103,6 +118,7 @@ export class FlatBoard {
     const f=boardFrame(w,h,this.padding),scale=this.scale=Math.min(f.width/bounds.width,f.height/bounds.height)*.96*this.zoom;
     const x=bounds.x-f.left/scale-(f.width/scale-bounds.width)/2-this.pan.x,y=bounds.y-f.top/scale-(f.height/scale-bounds.height)/2-this.pan.y;
     svg.setAttribute('viewBox',`${x} ${y} ${w/scale} ${h/scale}`);
+    this.onProjectionChange?.();
   }
   set(state,mode){
     const b=state.board;if(!b)return;this.state=state;this.mode=mode;
@@ -144,5 +160,5 @@ export class FlatBoard {
     if(mode==='robber')for(const el of this.container.querySelectorAll('[data-tile]'))if(state.legal.robber.includes(Number(el.dataset.tile)))activate(el,'tile',Number(el.dataset.tile),`将强盗移动至 ${LABELS[b.tiles[Number(el.dataset.tile)].resource]}地块 ${Number(el.dataset.tile)+1}`);
     this.setFeedback(this.feedback,{reducedMotion:this.reducedMotion});
   }
-  dispose(){this.cancelFocus();this.events.abort();this.observer.disconnect();this.container.innerHTML='';}
+  dispose(){this.onProjectionChange=null;this.cancelFocus();this.events.abort();this.observer.disconnect();this.container.innerHTML='';}
 }

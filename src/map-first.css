@@ -1,0 +1,119 @@
+/* Entry and play share the existing viewport stage, never a page of columns. */
+body.at-home { position:fixed; inset:0; overflow:hidden; overscroll-behavior:none; }
+.at-home #app { height:100%; min-height:0; overflow:hidden; }
+.at-home .topbar { position:fixed; z-index:4; inset:0 0 auto; height:76px; min-height:0; display:flex; padding:12px max(16px,env(safe-area-inset-right)) 12px max(16px,env(safe-area-inset-left)); background:transparent; border:0; }
+.at-home .topbar .brand { padding:5px 10px 5px 5px; border-radius:14px; background:#f8f7efeb; font-size:21px; }
+.at-home .topbar nav { display:flex; gap:5px; padding:3px; border-radius:12px; background:#f8f7efed; }
+.at-home .topbar nav button,.at-home .topbar nav a { min-width:44px; min-height:44px; padding:10px; margin:0; }
+.at-home .topbar nav button>span,.at-home #room-meta { display:none; }
+.table.home { position:fixed; inset:0; display:block; width:100%; height:100dvh; min-height:0; overflow:hidden; background:var(--ocean); }
+.table.home>#left-panel,.table.home>#right-panel { display:none; }
+.home .board-area { position:absolute; inset:0; display:block; width:100%; height:100%; min-height:0; max-height:none; padding:0; }
+.home #board { position:absolute; inset:0; width:100%; height:100%; min-height:0; }
+.home #island-caption,.home .tile-hint { display:none; }
+.home .board-controls { position:absolute; z-index:4; top:auto; bottom:max(14px,env(safe-area-inset-bottom)); right:max(14px,env(safe-area-inset-right)); display:flex; margin:0; padding:3px; border-radius:12px; background:#f8f7efed; }
+.home .board-controls button { width:44px; min-height:44px; background:transparent; }
+#home-dock { position:absolute; z-index:4; bottom:max(14px,env(safe-area-inset-bottom)); left:50%; transform:translateX(-50%); display:flex; gap:6px; width:max-content; max-width:calc(100% - 24px); padding:5px; border-radius:14px; border:1px solid #fff9; background:#f8f7efed; box-shadow:0 4px 24px #173b3b20; }
+#home-dock button { min-height:48px; padding:10px 16px; white-space:nowrap; font-size:13px; }
+#home-dock[hidden],#player-orbit:empty { display:none; }
+#entry-dialog,#rooms-dialog { position:fixed; top:calc(var(--visual-top) + var(--visual-height)/2); transform:translateY(-50%); margin:0 auto; width:min(460px,calc(100vw - 24px)); max-height:calc(var(--visual-height) - 24px); padding:0; overflow:hidden; }
+#entry-dialog[open],#rooms-dialog[open] { display:flex; flex-direction:column; }
+#entry-dialog>.dialog-heading,#rooms-dialog>.dialog-heading { flex:none; padding:12px 18px; margin:0; border-bottom:1px solid #dce1d1; }
+#entry-dialog .dialog-heading h2,#rooms-dialog .dialog-heading h2 { font-size:18px; }
+#entry-dialog .square,#rooms-dialog .square { width:44px; min-height:44px; }
+#entry-content,#rooms-content { padding:18px 22px; min-height:0; overflow-y:auto; overscroll-behavior:contain; }
+#entry-content .home-intro { display:none; }
+#entry-content .home-bottom { margin-top:15px; padding-top:8px; font-size:10px; }
+#entry-content .create-heading { margin-top:16px; }
+#entry-content .create-heading select { margin:0; }
+#entry-content #create-room { width:100%; min-height:44px; margin-top:14px; }
+#entry-content input,#entry-content select { font-size:16px; min-height:44px; }
+#entry-content .join-row { margin-top:9px; }
+#entry-content .practice-entry { margin-top:10px; }
+#rooms-content .public-rooms>.panel-heading h2 { display:none; }
+#rooms-content .public-rooms>.panel-heading { justify-content:flex-end; margin:0; }
+
+/* Six public player entries remain a row of small rings, with a shape marker. */
+#player-orbit { position:absolute; z-index:4; top:max(78px,calc(66px + env(safe-area-inset-top))); right:max(14px,env(safe-area-inset-right)); display:flex; align-items:center; gap:8px; padding:5px 3px 9px; pointer-events:none; }
+.player-circle { position:relative; width:44px; height:44px; min-height:44px; flex:none; display:grid; place-items:center; padding:3px; border:3px solid var(--player); border-radius:50%; background:#f9f5e9; box-shadow:0 2px 9px #173b3b20; pointer-events:auto; }
+.player-circle .circle-face { display:grid; place-items:center; font-size:17px; font-weight:700; color:#244c48; }
+.player-circle .circle-face>.icon { width:24px; height:24px; }
+.circle-score { position:absolute; right:-5px; bottom:-5px; min-width:20px; height:20px; display:grid; place-items:center; padding:1px 4px; border:1px solid #bccab9; border-radius:10px; background:#fff9e9; color:#244c48; font-size:11px; line-height:1; }
+.circle-turn { position:absolute; top:-14px; left:50%; transform:translateX(-50%) rotate(90deg); width:19px; height:19px; border-radius:50%; background:#244c48; color:#fff9e9; }
+.circle-turn>.icon { width:17px; height:17px; }
+.player-circle[aria-current=true] { outline:2px solid #fff9e9; outline-offset:2px; }
+.circle-self { position:absolute; left:-7px; bottom:-5px; display:grid; place-items:center; width:18px; height:18px; border-radius:50%; background:#244c48; color:#fff9e9; font-size:10px; }
+.circle-offline { position:absolute; top:-6px; right:-7px; width:18px; height:18px; border-radius:50%; background:#faf8ec; color:#633d29; }
+.circle-offline .icon { width:16px; height:16px; }
+.player-detail { text-align:center; }
+.detail-avatar { margin:0 auto 12px; width:64px; height:64px; display:grid; place-items:center; border:4px solid var(--player); border-radius:50%; font-size:26px; }
+.detail-avatar .icon { width:34px; height:34px; }
+.player-detail h3 { margin:0; font-size:19px; overflow-wrap:anywhere; }
+.player-detail h3 small { font-size:12px; }
+.player-detail p { font-size:12px; margin-top:7px; }
+.public-stats { display:grid; grid-template-columns:1fr 1fr; gap:10px; padding:20px 0; }
+.public-stats>span { display:flex; align-items:center; justify-content:center; gap:5px; padding:10px; background:#e9eddf; border-radius:10px; font-size:12px; }
+.public-stats .icon { width:22px; height:22px; }
+.public-stats b { font-size:20px; }
+
+/* The existing public stream/highlights now drive one bounded map bubble. */
+#action-feedback { top:0; left:0; max-width:min(230px,70vw); min-height:0; width:max-content; padding:7px 11px; gap:0; transform:translate(-50%,calc(-100% - 14px)); pointer-events:none; border:1px solid #fff9; border-radius:10px; background:#244c48f2; color:#fff9e9; box-shadow:0 3px 14px #123b3d30; }
+#action-feedback::after { content:''; position:absolute; left:50%; bottom:-7px; transform:translateX(-50%); border:7px solid transparent; border-top-color:#244c48; border-bottom:0; }
+#action-feedback p { font-size:12px; line-height:1.45; -webkit-line-clamp:2; }
+#action-feedback button { display:none; }
+.playing.has-action-feedback .tile-hint { visibility:visible; }
+.playing .tile-hint { display:none; }
+
+@media(max-width:700px) {
+  .at-home .topbar { height:calc(66px + env(safe-area-inset-top)); padding:max(8px,env(safe-area-inset-top)) max(8px,env(safe-area-inset-right)) 8px max(8px,env(safe-area-inset-left)); }
+  .at-home .topbar .brand { font-size:18px; gap:6px; }
+  .at-home .topbar .brand small { display:none; }
+  .at-home .topbar nav { gap:0; }
+  .at-home .topbar nav a { font-size:11px; max-width:88px; padding:6px; }
+  #home-dock { bottom:max(12px,env(safe-area-inset-bottom)); gap:3px; padding:4px; }
+  #home-dock button { font-size:12px; padding:8px 10px; gap:5px; }
+  .home .board-controls { top:calc(76px + env(safe-area-inset-top)); bottom:auto; right:max(8px,env(safe-area-inset-right)); flex-direction:column; gap:0; padding:1px; }
+  #player-orbit { top:calc(66px + env(safe-area-inset-top)); right:0; left:0; justify-content:center; gap:8px; }
+  .playing .board-top { top:calc(128px + env(safe-area-inset-top)); left:8px; right:8px; }
+  .playing .turn-banner { max-width:390px; margin:auto; }
+  .table.playing { --board-pad-top:186px; }
+  #entry-content,#rooms-content { padding:14px 18px; }
+}
+@media(orientation:landscape) and (max-height:600px) {
+  #player-orbit { top:calc(10px + env(safe-area-inset-top)); left:50%; right:auto; transform:translateX(-50%); gap:4px; }
+  .player-circle { width:40px; height:40px; min-height:40px; }
+  .playing #camera-toolbar { display:none; }
+  .playing .stage-utilities { gap:0; }
+  .playing .board-top { top:calc(8px + env(safe-area-inset-top)); left:60px; right:auto; width:132px; }
+  .playing .turn-banner { min-height:44px; max-width:132px; padding:4px 6px; gap:4px; }
+  .playing .turn-banner>div:not(.dice-pair) { display:flex; flex-direction:column; align-items:flex-start; min-width:0; gap:1px; }
+  .playing .turn-banner strong { max-width:72px; font-size:11px; }
+  .playing .turn-banner .turn-description { max-width:72px; font-size:9px; }
+  .playing .turn-dot { display:none; }
+  .playing .turn-banner .dice-pair { gap:2px; margin-left:auto; }
+  .playing .dice-pair span { width:18px; height:18px; }
+  .playing .dice-pair>b { font-size:11px; margin:0; }
+  .playing .turn-banner .task-shortcut { padding:4px; min-width:40px; font-size:10px; }
+  .table.playing { --board-pad-top:78px; }
+  .playing.compact-hud .stage-brand { display:none; }
+  .playing.compact-hud .board-top { left:max(8px,env(safe-area-inset-left)); width:106px; }
+  .playing.compact-hud #player-orbit { left:calc(max(8px,env(safe-area-inset-left)) + 112px); transform:none; padding-left:0; padding-right:0; }
+  .playing.compact-hud .stage-utilities button { width:40px; min-width:40px; padding:8px; }
+  .home .board-controls { top:8px; bottom:auto; right:8px; flex-direction:row; }
+  .at-home .topbar { right:112px; }
+  .at-home .topbar nav a { max-width:78px; }
+  #entry-dialog { width:min(600px,calc(100vw - 24px)); }
+  #entry-content #entry-form { display:grid; grid-template-columns:1fr 1fr; gap:8px 18px; align-items:start; }
+  #entry-content #entry-form>label { grid-column:1; }
+  #entry-content #entry-form>#nickname { grid-column:1; }
+  #entry-content #entry-form>.join-row { grid-column:1; }
+  #entry-content #entry-form>.create-heading { grid-column:2; grid-row:1/3; margin:0; }
+  #entry-content #entry-form>.create-options { grid-column:2; grid-row:3/6; margin:0; }
+  #entry-content #create-room { grid-column:1; }
+}
+@media(max-width:359px) {
+  #home-dock button { width:86px; padding:6px; font-size:11px; flex-direction:column; gap:2px; }
+  #home-dock .icon { width:18px; height:18px; }
+  #player-orbit { gap:6px; }
+  .at-home .topbar .brand { font-size:16px; }
+}

@@ -3,7 +3,7 @@ import { Vector3 } from 'three';
 import assert from 'node:assert/strict';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { createGame, addPlayer, act, botAction, viewFor, RESOURCES } from '../shared/game.js';
-import { boardCamera, toggleBoard, openStagePanel, closeStagePanel } from './browser-stage-helpers.js';
+import { boardCamera, toggleBoard, openStagePanel, closeStagePanel, openEntry } from './browser-stage-helpers.js';
 
 // These loopback-only fixtures exercise rare UI states without changing a live
 // game or exposing another player's hand. Actual room flows have separate tests.
@@ -44,7 +44,7 @@ async function open(count,viewport,{touch=true,setup=false}={}) {
       }catch(error){ws.send(JSON.stringify({type:'error',id:m.id,message:error.message}));}
     });
   });
-  await page.goto(url);await page.locator('#nickname').fill('海风');await page.getByRole('button',{name:'创建好友房间'}).click();
+  await page.goto(url);await openEntry(page);await page.locator('#nickname').fill('海风');await page.getByRole('button',{name:'创建好友房间'}).click();
   await page.locator('.playing #board canvas[data-render-stats]').waitFor();
   await page.waitForFunction(()=>JSON.parse(document.querySelector('#board canvas').dataset.renderStats).pieceBuilds>0);
   return {context,page,actions,get game(){return game;},setGame(next){game=next;publish();},publish,chat(text){chat=[...chat,{id:`peer-${revision}`,name:'松林',text}];publish();}};
