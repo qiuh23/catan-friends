@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { appendFile, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -44,9 +44,29 @@ async function prepare(release) {
   await writeFile(join(deployer, 'package.json'), JSON.stringify({ name: 'trusted-catan-deployer', private: true }));
   await writeFile(resolve(process.env.RUNNER_TEMP, 'catan-wrangler.json'), JSON.stringify(worker));
 }
+/** Retry only management reads. Mutations need their existing guarded recovery. */
+export async function cloudflareRequest(url, init, { fetchImpl = fetch, sleep = ms => new Promise(resolve => setTimeout(resolve, ms)), now = Date.now } = {}) {
+  const read = (init.method ?? 'GET').toUpperCase() === 'GET', attempts = read ? 4 : 1;
+  for (let attempt = 0; attempt < attempts; attempt++) {
+    let response;
+    try { response = await fetchImpl(url, { ...init, signal: AbortSignal.timeout(20000) }); }
+    catch (error) {
+      if (attempt + 1 === attempts || !(error instanceof TypeError || ['AbortError', 'TimeoutError'].includes(error?.name))) throw error;
+      await sleep(1000 * 2 ** attempt);
+      continue;
+    }
+    if (attempt + 1 === attempts || !(response.status === 429 || response.status >= 500 && response.status <= 599)) return response;
+    const retryAfter = response.headers.get('retry-after');
+    const seconds = retryAfter === null || retryAfter.trim() === '' ? NaN : Number(retryAfter);
+    const requestedWait = Number.isFinite(seconds) ? seconds * 1000 : Date.parse(retryAfter) - now();
+    const wait = Math.min(30000, Math.max(1000 * 2 ** attempt, Number.isFinite(requestedWait) ? requestedWait : 0));
+    await response.body?.cancel().catch(() => {});
+    await sleep(wait);
+  }
+}
 async function cf(path, body) {
   if (!/^[a-f0-9]{32}$/i.test(process.env.CLOUDFLARE_ACCOUNT_ID ?? '') || !process.env.CLOUDFLARE_API_TOKEN) throw Error('Missing dedicated Cloudflare release credentials.');
-  return fetch(`https://api.cloudflare.com/client/v4/accounts/${process.env.CLOUDFLARE_ACCOUNT_ID}/workers/scripts/catan-friends${path}`, { method: body ? 'POST' : 'GET', headers: { Authorization: `Bearer ${process.env.CLOUDFLARE_API_TOKEN}`, ...(body ? { 'Content-Type': 'application/json' } : {}) }, body: body ? JSON.stringify(body) : undefined, signal: AbortSignal.timeout(20000) });
+  return cloudflareRequest(`https://api.cloudflare.com/client/v4/accounts/${process.env.CLOUDFLARE_ACCOUNT_ID}/workers/scripts/catan-friends${path}`, { method: body ? 'POST' : 'GET', headers: { Authorization: `Bearer ${process.env.CLOUDFLARE_API_TOKEN}`, ...(body ? { 'Content-Type': 'application/json' } : {}) }, body: body ? JSON.stringify(body) : undefined });
 }
 const cloudRecordPath = () => resolve(process.env.RUNNER_TEMP, 'catan-cloudflare-attempt.json');
 async function currentVersion() {
@@ -107,6 +127,24 @@ async function rollbackWorker(release) {
 async function assertCurrent(release) {
   const current = await resolveRelease(release.runId);
   if (!current || JSON.stringify(current) !== JSON.stringify(release) || execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim() !== release.commit) throw Error('Release became stale or the trusted control checkout does not match current checked main.');
+}
+export function transientCloudflareCommand(output) {
+  if (/authentication error|unauthorized|forbidden|permission denied|configuration error|validation error|invalid (?:configuration|binding|argument)|\[code:\s*(?:10000|10005|10023)\]/i.test(output)) return false;
+  return /(?:\bHTTP(?: status)?|\bstatus(?: code)?|->)\s*[:=]?\s*(?:429|5\d\d)\b|\b(?:429 Too Many Requests|50[0234] (?:Service Unavailable|Bad Gateway|Gateway Timeout|Internal Server Error))\b|fetch failed|ECONNRESET|ETIMEDOUT|no healthy upstream|upstream connect error|network connection lost/i.test(output);
+}
+/** A fixed artifact may be retried only while it remains the exact checked main. */
+export async function runWorkerDeploy(release, { directory = resolve(process.env.RUNNER_TEMP, 'catan-deployer'), config = resolve(process.env.RUNNER_TEMP, 'catan-wrangler.json'), checkCurrent = () => assertCurrent(release), execute = args => spawnSync(process.execPath, [resolve(directory, 'node_modules/wrangler/bin/wrangler.js'), ...args], {cwd:directory,env:process.env,encoding:'utf8',timeout:240000,maxBuffer:4*1024*1024}), sleep = ms => new Promise(resolve => setTimeout(resolve, ms)), report = text => process.stdout.write(text) } = {}) {
+  const args = ['deploy', '--no-bundle', '--config', config];
+  for (let attempt = 0; attempt < 4; attempt++) {
+    await checkCurrent();
+    const result = execute(args), output = String(result.stdout ?? '') + String(result.stderr ?? '');
+    if (output) report(output);
+    if (result.status === 0) return;
+    // A local process failure is not evidence that Cloudflare is unavailable.
+    if (result.error || !transientCloudflareCommand(output) || attempt === 3) throw Error('Fixed Catan Worker deployment failed; inspect its preceding output.');
+    report(`Cloudflare temporary failure; retry ${attempt + 1}/3 with the same checked Catan artifact.\n`);
+    await sleep(2000 * 2 ** attempt);
+  }
 }
 export function cloudAssistantCommand(encoded) {
   if (!/^[A-Za-z0-9+/]+={0,2}$/.test(encoded) || encoded.length > 32000) throw Error('Invalid bounded deployment request.');
@@ -178,6 +216,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   const action = process.argv[2], release = JSON.parse(await readFile(process.env.RELEASE_RECORD, 'utf8'));
   if (action === 'prepare') await prepare(release);
   else if (action === 'assert-current') await assertCurrent(release);
+  else if (action === 'deploy-worker') await runWorkerDeploy(release);
   else if (action === 'previous') await previous();
   else if (action === 'record-worker') await recordWorker(release);
   else if (action === 'rollback-worker') await rollbackWorker(release);

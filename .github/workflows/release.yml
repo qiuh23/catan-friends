@@ -77,9 +77,8 @@ jobs:
           audience: sts.aliyuncs.com
           role-session-name: catan-production-${{ github.run_id }}
           role-session-expiration: 3600
-      - name: Publish the checked Worker without rebuilding application code
+      - name: Install fixed Wrangler without publishing
         if: steps.gate.outputs.deploy == 'true'
-        id: worker
         uses: cloudflare/wrangler-action@953926a2e2182532811c01a25e53647d93bf07c0 # v4
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -87,7 +86,15 @@ jobs:
           wranglerVersion: 4.157.0
           packageManager: npm
           workingDirectory: ${{ runner.temp }}/catan-deployer
-          command: deploy --no-bundle --config ${{ runner.temp }}/catan-wrangler.json
+          command: --version
+      - name: Publish the checked Worker without rebuilding application code
+        if: steps.gate.outputs.deploy == 'true'
+        id: worker
+        run: node scripts/deploy/release.mjs deploy-worker
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       - name: Record only this immutable Worker version for guarded rollback
         if: steps.gate.outputs.deploy == 'true'
         id: record_worker
