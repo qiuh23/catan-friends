@@ -1,4 +1,5 @@
 import { Room, roomCode, fingerprint, ROOM_PATTERN } from '../shared/room.js';
+import { createRoomFromInput } from '../shared/room-create.js';
 import { UserError,publicError } from '../shared/errors.js';
 import { securityConfig,adminAuthorized,emptyModeration,pruneModeration,applyModeration,disposition,inspectRoom,closedModeration } from '../shared/moderation.js';
 const json=(data,status=200)=>Response.json(data,{status,headers:{'Cache-Control':'no-store'}});
@@ -137,9 +138,7 @@ export class CatanRoom {
       }
       if(url.pathname==='/create'){
         if(this.room)return json({error:'房间码冲突，请重试。'},409);
-        const raw=await request.text();if(raw.length>8192)throw Error('请求过大。');const input=JSON.parse(raw),hash=await fingerprint(input.token),room=new Room(),id=room.join(hash,input.name);
-        room.record.practice=input.practice===true;room.handle(id,{id:crypto.randomUUID(),revision:room.record.revision,action:{type:'configure',visibility:input.visibility??'public',options:input.options}});
-        if(input.practice===true){for(let i=1;i<room.metadata().minPlayers;i++)room.handle(id,{id:crypto.randomUUID(),revision:room.record.revision,action:{type:'addBot'}});room.handle(id,{id:crypto.randomUUID(),revision:room.record.revision,action:{type:'start'}});}
+        const raw=await request.text();if(raw.length>8192)throw new UserError('请求过大。');const room=await createRoomFromInput(JSON.parse(raw));
         this.room=room;try{await this.persist();}catch(error){this.room=null;throw error;}return json({code:this.code},201);
       }
       if(!await this.check()){

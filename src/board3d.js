@@ -6,12 +6,27 @@ import { BoardAssets, Batches, buildTerrain, clearLayer } from './terrain.js';
 import { boardFrame } from './board-frame.js';
 import { feedbackPoints, planActionCamera } from './action-camera.js';
 
+// Flat site silhouettes stay inside the vertex lane, away from number tokens.
+const siteOutline={settlement:[[-.17,-.13],[.17,-.13],[.17,.025],[0,.18],[-.17,.025]],city:[[-.20,-.14],[.20,-.14],[.20,.02],[.07,.02],[.07,.20],[-.08,.20],[-.08,.07],[-.20,.07]]};
+function siteGeometry(points){const shape=new THREE.Shape();points.forEach(([x,y],i)=>i?shape.lineTo(x,y):shape.moveTo(x,y));shape.closePath();return new THREE.ShapeGeometry(shape);}
+function gableRoof(){
+  const geometry=new THREE.BufferGeometry();
+  geometry.setAttribute('position',new THREE.Float32BufferAttribute([
+    -.5,-.5,.5,.5,-.5,.5,0,.5,.5, .5,-.5,-.5,-.5,-.5,-.5,0,.5,-.5,
+    -.5,-.5,-.5,-.5,-.5,.5,0,.5,.5, -.5,-.5,-.5,0,.5,.5,0,.5,-.5,
+    .5,-.5,.5,.5,-.5,-.5,0,.5,-.5, .5,-.5,.5,0,.5,-.5,0,.5,.5,
+    -.5,-.5,-.5,.5,-.5,-.5,.5,-.5,.5, -.5,-.5,-.5,.5,-.5,.5,-.5,-.5,.5,
+  ],3));geometry.computeVertexNormals();return geometry;
+}
+
 export class Board {
   constructor(container,onSelect,onHover) {
     this.container=container;this.onSelect=onSelect;this.onHover=onHover;
     this.frame=0;this.visible=true;this.metrics={renders:0,landBuilds:0,pieceBuilds:0,markerBuilds:0};
     this.renderer=new THREE.WebGLRenderer({antialias:true,alpha:false,powerPreference:'low-power'});
     this.assets=new BoardAssets();
+    this.assets.geometries.roof.dispose();this.assets.geometries.roof=gableRoof();
+    for(const [kind,points] of Object.entries(siteOutline))this.assets.geometries[`site-${kind}`]=siteGeometry(points);
     this.scene=new THREE.Scene();this.scene.background=new THREE.Color('#b8d8d2');
     this.camera=new THREE.PerspectiveCamera(34,1,.1,150);
     this.renderer.outputColorSpace=THREE.SRGBColorSpace;this.renderer.toneMapping=THREE.ACESFilmicToneMapping;
@@ -30,10 +45,16 @@ export class Board {
     this.sun.shadow.normalBias=.035;this.sun.shadow.bias=-.0001;this.scene.add(this.sun);
     this.seaBase=new THREE.Mesh(this.assets.geometries.sea,this.assets.material('sea'));
     this.seaBase.material.color.set(0xa7cdc7);this.seaBase.position.y=-.04;this.scene.add(this.seaBase);
-    this.land=new THREE.Group();this.pieces=new THREE.Group();this.markers=new THREE.Group();this.feedbackLayer=new THREE.Group();
-    this.scene.add(this.land,this.pieces,this.markers,this.feedbackLayer);
+    this.land=new THREE.Group();this.pieces=new THREE.Group();this.markers=new THREE.Group();this.selectionLayer=new THREE.Group();this.feedbackLayer=new THREE.Group();
+    this.scene.add(this.land,this.pieces,this.markers,this.selectionLayer,this.feedbackLayer);
     this.assets.materials.set('marker',new THREE.MeshBasicMaterial({color:0xffef9d,depthTest:false,depthWrite:false,toneMapped:false}));
-    this.assets.materials.set('outline',new THREE.MeshBasicMaterial({color:0x234c43,depthTest:false,depthWrite:false,toneMapped:false}));
+    this.assets.materials.set('outline',new THREE.MeshBasicMaterial({color:0x203e46,depthTest:false,depthWrite:false,toneMapped:false,side:THREE.DoubleSide}));
+    this.assets.materials.get('marker').side=THREE.DoubleSide;
+    this.assets.materials.set('site-rim',new THREE.MeshBasicMaterial({color:0xfffcf0,depthTest:false,depthWrite:false,toneMapped:false,side:THREE.DoubleSide}));
+    this.assets.materials.set('selected',new THREE.MeshBasicMaterial({color:0x155c9c,depthTest:false,depthWrite:false,toneMapped:false,side:THREE.DoubleSide}));
+    // Painted pieces use depth so their pale plinth cannot draw over a roof or
+    // tower. They keep one shared material and do not add mobile shadow passes.
+    this.assets.materials.set('pieces',new THREE.MeshStandardMaterial({color:0xffffff,roughness:.65,metalness:.035,flatShading:true}));
     this.assets.materials.set('feedback',new THREE.MeshBasicMaterial({color:0x167781,depthTest:false,depthWrite:false,toneMapped:false,side:THREE.DoubleSide}));
     this.assets.materials.set('feedback-rim',new THREE.MeshBasicMaterial({color:0xf8ffff,depthTest:false,depthWrite:false,toneMapped:false,side:THREE.DoubleSide}));
     this.raycaster=new THREE.Raycaster();this.pointer=new THREE.Vector2();this.pointers=new Set();
@@ -46,22 +67,23 @@ export class Board {
     },options);
     canvas.addEventListener('pointerdown',e=>{
       this.pointers.add(e.pointerId);this.down=this.pointers.size===1?{id:e.pointerId,x:e.clientX,y:e.clientY}:null;
-      if(this.pointers.size===1)this.pointerManual=false;else this.manualInput();
+      if(this.pointers.size===1){this.pointerManual=false;this.selectSite(this.pick(e,e.pointerType==='touch',false));}else {this.selectSite(null);this.manualInput();}
     },options);
     canvas.addEventListener('pointercancel',e=>{this.pointers.delete(e.pointerId);this.down=null;},options);
     canvas.addEventListener('pointerup',e=>{
       this.pointers.delete(e.pointerId);const down=this.down;this.down=null;
       if(!down||down.id!==e.pointerId||this.pointers.size||Math.hypot(e.clientX-down.x,e.clientY-down.y)>7)return;
-      const target=this.pick(e,e.pointerType==='touch');if(target)this.onSelect(target);
+      const target=this.pick(e,e.pointerType==='touch');this.selectSite(target);if(target)this.onSelect(target);
     },options);
     canvas.addEventListener('pointermove',e=>{
-      if(this.down&&this.pointers.has(e.pointerId)&&!this.pointerManual&&Math.hypot(e.clientX-this.down.x,e.clientY-this.down.y)>3){this.pointerManual=true;this.manualInput();}
+      if(this.down&&this.pointers.has(e.pointerId)&&!this.pointerManual&&Math.hypot(e.clientX-this.down.x,e.clientY-this.down.y)>3){this.pointerManual=true;this.selectSite(null);this.manualInput();}
       if(e.pointerType==='touch'||this.pointers.size)return;
       const hit=this.hit(e),data=hit?.object.userData,tile=data?.tile;
-      canvas.style.cursor=this.pick(e,false,false)?'pointer':'grab';
+      const target=this.pick(e,false,false);this.selectSite(target);canvas.style.cursor=target?'pointer':'grab';
       this.onHover(data?.port!==undefined?(data.port==='any'?'普通港口 3:1':`${LABELS[data.port]}港口 2:1`)
         :tile===undefined?'':`${LABELS[this.board.tiles[tile].resource]}${this.board.tiles[tile].number?` · ${this.board.tiles[tile].number} 点生产`:' · 不生产资源'}`);
     },options);
+    canvas.addEventListener('pointerleave',()=>{if(!this.pointers.size)this.selectSite(null);},options);
     document.addEventListener('visibilitychange',()=>{if(document.hidden)this.stopFrame();else this.invalidate();},options);
     this.observer=new ResizeObserver(()=>this.resize());this.observer.observe(container);
     this.intersection=new IntersectionObserver(entries=>{
@@ -116,12 +138,12 @@ export class Board {
     this.camera.setViewOffset(f.width,f.height,-f.left,-f.top,this.width,this.height);
     this.camera.updateProjectionMatrix();
   }
-  reset() {
+  reset({defaultOrientation=false}={}) {
     this.cancelFocus();this.viewMode='overview';this.focusEvent='';
     const scale=this.boardScale||1;
     const portrait=(this.container?.clientWidth||this.width)<(this.container?.clientHeight||this.height);
     const offset=this.camera.position.clone().sub(this.controls.target);
-    if(offset.lengthSq()<1)offset.set(...(portrait?[.3*scale,16*scale,3*scale]:[14*scale,8*scale,.3*scale]));
+    if(defaultOrientation||offset.lengthSq()<1)offset.set(...(portrait?[.3*scale,16*scale,3*scale]:[14*scale,8*scale,.3*scale]));
     this.controls.target.set(0,0,0);this.camera.position.copy(offset);this.updateProjection();
     this.fit(false);
   }
@@ -132,7 +154,20 @@ export class Board {
     this.camera.position.copy(this.controls.target).add(offset.setLength(distance));this.controls.update();this.invalidate();
   }
   manualInput(){this.cancelFocus();this.viewMode='manual';this.onManual?.();}
-  cancelFocus(){this.focusAnimation=null;this.invalidate();}
+  cancelFocus(){if(!this.focusAnimation)return;this.focusAnimation=null;this.invalidate();}
+  siteMesh(marker,material,factor,order){
+    const road=marker.userData.kind==='edge',mesh=new THREE.Mesh(this.assets.geometries[road?'box':`site-${this.mode}`],this.assets.materials.get(material));
+    mesh.position.copy(marker.position);mesh.renderOrder=order;
+    if(road){mesh.rotation.y=marker.rotation.y;mesh.scale.set(.62*factor,.018,.13*factor);}
+    else {mesh.rotation.x=-Math.PI/2;mesh.scale.setScalar(factor);}
+    return mesh;
+  }
+  selectSite(target){
+    const marker=(this.markerTargets||[]).find(m=>m.userData.kind===target?.kind&&m.userData.id===target?.id),key=marker?`${target.kind}:${target.id}`:'';
+    if(key===this.selectedSiteKey)return;this.selectedSiteKey=key;clearLayer(this.selectionLayer);
+    if(marker)for(const [material,factor,order] of [['outline',1.3,25],['site-rim',1.12,26],['selected',.88,27]])this.selectionLayer.add(this.siteMesh(marker,material,factor,order));
+    this.renderer.domElement.dataset.selectedSite=key;this.invalidate();
+  }
   setFeedback(event,{reducedMotion=this.reducedMotion??false}={}) {
     this.feedback=event;this.reducedMotion=reducedMotion;this.controls.enableDamping=!reducedMotion;
     const key=JSON.stringify(event?.targets||[]);if(key===this.feedbackKey)return;this.feedbackKey=key;
@@ -141,9 +176,11 @@ export class Board {
       const points=feedbackPoints(this.board,{targets:[target]});if(!points.length)continue;
       if(target.kind==='edge') {
         const a=points[0],b=points[1];
-        for(const [material,width,order] of [['feedback-rim',.29,23],['feedback',.19,24]]) {
-          const mesh=new THREE.Mesh(this.assets.geometries.box,this.assets.materials.get(material));
-          mesh.position.set((a.x+b.x)/2,.35,(a.z+b.z)/2);mesh.scale.set(Math.hypot(b.x-a.x,b.z-a.z)+.12,.025,width);mesh.rotation.y=-Math.atan2(b.z-a.z,b.x-a.x);mesh.renderOrder=order;this.feedbackLayer.add(mesh);
+        const angle=-Math.atan2(b.z-a.z,b.x-a.x),length=Math.hypot(b.x-a.x,b.z-a.z)*.76;
+        // An outlined frame preserves the player's road colour in the middle.
+        for(const [material,width,order] of [['feedback-rim',.045,23],['feedback',.025,24]])for(const side of [-1,1]) {
+          const mesh=new THREE.Mesh(this.assets.geometries.box,this.assets.materials.get(material)),offset=side*.15;
+          mesh.position.set((a.x+b.x)/2+Math.sin(angle)*offset,.35,(a.z+b.z)/2+Math.cos(angle)*offset);mesh.scale.set(length,.025,width);mesh.rotation.y=angle;mesh.renderOrder=order;this.feedbackLayer.add(mesh);
         }
       } else {
         const p=target.kind==='tile'?this.board.tiles[target.id]:this.board.vertices[target.id],radius=target.kind==='tile'?.97:.32;
@@ -237,7 +274,7 @@ export class Board {
     },256,128);sprite.scale.set(.92,.46,1);sprite.userData={port:resource};return sprite;
   }
   set(state,mode) {
-    const b=state.board;if(!b||this.disposed)return;this.board=b;
+    const b=state.board;if(!b||this.disposed)return;this.board=b;this.mode=mode;
     const key=JSON.stringify([b.tiles.map(t=>[t.id,t.x,t.z,t.resource,t.number]),b.vertices.map(v=>[v.x,v.z]),b.ports]);
     let changed=false;
     if(key!==this.landKey) {
@@ -256,23 +293,39 @@ export class Board {
         const p={x:x+x/l*.69,y:.4,z:z+z/l*.69};this.portBounds.push(p);
         const label=this.portToken(port.resource);label.position.set(p.x,p.y,p.z);this.land.add(label);this.portTargets.push(label);
       }
-      this.fitPoints=[...b.vertices.map(v=>({x:v.x,y:.4,z:v.z})),...b.tiles.map(t=>({x:t.x,y:1,z:t.z}))];this.reset();
+      // A newly created map uses the play canvas's current orientation. The
+      // narrow home preview can otherwise carry its low landscape pitch into a
+      // portrait game and leave most of the available play area empty.
+      this.fitPoints=[...b.vertices.map(v=>({x:v.x,y:.4,z:v.z})),...b.tiles.map(t=>({x:t.x,y:1,z:t.z}))];this.reset({defaultOrientation:true});
     }
     const colors=state.players.map(p=>[p.id,p.color]);
     const pieceKey=JSON.stringify([b.edges.map(e=>e.owner),b.vertices.map(v=>[v.owner,v.level]),colors,state.robber]);
     if(pieceKey!==this.pieceKey) {
       this.pieceKey=pieceKey;clearLayer(this.pieces);this.metrics.pieceBuilds++;changed=true;
       const batch=new Batches(this.assets),color=id=>state.players.find(p=>p.id===id)?.color||'#e57c54';
-      const add=(shape,c,x,y,z,sx,sy,sz,r=0)=>batch.add(shape,c,x,y,z,sx,sy,sz,r,'overlay');
+      const shade=(value,light)=>new THREE.Color(value).offsetHSL(0,0,light).getHex();
+      const add=(shape,c,x,y,z,sx,sy,sz,r=0)=>batch.add(shape,c,x,y,z,sx,sy,sz,r,'pieces');
       for(const edge of b.edges.filter(e=>e.owner)) {
         const a=b.vertices[edge.a],v=b.vertices[edge.b],x=(a.x+v.x)/2,z=(a.z+v.z)/2,r=-Math.atan2(v.z-a.z,v.x-a.x);
-        add('box',0x385347,x,.31,z,.76,.08,.18,r);add('box',color(edge.owner),x,.37,z,.72,.12,.13,r);
+        add('box',0x203a3e,x,.31,z,.84,.055,.21,r);add('box',0xfff6df,x,.35,z,.81,.05,.17,r);
+        add('box',color(edge.owner),x,.40,z,.77,.09,.125,r);add('box',shade(color(edge.owner),.15),x,.451,z,.69,.012,.035,r);
       }
       for(const v of b.vertices.filter(v=>v.owner)) {
-        add('box',0x344b40,v.x,.31,v.z,.31,.045,.30);
-        add('box',color(v.owner),v.x,.43,v.z,.24,.23,.25);
-        add('roof',color(v.owner),v.x,.62,v.z,.21,.18,.21,Math.PI/4);
-        if(v.level===2){add('box',color(v.owner),v.x+.19,.5,v.z,.20,.38,.22);add('roof',color(v.owner),v.x+.19,.76,v.z,.18,.15,.18,Math.PI/4);}
+        const owner=color(v.owner),dark=0x203a3e,ivory=0xfff5da;
+        add('cylinder',dark,v.x,.29,v.z,v.level===2?.235:.205,.04,v.level===2?.235:.205);
+        add('cylinder',ivory,v.x,.315,v.z,v.level===2?.215:.185,.035,v.level===2?.215:.185);
+        if(v.level===2){
+          // A compact stepped tower silhouette contrasts with the village roof.
+          add('box',dark,v.x,.35,v.z,.37,.045,.29);add('box',owner,v.x,.475,v.z,.33,.255,.255);
+          add('box',owner,v.x-.075,.59,v.z,.17,.40,.255);
+          add('box',ivory,v.x-.075,.80,v.z,.205,.045,.30);add('box',shade(owner,.08),v.x-.075,.83,v.z,.17,.035,.26);
+          add('box',ivory,v.x+.105,.625,v.z,.18,.04,.285);add('box',shade(owner,.08),v.x+.105,.65,v.z,.15,.035,.25);
+          add('box',dark,v.x-.075,.64,v.z+.132,.055,.085,.012);add('box',dark,v.x+.08,.44,v.z+.132,.065,.12,.012);
+        }else{
+          add('box',dark,v.x,.35,v.z,.29,.04,.27);add('box',owner,v.x,.465,v.z,.27,.23,.25);
+          add('box',dark,v.x,.585,v.z,.35,.025,.31);add('roof',shade(owner,-.07),v.x,.665,v.z,.33,.17,.29);
+          add('box',ivory,v.x,.56,v.z+.132,.27,.025,.012);add('box',dark,v.x,.415,v.z+.132,.065,.12,.014);
+        }
       }
       if(state.robber!==null&&state.robber!==undefined) {
         const t=b.tiles[state.robber];add('cone',0x283e38,t.x,.53,t.z+.4,.14,.4,.14);add('wool',0x283e38,t.x,.8,t.z+.4,.09,.10,.09);
@@ -281,27 +334,28 @@ export class Board {
     }
     const markerKey=JSON.stringify([mode,state.legal?.[mode]||[]]);
     if(markerKey!==this.markerKey) {
-      this.markerKey=markerKey;clearLayer(this.markers);this.metrics.markerBuilds++;this.markerTargets=[];changed=true;
+      this.markerKey=markerKey;this.selectSite(null);clearLayer(this.markers);this.metrics.markerBuilds++;this.markerTargets=[];changed=true;
       for(const tile of this.tiles)tile.userData={tile:tile.userData.tile,...(mode==='robber'&&state.legal?.robber.includes(tile.userData.tile)?{kind:'tile',id:tile.userData.tile}:{})};
       const sites=['road','settlement','city'].includes(mode)?state.legal?.[mode]||[]:[];
-      const fill=new THREE.InstancedMesh(this.assets.geometries.cylinder,this.assets.materials.get('marker'),sites.length);
-      const rim=new THREE.InstancedMesh(this.assets.geometries.ring,this.assets.materials.get('outline'),sites.length);
+      const shape=this.assets.geometries[mode==='road'?'box':`site-${mode}`]||this.assets.geometries.cylinder;
+      const layers=[['outline',1.2,20],['site-rim',1.02,21],['marker',.78,22]].map(([material,factor,order])=>({mesh:new THREE.InstancedMesh(shape,this.assets.materials.get(material),sites.length),factor,order}));
       const transform=new THREE.Object3D();
       for(const [index,id] of sites.entries()) {
-        let x,z;if(mode==='road'){const e=b.edges[id],a=b.vertices[e.a],v=b.vertices[e.b];x=(a.x+v.x)/2;z=(a.z+v.z)/2;}else({x,z}=b.vertices[id]);
+        let x,z,rotation=0;if(mode==='road'){const e=b.edges[id],a=b.vertices[e.a],v=b.vertices[e.b];x=(a.x+v.x)/2;z=(a.z+v.z)/2;rotation=-Math.atan2(v.z-a.z,v.x-a.x);}else({x,z}=b.vertices[id]);
         const marker=new THREE.Object3D();marker.position.set(x,.39,z);
+        marker.rotation.y=rotation;
         marker.userData={kind:mode==='road'?'edge':'vertex',id};this.markerTargets.push(marker);
-        transform.position.copy(marker.position);transform.scale.set(.14,.055,.14);transform.rotation.set(0,0,0);transform.updateMatrix();fill.setMatrixAt(index,transform.matrix);
-        transform.position.y=.425;transform.scale.setScalar(.145);transform.rotation.x=-Math.PI/2;transform.updateMatrix();rim.setMatrixAt(index,transform.matrix);
+        for(const {mesh,factor} of layers){transform.position.copy(marker.position);if(mode==='road'){transform.rotation.set(0,rotation,0);transform.scale.set(.62*factor,.018,.13*factor);}else{transform.rotation.set(-Math.PI/2,0,0);transform.scale.setScalar(factor);}transform.updateMatrix();mesh.setMatrixAt(index,transform.matrix);}
       }
-      for(const [mesh,order] of [[fill,20],[rim,21]]){mesh.renderOrder=order;mesh.instanceMatrix.needsUpdate=true;mesh.computeBoundingSphere();if(sites.length)this.markers.add(mesh);else mesh.dispose();}
+      for(const {mesh,order} of layers){mesh.renderOrder=order;mesh.instanceMatrix.needsUpdate=true;mesh.computeBoundingSphere();if(sites.length)this.markers.add(mesh);else mesh.dispose();}
+      this.renderer.domElement.dataset.siteShape=mode||'';
     }
     this.targets=[...this.tiles,...this.portTargets];
     if(changed){this.renderer.shadowMap.needsUpdate=true;this.invalidate();}
   }
   dispose() {
     if(this.disposed)return;this.disposed=true;this.stopFrame();this.events.abort();this.observer.disconnect();this.intersection.disconnect();this.controls.dispose();
-    for(const group of [this.land,this.pieces,this.markers,this.feedbackLayer])clearLayer(group);
+    for(const group of [this.land,this.pieces,this.markers,this.selectionLayer,this.feedbackLayer])clearLayer(group);
     this.scene.clear();this.sun.shadow.dispose();this.assets.dispose();this.renderer.dispose();this.renderer.forceContextLoss();this.renderer.domElement.remove();
   }
 }

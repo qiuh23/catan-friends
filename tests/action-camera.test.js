@@ -54,6 +54,14 @@ test('manual cancellation immediately removes camera animation without resetting
   assert.deepEqual(position.toArray(),[8,10,12]);assert.deepEqual(target.toArray(),[2,.5,-1]);
 });
 
+test('cancelling an idle camera does not schedule a render for chat or focus changes',()=>{
+  const view=Object.create(Board.prototype);let renders=0;
+  Object.assign(view,{focusAnimation:null,invalidate(){renders++;}});
+  view.cancelFocus();view.cancelFocus();assert.equal(renders,0);
+  view.focusAnimation={};view.cancelFocus();assert.equal(view.focusAnimation,null);assert.equal(renders,1);
+  view.cancelFocus();assert.equal(renders,1);
+});
+
 test('reduced motion and an active pointer never start an automatic shot',()=>{
   const view=Object.create(Board.prototype);view.pointers=new Set();
   assert.equal(view.focusFeedback({targets:[{kind:'vertex',id:0}]},{reducedMotion:true}),false);

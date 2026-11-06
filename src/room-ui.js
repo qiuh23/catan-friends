@@ -1,9 +1,13 @@
 import { lobbyOrigins } from './invitation.js';
 
 export const variantOptions = [
-  { key:'friendlyRobber', name:'友善强盗', description:'公开分不超过 2 分的玩家受强盗保护；掷出 7 仍须按基础规则弃牌。' },
-  { key:'harbormaster', name:'卡坦港口', description:'港口村庄计 1 港口分、城市计 2 分；港口奖励值 2 胜利分，目标改为 11 分。' },
+  { key:'friendlyRobber', name:'友善强盗', glyph:'shield', summary:'保护低分玩家', description:'公开分不超过 2 分的玩家受强盗保护；掷出 7 仍须按基础规则弃牌。' },
+  { key:'harbormaster', name:'卡坦港口', glyph:'anchor', summary:'争夺港口奖励 · 11 分', description:'港口村庄计 1 港口分、城市计 2 分；港口奖励值 2 胜利分，目标改为 11 分。' },
 ];
+export function expansionForCount(count) {
+  if(!Number.isInteger(count)||count<3||count>6)throw new Error('请选择 3、4、5 或 6 人。');
+  return count>4?'five-six-2025':'base';
+}
 export function rulesLabel(options={}) {
   const names=variantOptions.filter(v=>options[v.key]).map(v=>v.name);
   const base=options.playerExpansion==='five-six-2025'?'5–6 人扩充（2025）':'经典基础版';

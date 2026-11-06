@@ -5,6 +5,11 @@ import { terrain } from './terrain.js';
 import { boardFrame } from './board-frame.js';
 import { feedbackPoints } from './action-camera.js';
 
+const buildingPath=(kind,x,y,scale=1)=>{
+  const points=kind==='city'?[[-12,9],[12,9],[12,-2],[4,-2],[4,-13],[-5,-13],[-5,-5],[-12,-5]]:[[-9,8],[9,8],[9,-1],[0,-10],[-9,-1]];
+  return points.map(([px,py],i)=>`${i?'L':'M'}${x+px*scale} ${y+py*scale}`).join('')+'Z';
+};
+
 export class FlatBoard {
   constructor(container,onSelect,onHover){
     this.container=container;this.onSelect=onSelect;this.onHover=onHover;
@@ -43,6 +48,15 @@ export class FlatBoard {
   zoomBy(factor){if(Number.isFinite(factor)&&factor>0){this.manualInput();this.zoomAt(factor);}}
   manualInput(){this.cancelFocus();this.onManual?.();}
   cancelFocus(){cancelAnimationFrame(this.focusFrame);this.focusFrame=0;}
+  selectSite(el){
+    if(!el?.hasAttribute('data-id'))el=null;
+    for(const site of this.container.querySelectorAll('[data-id]')){
+      const selected=site===el;site.dataset.selected=String(selected);
+      site.querySelector('[data-marker-fill]')?.setAttribute('fill',selected?'#155c9c':'#ffef9d');
+      site.querySelector('[data-marker-rim]')?.setAttribute('stroke',selected?'#ffffff':'#203e46');
+    }
+    const svg=this.container.querySelector('svg');if(svg)svg.dataset.selectedSite=el?`${this.mode==='road'?'edge':'vertex'}:${el.dataset.id}`:'';
+  }
   point(x,z){return this.landscape?{x:z*50+300,y:-x*50+290}:{x:x*50+300,y:z*50+290};}
   setFeedback(event,{reducedMotion=this.reducedMotion??false}={}) {
     this.feedback=event;this.reducedMotion=reducedMotion;
@@ -52,7 +66,7 @@ export class FlatBoard {
     const b=this.state.board;
     layer.innerHTML=(event?.targets||[]).map(target=>{
       const points=feedbackPoints(b,{targets:[target]});if(!points.length)return '';
-      if(target.kind==='edge') {const a=this.point(points[0].x,points[0].z),c=this.point(points[1].x,points[1].z);return `<path d="M${a.x} ${a.y}L${c.x} ${c.y}" fill="none" stroke="#f8ffff" stroke-width="15" stroke-linecap="round"/><path d="M${a.x} ${a.y}L${c.x} ${c.y}" fill="none" stroke="#167781" stroke-width="9" stroke-linecap="round"/>`;}
+      if(target.kind==='edge') {const a=this.point(points[0].x,points[0].z),c=this.point(points[1].x,points[1].z),length=Math.hypot(c.x-a.x,c.y-a.y),angle=Math.atan2(c.y-a.y,c.x-a.x)*180/Math.PI;return `<g transform="translate(${(a.x+c.x)/2} ${(a.y+c.y)/2}) rotate(${angle})"><rect x="${-length*.4}" y="-9" width="${length*.8}" height="18" rx="4" fill="none" stroke="#f8ffff" stroke-width="5"/><rect x="${-length*.4}" y="-9" width="${length*.8}" height="18" rx="4" fill="none" stroke="#167781" stroke-width="2.5"/></g>`;}
       if(target.kind==='tile'){const tile=b.tiles[target.id],path=tile.vertices.map(id=>{const p=this.point(b.vertices[id].x,b.vertices[id].z);return `${p.x},${p.y}`;}).join(' ');return `<polygon points="${path}" fill="none" stroke="#f8ffff" stroke-width="7"/><polygon points="${path}" fill="none" stroke="#167781" stroke-width="4"/>`;}
       const p=this.point(points[0].x,points[0].z);return `<circle cx="${p.x}" cy="${p.y}" r="17" fill="none" stroke="#f8ffff" stroke-width="7"/><circle cx="${p.x}" cy="${p.y}" r="17" fill="none" stroke="#167781" stroke-width="4"/>`;
     }).join('');
@@ -99,9 +113,13 @@ export class FlatBoard {
     const point=(x,z)=>landscape?{x:z*50+300,y:-x*50+290}:{x:x*50+300,y:z*50+290};
     const pos=v=>{const p=point(v.x,v.z);return `${p.x},${p.y}`;},color=id=>state.players.find(p=>p.id===id)?.color||'#173b3d';
     const tiles=b.tiles.map(t=>{const {x,y}=point(t.x,t.z),hot=[6,8].includes(t.number),dots=t.number?6-Math.abs(7-t.number):0;return `<g data-tile="${t.id}" role="img" aria-label="${LABELS[t.resource]}${t.number?'，'+t.number+' 点生产':'，不生产资源'}"><title>${LABELS[t.resource]}${t.number?' · '+t.number+' 点':''}</title><polygon points="${t.vertices.map(id=>pos(b.vertices[id])).join(' ')}" fill="#${terrain[t.resource].toString(16)}" stroke="#f2f0df" stroke-width="2"/><polygon points="${t.vertices.map(id=>pos(b.vertices[id])).join(' ')}" fill="url(#terrain-${t.resource})"/>${t.resource!=='desert'?resourceIllustration(t.resource).replace('<svg ',`<svg x="${x-13}" y="${y-42}" width="26" height="26" `):''}${t.number?`<circle cx="${x}" cy="${y+3}" r="18" fill="#fff5d9" stroke="#b39c6f" stroke-width="1.5"/><text x="${x}" y="${y+8}" text-anchor="middle" font-size="19" font-weight="700" fill="${hot?'#a93f28':'#173b3d'}">${t.number}</text>${Array.from({length:dots},(_,i)=>`<circle cx="${x+(i-(dots-1)/2)*4}" cy="${y+15}" r="1.1" fill="${hot?'#a93f28':'#173b3d'}"/>`).join('')}`:''}${state.robber===t.id?`<rect x="${x-21}" y="${y+22}" width="42" height="17" rx="6" fill="#283e39"/><text x="${x}" y="${y+34}" text-anchor="middle" font-size="11" fill="#fff7e4">强盗</text>`:''}</g>`;}).join('');
-    const roads=b.edges.filter(e=>e.owner).map(e=>`<line x1="${point(b.vertices[e.a].x,b.vertices[e.a].z).x}" y1="${point(b.vertices[e.a].x,b.vertices[e.a].z).y}" x2="${point(b.vertices[e.b].x,b.vertices[e.b].z).x}" y2="${point(b.vertices[e.b].x,b.vertices[e.b].z).y}" stroke="${color(e.owner)}" stroke-width="8"/>`).join('');
-    const buildings=b.vertices.filter(v=>v.owner).map(v=>`<rect x="${point(v.x,v.z).x-7}" y="${point(v.x,v.z).y-7}" width="${v.level===2?20:14}" height="14" fill="${color(v.owner)}" stroke="white" stroke-width="2"/>`).join('');
-    const markers=(state.legal?.[mode]||[]).filter(()=>['road','settlement','city'].includes(mode)).map(id=>{let x,z;if(mode==='road'){const e=b.edges[id];x=(b.vertices[e.a].x+b.vertices[e.b].x)/2;z=(b.vertices[e.a].z+b.vertices[e.b].z)/2;}else({x,z}=b.vertices[id]);return `<circle data-id="${id}" cx="${point(x,z).x}" cy="${point(x,z).y}" r="9" fill="#fff1a5" stroke="#173b3d" stroke-width="2"/>`;}).join('');
+    const roads=b.edges.filter(e=>e.owner).map(e=>{const a=point(b.vertices[e.a].x,b.vertices[e.a].z),c=point(b.vertices[e.b].x,b.vertices[e.b].z),path=`M${a.x+(c.x-a.x)*.10} ${a.y+(c.y-a.y)*.10}L${c.x+(a.x-c.x)*.10} ${c.y+(a.y-c.y)*.10}`;return `<g role="img" aria-label="道路"><path d="${path}" stroke="#203a3e" stroke-width="12" stroke-linecap="round"/><path d="${path}" stroke="#fff5da" stroke-width="9" stroke-linecap="round"/><path d="${path}" stroke="${color(e.owner)}" stroke-width="6" stroke-linecap="round"/></g>`;}).join('');
+    const buildings=b.vertices.filter(v=>v.owner).map(v=>{const {x,y}=point(v.x,v.z),kind=v.level===2?'city':'settlement',path=buildingPath(kind,x,y);return `<g data-building="${kind}" role="img" aria-label="${kind==='city'?'城市':'村庄'}"><path d="${path}" fill="#fff5da" stroke="#203a3e" stroke-width="5" stroke-linejoin="round"/><path d="${path}" fill="${color(v.owner)}" stroke="#fff5da" stroke-width="1.8" stroke-linejoin="round"/>${kind==='settlement'?`<path d="M${x-8} ${y-1}L${x} ${y-9}L${x+8} ${y-1}" fill="none" stroke="#203a3e" stroke-width="2"/>`:`<path d="M${x-4} ${y-5}V${y-11}M${x+3} ${y-2}H${x+10}" fill="none" stroke="#fff5da" stroke-width="2"/>`}<path d="M${x-2} ${y+7}V${y+1}H${x+2}V${y+7}" fill="#203a3e"/></g>`;}).join('');
+    const markers=(state.legal?.[mode]||[]).filter(()=>['road','settlement','city'].includes(mode)).map(id=>{
+      let x,z,shape;if(mode==='road'){const e=b.edges[id],a=point(b.vertices[e.a].x,b.vertices[e.a].z),c=point(b.vertices[e.b].x,b.vertices[e.b].z);x=(b.vertices[e.a].x+b.vertices[e.b].x)/2;z=(b.vertices[e.a].z+b.vertices[e.b].z)/2;const angle=Math.atan2(c.y-a.y,c.x-a.x)*180/Math.PI;shape=`<g transform="rotate(${angle} ${point(x,z).x} ${point(x,z).y})"><rect x="${point(x,z).x-17}" y="${point(x,z).y-6}" width="34" height="12" rx="3" fill="#fffdf0" stroke="#203e46" stroke-width="2.5" data-marker-rim/><rect x="${point(x,z).x-14}" y="${point(x,z).y-3}" width="28" height="6" rx="1" fill="#ffef9d" data-marker-fill/></g>`;}
+      else {({x,z}=b.vertices[id]);const p=point(x,z),path=buildingPath(mode,p.x,p.y,.9);shape=`<path d="${path}" fill="#fffdf0" stroke="#203e46" stroke-width="3" stroke-linejoin="round" data-marker-rim/><path d="${buildingPath(mode,p.x,p.y,.67)}" fill="#ffef9d" data-marker-fill/>`;}
+      const p=point(x,z);return `<g data-id="${id}" data-site-shape="${mode}" data-selected="false" cx="${p.x}" cy="${p.y}"><circle cx="${p.x}" cy="${p.y}" r="13" fill="transparent"/>${shape}</g>`;
+    }).join('');
     const ports=b.ports.map(p=>{const a=b.vertices[p.vertices[0]],c=b.vertices[p.vertices[1]],x=(a.x+c.x)/2,z=(a.z+c.z)/2,l=Math.hypot(x,z),{x:px,y:py}=point(x+x/l*.65,z+z/l*.65);return `<g role="img" aria-label="${p.resource==='any'?'普通港口 3:1':LABELS[p.resource]+'港口 2:1'}"><title>${p.resource==='any'?'普通港口 3:1':LABELS[p.resource]+'港口 2:1'}</title><rect x="${px-30}" y="${py-14}" width="60" height="28" rx="6" fill="#faf4e3" stroke="#9bae99"/>${p.resource!=='any'?resourceIllustration(p.resource).replace('<svg ',`<svg x="${px-28}" y="${py-13}" width="26" height="26" `):''}<text x="${p.resource==='any'?px:px+12}" y="${py+5}" text-anchor="middle" font-size="14" font-weight="600" fill="#173b3d">${p.resource==='any'?'3:1':'2:1'}</text></g>`;}).join('');
     const extents=b.vertices.map(v=>point(v.x,v.z));
     for(const p of b.ports){const a=b.vertices[p.vertices[0]],c=b.vertices[p.vertices[1]],x=(a.x+c.x)/2,z=(a.z+c.z)/2,l=Math.hypot(x,z),{x:px,y:py}=point(x+x/l*.65,z+z/l*.65);extents.push({x:px-32,y:py-16},{x:px+32,y:py+16});}
@@ -111,8 +129,8 @@ export class FlatBoard {
     this.container.innerHTML=`<svg viewBox="${bounds}" role="group" aria-label="卡坦岛二维棋盘，Tab 选择位置，回车落子"><defs><pattern id="terrain-wood" width="14" height="14" patternUnits="userSpaceOnUse"><path d="m3 2 4 8H0ZM10 8l3 5H7Z" fill="#244e3c" opacity=".14"/></pattern><pattern id="terrain-brick" width="18" height="12" patternUnits="userSpaceOnUse"><path d="M0 6h18M9 0v6M4 6v6M14 6v6" stroke="#754d35" opacity=".16" fill="none"/></pattern><pattern id="terrain-wheat" width="12" height="12" patternUnits="userSpaceOnUse"><path d="M6 12V1M6 5 2 2M6 8l4-4" stroke="#917126" opacity=".22" fill="none"/></pattern><pattern id="terrain-sheep" width="18" height="16" patternUnits="userSpaceOnUse"><path d="M2 13q4-4 8 0M8 5q3-3 6 0" stroke="#456d35" opacity=".17" fill="none"/></pattern><pattern id="terrain-ore" width="18" height="16" patternUnits="userSpaceOnUse"><path d="m1 15 6-11 7 11M5 8l2-4 3 5" stroke="#405c68" opacity=".19" fill="none"/></pattern><pattern id="terrain-desert" width="22" height="14" patternUnits="userSpaceOnUse"><path d="M1 9q5-6 10 0t10 0" stroke="#9d8452" opacity=".18" fill="none"/></pattern></defs>${tiles}${ports}${roads}${buildings}${markers}</svg>`;
     this.resize();
     const svg=this.container.querySelector('svg');svg.style.touchAction='none';svg.setAttribute('tabindex','0');svg.setAttribute('aria-label','卡坦岛二维棋盘，拖动平移，双指或加减键缩放；Tab 选择位置，回车落子，0 复位');
-    const activate=(el,kind,id,name)=>{el.setAttribute('role','button');el.setAttribute('tabindex','0');el.setAttribute('aria-label',name);el.onclick=e=>{if(e?.detail&&this.suppressClick)return;if(kind==='tile'||!e||e.detail===0)this.onSelect({kind,id});};el.onkeydown=e=>{if(['Enter',' '].includes(e.key)){e.preventDefault();el.onclick();}};};
-    for(const el of this.container.querySelectorAll('[data-id]'))activate(el,mode==='road'?'edge':'vertex',Number(el.dataset.id),`${mode==='road'?'道路':'交叉点'} ${Number(el.dataset.id)+1}`);
+    const activate=(el,kind,id,name)=>{el.setAttribute('role','button');el.setAttribute('tabindex','0');el.setAttribute('aria-label',name);el.onclick=e=>{if(e?.detail&&this.suppressClick)return;this.selectSite(el.hasAttribute('data-id')?el:null);if(kind==='tile'||!e||e.detail===0)this.onSelect({kind,id});};el.onfocus=()=>this.selectSite(el);el.onblur=()=>this.selectSite(null);el.onpointerenter=()=>this.selectSite(el);el.onpointerleave=()=>{if(document.activeElement!==el)this.selectSite(null);};el.onkeydown=e=>{if(['Enter',' '].includes(e.key)){e.preventDefault();el.onclick();}};};
+    for(const el of this.container.querySelectorAll('[data-id]'))activate(el,mode==='road'?'edge':'vertex',Number(el.dataset.id),`${mode==='road'?'铺设道路':mode==='city'?'升级城市':'建造村庄'} · 位置 ${Number(el.dataset.id)+1}`);
     this.container.querySelector('svg').onclick=e=>{
       if(e.detail===0||this.suppressClick)return;
       const candidates=[...this.container.querySelectorAll('[data-id]')].map(el=>{
@@ -121,7 +139,7 @@ export class FlatBoard {
       }).filter(p=>p.distance<=(e.pointerType==='touch'?22:11)).sort((a,b)=>a.distance-b.distance);
       if(!candidates.length)return;
       if(e.pointerType==='touch'&&candidates[1]&&candidates[1].distance-candidates[0].distance<6){this.onHover('相邻落点较近，请放大棋盘后再点选。');return;}
-      this.onSelect({kind:mode==='road'?'edge':'vertex',id:Number(candidates[0].el.dataset.id)});
+      this.selectSite(candidates[0].el);this.onSelect({kind:mode==='road'?'edge':'vertex',id:Number(candidates[0].el.dataset.id)});
     };
     if(mode==='robber')for(const el of this.container.querySelectorAll('[data-tile]'))if(state.legal.robber.includes(Number(el.dataset.tile)))activate(el,'tile',Number(el.dataset.tile),`将强盗移动至 ${LABELS[b.tiles[Number(el.dataset.tile)].resource]}地块 ${Number(el.dataset.tile)+1}`);
     this.setFeedback(this.feedback,{reducedMotion:this.reducedMotion});
