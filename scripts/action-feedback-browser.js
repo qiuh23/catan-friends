@@ -8,7 +8,7 @@ import {openStagePanel,closeStagePanel,toggleBoard} from './browser-stage-helper
 
 // Real-rule protocol fixtures stay on loopback. Independently project the public
 // target to catch fixed-screen or wrong-site bubbles in either renderer.
-const browser=await chromium.launch({headless:true}),errors=[],results=[],lifetimesMs=[];
+const browser=await chromium.launch({headless:true,...(process.env.BROWSER_CHANNEL?{channel:process.env.BROWSER_CHANNEL}:{})}),errors=[],results=[],lifetimesMs=[];
 await mkdir('test-results',{recursive:true});await mkdir('docs/screenshots',{recursive:true});
 const notice=page=>page.locator('#action-feedback');
 async function waitEvent(page,event){await page.waitForFunction(id=>{const el=document.querySelector('#action-feedback');return !el.hidden&&el.dataset.eventIds?.split(',').includes(String(id));},event.id);}

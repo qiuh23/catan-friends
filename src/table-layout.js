@@ -10,8 +10,5 @@ export function requiredTask(state) {
   if(state.phase==='steal'&&state.players[state.turn]?.id===state.me)return {
     key:`steal:${state.turnNo}`,title:'请选择一位对手',description:'需要你处理 · 抽取一张资源。',
   };
-  if(state.offer&&state.offer.from!==state.me)return {
-    key:`offer:${state.offer.id}`,title:'收到一笔交易报价',description:'查看对方提供与需要的资源。',
-  };
   return null;
 }

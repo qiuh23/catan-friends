@@ -32,7 +32,7 @@ export async function openFixture(browser,{count=6,viewport={width:1366,height:7
     return {...view,chat,room:{hostId:'p0',paused,practice:false,visibility:'private',serverNow:Date.now()},players:view.players.map(p=>({...p,online:true}))};
   };
   const publish=()=>socket?.send(JSON.stringify({type:'state',revision:++revision,state:project()}));
-  await page.route('**/api/deployment',route=>route.fulfill({json:{game:'catan-friends',backendId:'local',publicOrigin:new URL(testURL).origin}}));
+  await page.route('**/api/deployment',route=>route.fulfill({json:{game:'catan-friends',siteEdition:process.env.TEST_EDITION||'global',backendId:'local',publicOrigin:new URL(testURL).origin}}));
   await page.route('**/api/rooms',route=>route.fulfill({json:route.request().method()==='POST'?{code:'ABC234'}:{rooms:[]}}));
   await page.routeWebSocket('**/api/rooms/*/ws',ws=>{
     socket=ws;ws.onMessage(message=>{
@@ -46,7 +46,7 @@ export async function openFixture(browser,{count=6,viewport={width:1366,height:7
       }catch(error){ws.send(JSON.stringify({type:'error',id:envelope.id,message:error.message}));}
     });
   });
-  await page.goto(testURL);await entry(page);await page.locator('#nickname').fill(names[0]);await page.locator('#create-room').click();
+  await page.goto(testURL);await page.locator('[data-action="openEntry"]').click();if(await page.locator('#nickname').count())await page.locator('#nickname').fill(names[0]);await page.locator('#create-room').click();
   await page.locator('.playing #board canvas[data-camera]').waitFor();
   await page.waitForFunction(()=>JSON.parse(document.querySelector('#board canvas').dataset.renderStats||'{}').pieceBuilds>0);
   await page.waitForTimeout(200);

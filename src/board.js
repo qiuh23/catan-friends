@@ -1,3 +1,4 @@
+import {portGeometry} from './ports.js';
 export { Board } from './board3d.js';
 import { LABELS } from '../shared/board.js';
 import { resourceIllustration } from './icons.js';
@@ -50,7 +51,9 @@ export class FlatBoard {
   manualInput(){this.cancelFocus();this.followZoomBaseline=null;this.onManual?.();}
   cancelFocus(){cancelAnimationFrame(this.focusFrame);this.focusFrame=0;}
   selectSite(el){
-    if(!el?.hasAttribute('data-id'))el=null;
+    if(!el?.hasAttribute('data-id')&&!el?.hasAttribute('data-port'))el=null;
+    const port=el?.hasAttribute('data-port')?Number(el.dataset.port):el&&this.mode!=='road'?this.state.board.ports.find(p=>p.vertices.includes(Number(el.dataset.id)))?.id:null;
+    for(const entry of this.container.querySelectorAll('[data-port]'))entry.dataset.selected=String(Number(entry.dataset.port)===port);
     for(const site of this.container.querySelectorAll('[data-id]')){
       const selected=site===el;site.dataset.selected=String(selected);
       site.querySelector('[data-marker-fill]')?.setAttribute(this.mode==='road'?'fill':'stroke',selected?'#687f63':'#9d8c55');
@@ -97,7 +100,7 @@ export class FlatBoard {
     layer.innerHTML=(event?.targets||[]).map(target=>{
       const points=feedbackPoints(b,{targets:[target]});if(!points.length)return '';
       if(target.kind==='edge') {const a=this.point(points[0].x,points[0].z),c=this.point(points[1].x,points[1].z),length=Math.hypot(c.x-a.x,c.y-a.y),angle=Math.atan2(c.y-a.y,c.x-a.x)*180/Math.PI;return `<g transform="translate(${(a.x+c.x)/2} ${(a.y+c.y)/2}) rotate(${angle})"><rect x="${-length*.34}" y="-7" width="${length*.68}" height="14" rx="2" fill="none" stroke="#628f7c" stroke-width="1.6" stroke-dasharray="6 3"/></g>`;}
-      if(target.kind==='tile'){const tile=b.tiles[target.id],path=tile.vertices.map(id=>{const v=b.vertices[id],p=this.point(tile.x+(v.x-tile.x)*.94,tile.z+(v.z-tile.z)*.94);return `${p.x},${p.y}`;}).join(' ');return `<polygon points="${path}" fill="none" stroke="#628f7c" stroke-width="1.8" stroke-dasharray="7 4"/>`;}
+      if(target.kind==='tile'){const tile=b.tiles[target.id],path=tile.vertices.map(id=>{const v=b.vertices[id],p=this.point(tile.x+(v.x-tile.x)*.94,tile.z+(v.z-tile.z)*.94);return `${p.x},${p.y}`;}).join(' ');return `<polygon class="${['robber','steal','blocked'].includes(event.targetKinds?.[`${target.kind}:${target.id}`]||event.kind)?'robber-outline':'production-outline'}" points="${path}" fill="none" stroke="#d3ac54" stroke-width="4"/>`;}
       const p=this.point(points[0].x,points[0].z);return `<circle cx="${p.x}" cy="${p.y}" r="14" fill="none" stroke="#628f7c" stroke-width="1.8" stroke-dasharray="5 3"/>`;
     }).join('');
     svg.dataset.feedbackTargets=JSON.stringify(event?.targets||[]);
@@ -155,16 +158,18 @@ export class FlatBoard {
       else {({x,z}=b.vertices[id]);const p=point(x,z);shape=`<circle cx="${p.x}" cy="${p.y}" r="${mode==='city'?15:10}" fill="none" stroke="#687f63" stroke-width="1.3" opacity="0" data-marker-rim/><circle cx="${p.x}" cy="${p.y}" r="${mode==='city'?12:5.8}" fill="none" stroke="#9d8c55" stroke-width="1.4" data-marker-fill/>`;}
       const p=point(x,z);return `<g data-id="${id}" data-site-shape="${mode}" data-selected="false" cx="${p.x}" cy="${p.y}"><circle cx="${p.x}" cy="${p.y}" r="13" fill="transparent"/>${shape}</g>`;
     }).join('');
-    const ports=b.ports.map(p=>{const a=b.vertices[p.vertices[0]],c=b.vertices[p.vertices[1]],x=(a.x+c.x)/2,z=(a.z+c.z)/2,l=Math.hypot(x,z),{x:px,y:py}=point(x+x/l*.65,z+z/l*.65);return `<g role="img" aria-label="${p.resource==='any'?'普通港口 3:1':LABELS[p.resource]+'港口 2:1'}"><title>${p.resource==='any'?'普通港口 3:1':LABELS[p.resource]+'港口 2:1'}</title><rect x="${px-30}" y="${py-14}" width="60" height="28" rx="6" fill="#faf4e3" stroke="#9bae99"/>${p.resource!=='any'?resourceIllustration(p.resource).replace('<svg ',`<svg x="${px-28}" y="${py-13}" width="26" height="26" `):''}<text x="${p.resource==='any'?px:px+12}" y="${py+5}" text-anchor="middle" font-size="14" font-weight="600" fill="#173b3d">${p.resource==='any'?'3:1':'2:1'}</text></g>`;}).join('');
+    const ports=b.ports.map(p=>{const g=portGeometry(b,p),{x:px,y:py}=point(g.label.x,g.label.z),name=p.resource==='any'?'普通港口 3:1':LABELS[p.resource]+'港口 2:1';
+      const arms=g.arms.map(arm=>{const a=point(arm.from.x,arm.from.z),c=point(arm.to.x,arm.to.z),v=point(b.vertices[arm.vertex].x,b.vertices[arm.vertex].z),color=state.players.find(p=>p.id===arm.owner)?.color||'#ab8d62';return `<line x1="${a.x}" y1="${a.y}" x2="${c.x}" y2="${c.y}" stroke="#725b40" stroke-width="9"/><line x1="${a.x}" y1="${a.y}" x2="${c.x}" y2="${c.y}" stroke="${color}" stroke-width="5"/><circle cx="${v.x}" cy="${v.y}" r="${arm.owner?10:7}" fill="none" stroke="${color}" stroke-width="2"/>`;}).join('');
+      return `<g data-port="${p.id}" role="button" tabindex="0" aria-label="${name}，落点 ${p.vertices.map(id=>id+1).join('、')}"><title>${name}</title>${arms}<rect x="${px-30}" y="${py-14}" width="60" height="28" rx="6" fill="#faf4e3" stroke="#9bae99"/>${p.resource!=='any'?resourceIllustration(p.resource).replace('<svg ',`<svg x="${px-28}" y="${py-13}" width="26" height="26" `):''}<text x="${p.resource==='any'?px:px+12}" y="${py+5}" text-anchor="middle" font-size="14" font-weight="600" fill="#173b3d">${p.resource==='any'?'3:1':'2:1'}</text></g>`;}).join('');
     const extents=b.vertices.map(v=>point(v.x,v.z));
-    for(const p of b.ports){const a=b.vertices[p.vertices[0]],c=b.vertices[p.vertices[1]],x=(a.x+c.x)/2,z=(a.z+c.z)/2,l=Math.hypot(x,z),{x:px,y:py}=point(x+x/l*.65,z+z/l*.65);extents.push({x:px-32,y:py-16},{x:px+32,y:py+16});}
+    for(const p of b.ports){const g=portGeometry(b,p),{x:px,y:py}=point(g.label.x,g.label.z);extents.push({x:px-32,y:py-16},{x:px+32,y:py+16});}
     const minX=Math.min(...extents.map(p=>p.x))-8,minY=Math.min(...extents.map(p=>p.y))-8,maxX=Math.max(...extents.map(p=>p.x))+8,maxY=Math.max(...extents.map(p=>p.y))+8;
     this.contentBounds={x:minX,y:minY,width:maxX-minX,height:maxY-minY};
     const bounds=`${minX} ${minY} ${maxX-minX} ${maxY-minY}`;
     this.container.innerHTML=`<svg viewBox="${bounds}" role="group" aria-label="卡坦岛二维棋盘，Tab 选择位置，回车落子"><defs><pattern id="terrain-wood" width="14" height="14" patternUnits="userSpaceOnUse"><path d="m3 2 4 8H0ZM10 8l3 5H7Z" fill="#244e3c" opacity=".14"/></pattern><pattern id="terrain-brick" width="18" height="12" patternUnits="userSpaceOnUse"><path d="M0 6h18M9 0v6M4 6v6M14 6v6" stroke="#754d35" opacity=".16" fill="none"/></pattern><pattern id="terrain-wheat" width="12" height="12" patternUnits="userSpaceOnUse"><path d="M6 12V1M6 5 2 2M6 8l4-4" stroke="#917126" opacity=".22" fill="none"/></pattern><pattern id="terrain-sheep" width="18" height="16" patternUnits="userSpaceOnUse"><path d="M2 13q4-4 8 0M8 5q3-3 6 0" stroke="#456d35" opacity=".17" fill="none"/></pattern><pattern id="terrain-ore" width="18" height="16" patternUnits="userSpaceOnUse"><path d="m1 15 6-11 7 11M5 8l2-4 3 5" stroke="#405c68" opacity=".19" fill="none"/></pattern><pattern id="terrain-desert" width="22" height="14" patternUnits="userSpaceOnUse"><path d="M1 9q5-6 10 0t10 0" stroke="#9d8452" opacity=".18" fill="none"/></pattern></defs>${tiles}${ports}${roads}${buildings}${markers}</svg>`;
     this.resize();
     const svg=this.container.querySelector('svg');svg.style.touchAction='none';svg.setAttribute('tabindex','0');svg.setAttribute('aria-label','卡坦岛二维棋盘，拖动平移，双指或加减键缩放；Tab 选择位置，回车落子，0 复位');
-    const activate=(el,kind,id,name)=>{el.setAttribute('role','button');el.setAttribute('tabindex','0');el.setAttribute('aria-label',name);el.onclick=e=>{if(e?.detail&&this.suppressClick)return;this.selectSite(el.hasAttribute('data-id')?el:null);if(kind==='tile'||!e||e.detail===0)this.onSelect({kind,id});};el.onfocus=()=>this.selectSite(el);el.onblur=()=>this.selectSite(null);el.onpointerenter=()=>this.selectSite(el);el.onpointerleave=()=>{if(document.activeElement!==el)this.selectSite(null);};el.onkeydown=e=>{if(['Enter',' '].includes(e.key)){e.preventDefault();el.onclick();}};};
+    const activate=(el,kind,id,name)=>{el.setAttribute('role','button');el.setAttribute('tabindex','0');el.setAttribute('aria-label',name);el.onclick=e=>{if(e?.detail&&this.suppressClick)return;this.selectSite(el.hasAttribute('data-id')||el.hasAttribute('data-port')?el:null);if(kind==='tile'||kind==='port'||!e||e.detail===0)this.onSelect({kind,id});};el.onfocus=()=>this.selectSite(el);el.onblur=()=>this.selectSite(null);el.onpointerenter=()=>this.selectSite(el);el.onpointerleave=()=>{if(document.activeElement!==el)this.selectSite(null);};el.onkeydown=e=>{if(['Enter',' '].includes(e.key)){e.preventDefault();el.onclick();}};};
     for(const el of this.container.querySelectorAll('[data-id]'))activate(el,mode==='road'?'edge':'vertex',Number(el.dataset.id),`${mode==='road'?'铺设道路':mode==='city'?'升级城市':'建造村庄'} · 位置 ${Number(el.dataset.id)+1}`);
     this.container.querySelector('svg').onclick=e=>{
       if(e.detail===0||this.suppressClick)return;
@@ -173,6 +178,7 @@ export class FlatBoard {
       if(e.pointerType==='touch'&&candidates[1]&&candidates[1].distance-candidates[0].distance<6){this.onHover('相邻落点较近，请放大棋盘后再点选。');return;}
       this.selectSite(candidates[0].el);this.onSelect({kind:mode==='road'?'edge':'vertex',id:Number(candidates[0].el.dataset.id)});
     };
+    for(const el of this.container.querySelectorAll('[data-port]')){activate(el,'port',Number(el.dataset.port),el.getAttribute('aria-label'));el.addEventListener('click',e=>e.stopPropagation());}
     if(mode==='robber')for(const el of this.container.querySelectorAll('[data-tile]'))if(state.legal.robber.includes(Number(el.dataset.tile)))activate(el,'tile',Number(el.dataset.tile),`将强盗移动至 ${LABELS[b.tiles[Number(el.dataset.tile)].resource]}地块 ${Number(el.dataset.tile)+1}`);
     this.setFeedback(this.feedback,{reducedMotion:this.reducedMotion});
   }

@@ -43,7 +43,7 @@ test('robber and exhausted-bank tiles do not receive production highlights',()=>
   for(const t of g.board.tiles)if(t.number)t.number=t.id===tile.id?8:2;
   g.board.vertices.forEach(v=>{v.owner=null;v.level=0;});
   Object.assign(g.board.vertices[tile.vertices[0]],{owner:'p0',level:1});
-  g.robber=tile.id;let after=roll(g,8);assert.equal(head(after).kind,'roll');assert.deepEqual(head(after).targets,[]);
+  g.robber=tile.id;let after=roll(g,8);assert.equal(head(after).kind,'blocked');assert.deepEqual(head(after).targets,[{kind:'tile',id:tile.id}]);
   g.robber=g.board.tiles.find(t=>t.resource==='desert').id;g.bank[tile.resource]=0;after=roll(g,8);
   assert.equal(head(after).kind,'roll');assert.deepEqual(head(after).targets,[]);
 });
@@ -105,6 +105,11 @@ test('semantic burst groups repeated public text while retaining every event and
   assert.equal(merged.text,'甲掷出 8，地块产出。（2 次） · b 行动 3');
   assert.deepEqual(merged.eventIds,[1,2,3]);assert.equal(merged.count,3);assert.deepEqual(merged.actorIds,['a','b']);
   assert.deepEqual(merged.targets,[{kind:'tile',id:0},{kind:'tile',id:1},{kind:'edge',id:1}]);
+});
+test('mixed harvest and blocked-tile bursts preserve a separate visual kind per target',()=>{
+  const merged=mergeFeedbackEvents([event(1,'a','production',0),event(2,'a','blocked',1)]);
+  assert.equal(merged.kind,'summary');
+  assert.deepEqual(merged.targetKinds,{'tile:0':'production','tile:1':'blocked'});
 });
 
 test('discard summaries retain distinct actors even with identical names and reject private metadata',()=>{

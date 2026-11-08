@@ -1,0 +1,25 @@
+{
+  "results": [
+    {
+      "edition": "global",
+      "mode": "3d",
+      "production": true,
+      "blocked": true,
+      "robberPrivacy": true,
+      "award": true,
+      "sharedPort": true,
+      "dedup": true
+    },
+    {
+      "edition": "global",
+      "mode": "2d",
+      "production": true,
+      "blocked": true,
+      "robberPrivacy": true,
+      "award": true,
+      "sharedPort": true,
+      "dedup": true
+    }
+  ],
+  "errors": []
+}

@@ -6,7 +6,7 @@ import {openPolishFixture} from './immersive-polish-fixture.js';
 
 const url=process.env.TEST_URL||'http://127.0.0.1:5213',out='docs/qa/visual-first',before=process.argv.includes('--before');
 const baseline=before?execFileSync('git',['show','7baa5cc:src/main.js'],{encoding:'utf8'}):null;
-const browser=await chromium.launch({headless:true}),errors=[],results=[];
+const browser=await chromium.launch({headless:true,...(process.env.BROWSER_CHANNEL?{channel:process.env.BROWSER_CHANNEL}:{})}),errors=[],results=[];
 await mkdir(out,{recursive:true});
 const rooms=[
   {code:'ABC234',hostName:'超长昵称甲乙丙丁戊己庚辛壬癸子丑',playerCount:2,maxPlayers:6,phase:'lobby',options:{friendlyRobber:true}},
@@ -52,7 +52,7 @@ try{
     const client=await openPolishFixture(browser,{count:6,phase,viewport,touch:name!=='desktop',errors}),page=client.page;
     await fits(page,'#stage-tools button,#play-dock button,#player-orbit button');await shot(page,`${phase}-${name}`);
     if(phase==='lobby'){await page.locator('[data-action="openSettings"]:visible').first().click();await shot(page,`settings-${name}`);await outside(page,'#stage-dialog');}
-    if(phase==='action'){await page.locator('[data-action="trade"]:visible').click();await page.locator('#give-wood').fill('1');await outside(page,'#stage-dialog');await page.locator('[data-action="trade"]:visible').click();assert.equal(await page.locator('#give-wood').inputValue(),'1');await page.keyboard.press('Escape');assert.equal(client.actions.filter(a=>a.type==='offerTrade').length,0);}
+    if(phase==='action'){await page.locator('[data-action="trade"]:visible').click();await page.locator('.resource-pick[data-side="give"][data-resource="wood"]').click();await outside(page,'#stage-dialog');await page.locator('[data-action="trade"]:visible').click();assert.equal(await page.locator('.exchange-body>.exchange-resources:nth-child(2) .exchange-card.wood output').textContent(),'1');await page.keyboard.press('Escape');assert.equal(client.actions.filter(a=>a.type==='offerTrade').length,0);}
     results.push({name,phase,viewportFits:true});await client.context.close();
   }
   assert.deepEqual(errors,[]);await writeFile(`${out}/${before?'before':'after'}-results.json`,JSON.stringify({scope:'Local Chromium emulation; protocol fixtures for six-player table states.',results,errors},null,2));console.log(`${before?'Baseline screenshots':'Visual-first acceptance'}: ${results.length} cases passed`);

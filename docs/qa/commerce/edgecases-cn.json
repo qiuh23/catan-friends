@@ -1,0 +1,11 @@
+{
+  "edition": "cn",
+  "draftRefresh": true,
+  "unownedDemand": true,
+  "pairedBank": true,
+  "bankEmpty": true,
+  "staleOfferFeedback": true,
+  "turnExpiry": true,
+  "deckEmpty": true,
+  "errors": []
+}

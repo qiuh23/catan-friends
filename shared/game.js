@@ -56,12 +56,21 @@ function award(g, key, stat, minimum) {
   g[key] = max < minimum ? null : leaders.some(p => p.id === g[key]) ? g[key] : leaders.length === 1 ? leaders[0].id : null;
 }
 export function updateAwards(g) {
+  const previous={longest:g.longest,army:g.army,harbormaster:g.harbormaster};
   for (const p of g.players) p.roadLength = longestRoad(g.board, p.id);
   award(g,'longest','roadLength',5); award(g,'army','knights',3);
   // Count buildings, never roads or merely reaching the coast. A city is worth two.
   for (const p of g.players) p.harborPoints = g.board.vertices.filter(v => v.owner === p.id && g.board.ports.some(port => port.vertices.includes(v.id))).reduce((sum,v) => sum+v.level,0);
   if (g.options?.harbormaster) award(g,'harbormaster','harborPoints',3);
   else g.harbormaster = null;
+  for(const [key,name] of [['longest','最长道路'],['army','最大军队'],['harbormaster','卡坦港口']]){
+    if(previous[key]===g[key]||!g.presentation)continue;
+    const holder=g.players.find(p=>p.id===(g[key]||previous[key]));
+    if(!holder)continue;
+    const target=g.board.vertices.find(v=>v.owner===holder.id);
+    const text=g[key]?`${holder.name} 获得${name} · +2 分${previous[key]?'（奖项转移）':''}`:`${holder.name} 失去${name} · −2 分`;
+    log(g,text);present(g,'award',holder.id,text,target?[{kind:'vertex',id:target.id}]:[]);
+  }
 }
 function victory(g) {
   if (['lobby','setup-settlement','setup-road'].includes(g.phase)) return;
@@ -99,15 +108,22 @@ function robberSites(g) {
 }
 function finishRobber(g) { g.phase = g.resumePhase || 'action'; g.resumePhase = null; }
 function produce(g, sum) {
-  const productiveResources = new Set();
+  const productiveTiles = new Set();
   for (const r of RESOURCES) {
     const demand = g.players.map(p => ({ p, n: g.board.vertices.filter(v => v.owner === p.id).reduce((n,v) => n + v.level * v.tiles.filter(id => { const t = g.board.tiles[id]; return id !== g.robber && t.number === sum && t.resource === r; }).length,0) })).filter(d => d.n > 0);
     const need = demand.reduce((n,d) => n+d.n,0);
-    if (need <= g.bank[r]) { if (need) productiveResources.add(r); for (const {p,n} of demand) take(g,p,r,n); }
-    else if (demand.length === 1) { if (g.bank[r]) productiveResources.add(r); take(g,demand[0].p,r,g.bank[r]); }
+    const paid=new Map();
+    if (need <= g.bank[r]) { for (const {p,n} of demand) {take(g,p,r,n);paid.set(p.id,n);} }
+    else if (demand.length === 1) {const n=g.bank[r];take(g,demand[0].p,r,n);paid.set(demand[0].p.id,n);}
     else if (need) log(g, `${LABELS[r]}库存不足，本次该资源不分发。`);
+    // Stable attribution for a partial single-player payout. Unpaid tiles
+    // cannot receive harvest feedback, even when their dice number matches.
+    for(const t of g.board.tiles.filter(t=>t.id!==g.robber&&t.number===sum&&t.resource===r))for(const id of t.vertices){
+      const v=g.board.vertices[id],n=Math.min(v.level||0,paid.get(v.owner)||0);
+      if(n){productiveTiles.add(t.id);paid.set(v.owner,paid.get(v.owner)-n);}
+    }
   }
-  return g.board.tiles.filter(t => t.id !== g.robber && t.number === sum && productiveResources.has(t.resource) && t.vertices.some(id => g.board.vertices[id].owner)).map(t => ({ kind: 'tile', id: t.id }));
+  return g.board.tiles.filter(t => productiveTiles.has(t.id)).map(t => ({ kind: 'tile', id: t.id }));
 }
 export function legal(g, id) {
   if (!g.board) return { settlement: [], road: [], city: [], robber: [], victims: [] };
@@ -207,6 +223,8 @@ export function act(source, actorId, action, fixtureRandom) {
       const owners=new Set(targets.flatMap(t=>g.board.tiles[t.id].vertices.map(id=>g.board.vertices[id].owner)).filter(Boolean));
       const names=g.players.filter(player=>owners.has(player.id)).map(player=>player.name).join('、');
       present(g,targets.length?'production':'roll',actorId,targets.length?`${p.name} 掷出 ${sum} · ${names} 收获，${targets.length} 处地块产出。`:`${p.name} 掷出 ${sum}，本次没有地块产出。`,targets);
+      const blocked=g.board.tiles[g.robber];
+      if(blocked?.number===sum&&blocked.vertices.some(id=>g.board.vertices[id].owner))present(g,'blocked',actorId,'强盗阻断 · 此处没有产出。',[{kind:'tile',id:blocked.id}]);
     }
   } else if (type === 'moveRobber') {
     requireRule(sites.robber.includes(action.tile),g.options?.friendlyRobber ? '友善强盗不能影响公开分不超过 2 分的玩家；无合法地块时须退回沙漠。' : '请选择强盗当前所在格以外的地块。');

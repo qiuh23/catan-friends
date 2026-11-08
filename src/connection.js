@@ -43,5 +43,6 @@ export class Connection {
     });
   }
   rejectPending(message){for(const p of this.pending.values()){clearTimeout(p.timeout);p.reject(new Error(message));}this.pending.clear();}
+  sync(){if(this.ws.readyState===WebSocket.OPEN&&!this.stopped)this.ws.send('{"type":"sync"}');}
   close(){this.stopped=true;clearTimeout(this.reconnectTimer);clearInterval(this.heartbeat);this.ws.close();this.rejectPending('已离开房间。');}
 }

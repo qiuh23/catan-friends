@@ -6,7 +6,7 @@ import { toggleBoard, openStagePanel, closeStagePanel } from './browser-stage-he
 const url=process.env.TEST_URL||'http://127.0.0.1:5175',label=process.env.TEST_LABEL||'node';
 let stage='starting';
 const checkpoint=name=>{stage=name;console.log(`${label}: ${name}`);};
-const browser=await chromium.launch({headless:true}),errors=[],contexts=[];
+const browser=await chromium.launch({headless:true,...(process.env.BROWSER_CHANNEL?{channel:process.env.BROWSER_CHANNEL}:{})}),errors=[],contexts=[];
 await mkdir('test-results',{recursive:true});
 async function open(viewport={width:1440,height:960}) {
   const context=await browser.newContext({viewport});contexts.push(context);
@@ -137,8 +137,8 @@ try {
   if(six[0].state.phase==='robber'){await six[0].page.locator('#board [data-tile][role="button"]').first().click();await six[0].wait(s=>s.phase!=='robber');}
   if(six[0].state.phase==='steal'){await six[0].page.locator('[data-victim]').first().click();await six[0].wait(s=>s.phase==='action');}
   await six[0].page.getByRole('button',{name:'结束回合'}).click();await six[3].wait(s=>s.pairStep==='secondary'&&s.turn===3&&s.phase==='action');
-  await six[3].page.getByRole('button',{name:'资源交易',exact:true}).click();assert.equal(await six[3].page.locator('#bank-form').count(),1);assert.equal(await six[3].page.locator('#trade-form').count(),0);
-  await six[3].page.getByText('配对伙伴建设阶段仅可向银行或港口交易，不能与其他玩家交易。').waitFor();
+  await six[3].page.getByRole('button',{name:'资源交易',exact:true}).click();assert.equal(await six[3].page.locator('[data-action="publishTrade"]').isDisabled(),true);
+  await six[3].page.getByText('配对建设阶段可使用银行／港口').waitFor();await six[3].page.locator('[data-trade-view="bank"]').click();assert.equal(await six[3].page.locator('[data-action="exchangeBank"]').count(),1);
   await closeStagePanel(six[3].page);
   await six[3].page.getByRole('button',{name:'结束阶段'}).click();await six[1].wait(s=>s.pairStep==='primary'&&s.turn===1&&s.phase==='roll');
   assert.deepEqual(errors,[]);

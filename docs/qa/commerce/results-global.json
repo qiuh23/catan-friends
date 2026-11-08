@@ -1,0 +1,56 @@
+{
+  "scope": "Local Edge Chromium emulation with authoritative game protocol fixtures; no physical phone.",
+  "results": [
+    {
+      "name": "desktop",
+      "edition": "global",
+      "draft": true,
+      "trade": true,
+      "bank": true,
+      "costInspection": true,
+      "incomingNonmodal": true,
+      "portKeyboard": true
+    },
+    {
+      "name": "portrait",
+      "edition": "global",
+      "draft": true,
+      "trade": true,
+      "bank": true,
+      "costInspection": true,
+      "incomingNonmodal": true,
+      "portKeyboard": true
+    },
+    {
+      "name": "small",
+      "edition": "global",
+      "draft": true,
+      "trade": true,
+      "bank": true,
+      "costInspection": true,
+      "incomingNonmodal": true,
+      "portKeyboard": true
+    },
+    {
+      "name": "landscape",
+      "edition": "global",
+      "draft": true,
+      "trade": true,
+      "bank": true,
+      "costInspection": true,
+      "incomingNonmodal": true,
+      "portKeyboard": true
+    },
+    {
+      "name": "short-landscape",
+      "edition": "global",
+      "draft": true,
+      "trade": true,
+      "bank": true,
+      "costInspection": true,
+      "incomingNonmodal": true,
+      "portKeyboard": true
+    }
+  ],
+  "errors": []
+}
