@@ -1,0 +1,52 @@
+{
+  "environment": {
+    "node": "v22.23.3",
+    "platform": "win32",
+    "chromium": "157.0.4341.42",
+    "scope": "Chromium desktop and touch/viewport simulations; no physical device verification"
+  },
+  "results": [
+    {
+      "name": "6-flat-portrait",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "width": 390,
+        "height": 844,
+        "scrollWidth": 390,
+        "scrollHeight": 844,
+        "scrollY": 0
+      },
+      "board": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 844
+      },
+      "screenshot": "test-results/viewport-6-flat-portrait.png"
+    },
+    {
+      "name": "6-flat-landscape",
+      "viewport": {
+        "width": 844,
+        "height": 390
+      },
+      "metrics": {
+        "width": 844,
+        "height": 390,
+        "scrollWidth": 844,
+        "scrollHeight": 390,
+        "scrollY": 0
+      },
+      "board": {
+        "x": 0,
+        "y": 0,
+        "width": 844,
+        "height": 390
+      },
+      "screenshot": "test-results/viewport-6-flat-landscape.png"
+    }
+  ]
+}

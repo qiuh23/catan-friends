@@ -8,7 +8,7 @@ import { boardCamera, toggleBoard, openStagePanel, closeStagePanel, openEntry } 
 // These loopback-only fixtures exercise rare UI states without changing a live
 // game or exposing another player's hand. Actual room flows have separate tests.
 const url=process.env.TEST_URL||'http://127.0.0.1:5175';
-const browser=await chromium.launch({headless:true}),errors=[],results=[];
+const browser=await chromium.launch({headless:true,...(process.env.BROWSER_CHANNEL?{channel:process.env.BROWSER_CHANNEL}:{})}),errors=[],results=[];
 await mkdir('test-results',{recursive:true});
 function fixture(count,setup=false) {
   let seed=17+count,random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};
@@ -29,7 +29,7 @@ async function open(count,viewport,{touch=true,setup=false}={}) {
   let game=fixture(count,setup),socket,revision=0,chat=[];const actions=[];
   const project=()=>({...viewFor(game,'p0'),chat,room:{hostId:'p0',paused:false,practice:false,visibility:'private',serverNow:Date.now()},players:viewFor(game,'p0').players.map(p=>({...p,online:true}))});
   const publish=()=>socket.send(JSON.stringify({type:'state',revision:++revision,state:project()}));
-  await page.route('**/api/deployment',route=>route.fulfill({json:{game:'catan-friends',backendId:'local',publicOrigin:new URL(url).origin}}));
+  await page.route('**/api/deployment',route=>route.fulfill({json:{game:'catan-friends',siteEdition:'global',backendId:'local',publicOrigin:new URL(url).origin}}));
   await page.route('**/api/rooms',route=>route.fulfill({json:route.request().method()==='POST'?{code:'ABC234'}:{rooms:[]}}));
   await page.routeWebSocket('**/api/rooms/*/ws',ws=>{
     socket=ws;ws.onMessage(message=>{
@@ -135,19 +135,19 @@ try {
   assert.equal(client.actions.at(-1).type,'discard');
 
   const trade=fixture(6);trade.turn=1;trade.offer={id:'offer-test',from:'p1',give:{wood:1,brick:0,sheep:0,wheat:0,ore:0},want:{wood:0,brick:1,sheep:0,wheat:0,ore:0}};client.setGame(trade);
-  await page.locator('.turn-banner:visible strong').filter({hasText:'收到一笔交易报价'}).waitFor();await page.getByRole('button',{name:'接受这笔交易'}).waitFor();
+  await page.getByRole('button',{name:'资源交易',exact:true}).click();await page.getByRole('button',{name:'接受并成交'}).waitFor();
   await page.screenshot({path:'test-results/terrain-trade-landscape.png',fullPage:true});
   await page.setViewportSize({width:390,height:844});await settled(page);await page.screenshot({path:'test-results/terrain-trade-portrait.png',fullPage:true});
-  await page.keyboard.press('Escape');await page.getByRole('button',{name:'去处理',exact:true}).click();assert.equal(await page.locator('#decision-panel').evaluate(el=>el===document.activeElement||el.contains(document.activeElement)),true);
-  await page.getByRole('button',{name:'接受这笔交易'}).click();await page.locator('.trade-offer').waitFor({state:'hidden'});
+  await page.keyboard.press('Escape');await page.getByRole('button',{name:'资源交易',exact:true}).click();assert.ok(await page.locator('.current-offer').isVisible());
+  await page.getByRole('button',{name:'接受并成交'}).click();await page.locator('.current-offer').waitFor({state:'hidden'});
   assert.equal(client.actions.at(-1).type,'acceptTrade');
 
   // Simulated keyboard viewport: keep input drafts and focused controls reachable.
-  client.setGame(fixture(6));await page.getByRole('button',{name:'资源交易',exact:true}).click();await page.locator('#give-wood').fill('2');
-  await page.setViewportSize({width:390,height:430});await settled(page);assert.equal(await page.locator('#give-wood').inputValue(),'2');
-  await page.locator('#give-wood').focus();await settled(page);
-  const focused=await page.locator('#give-wood').boundingBox();assert.ok(focused.y>=0&&focused.y+focused.height<=430);
-  client.chat('模拟键盘收起前的消息');assert.equal(await page.locator('#give-wood').inputValue(),'2');
+  client.setGame(fixture(6));await page.getByRole('button',{name:'资源交易',exact:true}).click();await page.locator('.resource-pick[data-side="give"][data-resource="wood"]').click();await page.locator('.resource-pick[data-side="give"][data-resource="wood"]').click();
+  await page.setViewportSize({width:390,height:430});await settled(page);assert.equal(await page.locator('.exchange-body>.exchange-resources:nth-child(2) .exchange-card.wood output').textContent(),'2');
+  await page.locator('.resource-pick[data-side="give"][data-resource="wood"]').focus();await settled(page);
+  const focused=await page.locator('.resource-pick[data-side="give"][data-resource="wood"]').boundingBox();assert.ok(focused.y>=0&&focused.y+focused.height<=430);
+  client.chat('模拟键盘收起前的消息');assert.equal(await page.locator('.exchange-body>.exchange-resources:nth-child(2) .exchange-card.wood output').textContent(),'2');
   await page.setViewportSize({width:390,height:844});await closeStagePanel(page);await page.evaluate(()=>scrollTo(0,0));
 
   // Repeated switches should keep one canvas, bounded GPU resources, and camera fit.

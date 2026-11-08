@@ -7,7 +7,7 @@ import { openStagePanel, closeStagePanel, toggleBoard, openEntry } from './brows
 // Rare decision states are loopback-only protocol fixtures. The ordinary smoke
 // and multiplayer suites exercise the actual local Node room implementation.
 const url=process.env.TEST_URL||'http://127.0.0.1:5175';
-const browser=await chromium.launch({headless:true}),errors=[],results=[];
+const browser=await chromium.launch({headless:true,...(process.env.BROWSER_CHANNEL?{channel:process.env.BROWSER_CHANNEL}:{})}),errors=[],results=[];
 await mkdir('test-results',{recursive:true});
 await mkdir('docs/screenshots',{recursive:true});
 function fixture(count,setup=false) {
@@ -30,7 +30,7 @@ async function open(count,viewport,{touch=true,insets=null}={}) {
   let game=fixture(count),socket,revision=0,chat=[],paused=false;const actions=[];
   const project=()=>({...viewFor(game,'p0'),chat,room:{hostId:'p0',paused,practice:false,visibility:'private',serverNow:Date.now(),expiresAt:paused?Date.now()+14_400_000:null},players:viewFor(game,'p0').players.map(p=>({...p,online:true}))});
   const publish=()=>socket.send(JSON.stringify({type:'state',revision:++revision,state:project()}));
-  await page.route('**/api/deployment',route=>route.fulfill({json:{game:'catan-friends',backendId:'local',publicOrigin:new URL(url).origin}}));
+  await page.route('**/api/deployment',route=>route.fulfill({json:{game:'catan-friends',siteEdition:'global',backendId:'local',publicOrigin:new URL(url).origin}}));
   await page.route('**/api/rooms',route=>route.fulfill({json:route.request().method()==='POST'?{code:'ABC234'}:{rooms:[]}}));
   await page.routeWebSocket('**/api/rooms/*/ws',ws=>{
     socket=ws;ws.onMessage(message=>{
@@ -134,15 +134,15 @@ try {
   await page.setViewportSize({width:390,height:844});await page.getByRole('button',{name:'发送消息'}).click();await settled(page);assert.equal(client.actions.at(-1).type,'chat');
   await closeStagePanel(page);
 
-  await page.getByRole('button',{name:'资源交易',exact:true}).click();await page.locator('#trade-form button').click();
-  await page.locator('#stage-feedback:not(:empty)').waitFor();assert.equal(client.game.offer,null,'invalid trade changed server state');await dialogFits(page);
+  await page.getByRole('button',{name:'资源交易',exact:true}).click();assert.equal(await page.locator('[data-action="publishTrade"]').isDisabled(),true);
+  await page.locator('.exchange-reason').waitFor();assert.equal(client.game.offer,null,'invalid trade changed server state');await dialogFits(page);
   assert.equal(await page.locator('#toast').evaluate(el=>el.classList.contains('show')),false,'modal error also opened an unrelated outside toast');
-  await page.locator('#give-wood').fill('2');await page.locator('#want-brick').fill('1');
-  await closeStagePanel(page);await page.getByRole('button',{name:'资源交易',exact:true}).click();assert.equal(await page.locator('#give-wood').inputValue(),'2');
+  await page.locator('.resource-pick[data-side="give"][data-resource="wood"]').click();await page.locator('.resource-pick[data-side="give"][data-resource="wood"]').click();await page.locator('.resource-pick[data-side="want"][data-resource="brick"]').click();
+  await closeStagePanel(page);await page.getByRole('button',{name:'资源交易',exact:true}).click();assert.equal(await page.locator('.exchange-body>.exchange-resources:nth-child(2) .exchange-card.wood output').textContent(),'2');
   await page.setViewportSize({width:740,height:320});await settled(page);await dialogFits(page);
   const scroll=await page.locator('#stage-dialog-content').evaluate(el=>({height:el.clientHeight,scroll:el.scrollHeight,overflow:getComputedStyle(el).overflowY}));
-  assert.ok(scroll.scroll>scroll.height&&['auto','scroll'].includes(scroll.overflow),'long trade dialog must scroll internally on short landscape');
-  await page.locator('#trade-form button').click();await settled(page);assert.equal(client.actions.at(-1).type,'offerTrade');
+  assert.ok(scroll.scroll<=scroll.height+1||['auto','scroll'].includes(scroll.overflow),'overflowing trade dialog must scroll internally');
+  await page.locator('[data-action="publishTrade"]').click();await settled(page);assert.equal(client.actions.at(-1).type,'offerTrade');
   await page.screenshot({path:'test-results/viewport-trade-short-landscape.png',fullPage:true,scale:'css'});await closeStagePanel(page);
 
   const discard=fixture(6);discard.phase='discard';discard.turn=1;discard.discards={p0:10,p1:5};const beforeDiscard=client.actions.length;client.setGame(discard);
@@ -162,9 +162,9 @@ try {
   await page.getByRole('button',{name:'确认弃牌',exact:true}).click();await page.locator('#discard-form').waitFor({state:'hidden'});assert.equal(client.actions.at(-1).type,'discard');
 
   const trade=fixture(6);trade.turn=1;trade.offer={id:'offer-test',from:'p1',give:{wood:1,brick:0,sheep:0,wheat:0,ore:0},want:{wood:0,brick:1,sheep:0,wheat:0,ore:0}};
-  const beforeTrade=client.actions.length;client.setGame(trade);await page.locator('#stage-dialog[open] .trade-offer').waitFor();await dialogFits(page);assert.equal(client.actions.length,beforeTrade,'trade automatically accepted');
+  const beforeTrade=client.actions.length;client.setGame(trade);await page.getByRole('button',{name:'资源交易',exact:true}).click();await page.locator('#stage-dialog[open] .current-offer').waitFor();await dialogFits(page);assert.equal(client.actions.length,beforeTrade,'trade automatically accepted');
   await page.screenshot({path:'docs/screenshots/map-first-incoming-trade.png',fullPage:true,scale:'css'});
-  await page.keyboard.press('Escape');await page.locator('[data-action="focusTask"]').click();await page.getByRole('button',{name:'接受这笔交易'}).click();await page.locator('.trade-offer').waitFor({state:'hidden'});assert.equal(client.actions.at(-1).type,'acceptTrade');
+  await page.keyboard.press('Escape');await page.getByRole('button',{name:'资源交易',exact:true}).click();await page.getByRole('button',{name:'接受并成交'}).click();await page.locator('.current-offer').waitFor({state:'hidden'});assert.equal(client.actions.at(-1).type,'acceptTrade');
 
   const steal=fixture(6);steal.phase='steal';steal.resumePhase='action';steal.robber=steal.board.tiles.find(t=>t.vertices.some(v=>steal.board.vertices[v].owner&&steal.board.vertices[v].owner!=='p0')).id;
   const beforeSteal=client.actions.length;client.setGame(steal);await page.locator('#stage-dialog[open] [data-victim]').first().waitFor();assert.equal(client.actions.length,beforeSteal,'victim automatically selected');
@@ -187,8 +187,8 @@ try {
   await page.getByRole('button',{name:'打出丰收',exact:true}).click();await settled(page);assert.equal(client.actions.at(-1).type,'playDevelopment');
   assert.equal(client.game.players[0].hand.wood,5);assert.equal(client.game.players[0].hand.wheat,5);await closeStagePanel(page);await page.setViewportSize({width:390,height:844});
 
-  client.setGame(fixture(6));client.setPaused(true);await page.getByRole('button',{name:'恢复对局',exact:true}).waitFor();
-  assert.equal(await page.locator('#play-dock [data-build="road"]').isDisabled(),true);await page.getByRole('button',{name:'恢复对局',exact:true}).click();await settled(page);assert.equal(client.actions.at(-1).type,'resume');await closeStagePanel(page);
+  client.setGame(fixture(6));client.setPaused(true);await page.locator('#stage-dialog [data-action="resumeGame"]').waitFor();
+  assert.equal(await page.locator('#play-dock [data-build="road"]').isDisabled(),false,'cost inspection remains available while execution is paused');await page.locator('#stage-dialog [data-action="resumeGame"]').click();await settled(page);assert.equal(client.actions.at(-1).type,'resume');await closeStagePanel(page);
   await toggleBoard(page,'切换二维棋盘');await page.locator('#board>svg').waitFor();await fit(page);await snapshot(client,'6-flat-portrait');
   const svg=page.locator('#board>svg'),initialBox=await svg.getAttribute('viewBox');
   await svg.focus();await page.keyboard.press('+');assert.notEqual(await svg.getAttribute('viewBox'),initialBox,'2D keyboard zoom did not change view');

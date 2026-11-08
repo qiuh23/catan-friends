@@ -17,7 +17,10 @@ export async function closeStagePanel(page) {
 
 export async function openStagePanel(page, action) {
   await closeStagePanel(page);
-  await page.locator(`[data-action="${action}"]`).first().click();
+  if(action==='openPlayers'&&!await page.locator('[data-action="openPlayers"]').count()){
+    await page.locator('[data-player]').first().click();
+    if(await page.locator('[data-action="allPlayers"]').isVisible())await page.locator('[data-action="allPlayers"]').click();
+  }else await page.locator(`[data-action="${action}"]`).first().click();
   await page.locator('#stage-dialog[open]').waitFor();
 }
 

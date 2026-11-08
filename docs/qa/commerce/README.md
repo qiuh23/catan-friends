@@ -23,6 +23,7 @@
 | `commerce-edgecases-browser.mjs` | 国内／海外通过；刷新草稿、需求资源未持有、配对阶段银行、库存不足、发布后资源不足反馈、回合结束、发展卡耗尽 |
 | `commerce-effects-browser.mjs` | 国内／海外 × 2D／3D 共 4 场景通过；真实产出、强盗阻断、抢劫隐私、重复消息、奖励和双端点显示／点击 |
 | 现有 `action-feedback-browser.js` | 通过；10 张截图覆盖位置投影、缩放、1–1.5 秒清理、事件合并、输入焦点、刷新／重连与减少动态 |
+| 现有 `viewport-stage-browser.js` 交互模式 | 通过；交易、弃牌、抢劫、草稿和输入节点保持、模拟键盘、2 个 CDP 安全区、暂停恢复与 2D／3D 手势 |
 | `git diff --check` | 通过 |
 
 新增规则测试还覆盖港口海岸边与两端映射、共享拥有权、道路或强盗不解锁／封锁港口、三档比例、交易原子失败、覆盖／撤销／失效报价、同版本双人接受只成交一次、存档恢复与收据重试、道路分叉／闭环／截断／平手／转移、军队与港口计分和胜利条件、免费建造及引擎费用一致。
@@ -32,6 +33,8 @@
 机器默认 Node 20 低于项目要求，所有检查通过 `npm exec --yes --package=node@22 -- node …` 执行。使用浏览器脚本时设置 `TEST_URL`、`TEST_EDITION=cn|global`，Windows 可设置 `BROWSER_CHANNEL=msedge`。国内截图来自本地生产构建，海外截图来自本地 Vite 游戏界面。
 
 详细机器记录：[视口 global](results-global.json)、[视口 cn](results-cn.json)、[边界 global](edgecases-global.json)、[边界 cn](edgecases-cn.json)、[动效 global](effects-global.json)、[动效 cn](effects-cn.json)。保留代表性截图在此目录，完整本地截图归档在 `.local/commerce-screenshots/`，未把运行存档或构建产物提交到仓库。
+
+同时同步了五份历史浏览器脚本的资源卡、报价和配对阶段选择器，补齐其部署夹具的站点标识，公共玩家面板助手改用现有头像入口；Node 22 语法检查通过。已运行其中视口脚本的 `VIEWPORT_PHASE=interactions` 模式，[机器记录](viewport-interactions-global.json)。五份历史脚本的所有页面矩阵没有在本次全量重跑；新版交易的跨站、跨屏与边界验收使用上述三份专用浏览器脚本。
 
 ## 运行前后截图
 
