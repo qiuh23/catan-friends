@@ -1,3 +1,4 @@
+import {portGeometry} from './ports.js';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { LABELS } from '../shared/board.js';
@@ -22,7 +23,7 @@ function gableRoof(){
 export class Board {
   constructor(container,onSelect,onHover) {
     this.container=container;this.onSelect=onSelect;this.onHover=onHover;
-    this.frame=0;this.visible=true;this.metrics={renders:0,landBuilds:0,pieceBuilds:0,markerBuilds:0};
+    this.frame=0;this.visible=true;this.lowPower=(navigator.deviceMemory||8)<=2;this.metrics={renders:0,landBuilds:0,pieceBuilds:0,markerBuilds:0};
     this.renderer=new THREE.WebGLRenderer({antialias:true,alpha:false,powerPreference:'low-power'});
     this.assets=new BoardAssets();
     this.assets.geometries.roof.dispose();this.assets.geometries.roof=gableRoof();
@@ -50,7 +51,7 @@ export class Board {
     this.scene.add(this.land,this.pieces,this.markers,this.selectionLayer,this.feedbackLayer);
     // These are small ground inlays. Depth remains enabled so a nearby roof,
     // tree or rock naturally hides an inlay instead of being crossed by it.
-    for(const [key,color,opacity] of [['marker',0xd4bb79,.88],['outline',0x49695e,.7],['selected',0xf0db9e,1],['feedback',0x81b6a4,.95]])
+    for(const [key,color,opacity] of [['marker',0xd4bb79,.88],['outline',0x49695e,.7],['selected',0xf0db9e,1],['feedback',0xe3bd69,1],['robber-feedback',0x685074,1]])
       this.assets.materials.set(key,new THREE.MeshBasicMaterial({color,opacity,transparent:opacity<1,depthTest:true,depthWrite:false,toneMapped:false,side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-1}));
     // Painted pieces use depth so their pale plinth cannot draw over a roof or
     // tower. They keep one shared material and do not add mobile shadow passes.
@@ -157,6 +158,8 @@ export class Board {
         this.controls.target.lerpVectors(shot.fromTarget,shot.target,ease);this.camera.position.lerpVectors(shot.from,shot.position,ease);
         if(t===1)this.focusAnimation=null;
       }
+      const feedbackAge=now-(this.feedbackStart||0);
+      if(this.feedback&&feedbackAge<1250&&!this.reducedMotion&&!this.lowPower){const opacity=.72+.28*Math.sin(Math.PI*feedbackAge/1250);this.assets.materials.get('feedback').transparent=true;this.assets.materials.get('feedback').opacity=opacity;}
       this.controls.update();this.renderer.render(this.scene,this.camera);this.metrics.renders++;
       const {calls,triangles}=this.renderer.info.render;
       this.renderer.domElement.dataset.renderStats=JSON.stringify({...this.metrics,calls,triangles,...this.renderer.info.memory,dpr:this.renderer.getPixelRatio(),shadows:this.renderer.shadowMap.enabled});
@@ -166,7 +169,7 @@ export class Board {
       this.renderer.domElement.dataset.cameraEvent=this.focusEvent||'';
       this.renderer.domElement.dataset.cameraView=JSON.stringify(this.camera.view);
       this.onProjectionChange?.();
-      if(this.focusAnimation)this.invalidate();
+      if(this.focusAnimation||(this.feedback&&!this.reducedMotion&&!this.lowPower&&feedbackAge<1250))this.invalidate();
     });
   }
   resize() {
@@ -265,7 +268,7 @@ export class Board {
     return mesh;
   }
   selectSite(target){
-    const marker=(this.markerTargets||[]).find(m=>m.userData.kind===target?.kind&&m.userData.id===target?.id),key=marker?`${target.kind}:${target.id}`:'';
+    const marker=(this.markerTargets||[]).find(m=>m.userData.kind===target?.kind&&m.userData.id===target?.id),key=marker?`${target.kind}:${target.id}`:target?.kind==='port'?`port:${target.id}`:'';
     if(key===this.selectedSiteKey)return;this.selectedSiteKey=key;clearLayer(this.selectionLayer);
     if(marker) {
       if(marker.userData.kind==='edge') {
@@ -273,13 +276,17 @@ export class Board {
         for(const side of [-1,1]){const mesh=this.siteMesh(marker,'selected',1.08,24);mesh.position.x+=Math.sin(marker.rotation.y)*side*.052;mesh.position.z+=Math.cos(marker.rotation.y)*side*.052;this.selectionLayer.add(mesh);}
       }else for(const factor of [1,this.mode==='city'?1.22:1.65])this.selectionLayer.add(this.siteMesh(marker,'selected',factor,24));
     }
+    const port=target?.kind==='port'?this.board.ports.find(p=>p.id===target.id):marker?.userData.kind==='vertex'?this.board.ports.find(p=>p.vertices.includes(target.id)):null;
+    if(port)for(const id of port.vertices){const v=this.board.vertices[id],mesh=new THREE.Mesh(this.assets.geometries['site-city-ring'],this.assets.materials.get('selected'));mesh.position.set(v.x,.322,v.z);mesh.rotation.x=-Math.PI/2;mesh.scale.setScalar(.8);this.selectionLayer.add(mesh);}
+    this.renderer.domElement.dataset.selectedPort=port?String(port.id):'';
     this.renderer.domElement.dataset.selectedSite=key;this.invalidate();
   }
   setFeedback(event,{reducedMotion=this.reducedMotion??false}={}) {
     this.feedback=event;this.reducedMotion=reducedMotion;this.controls.enableDamping=!reducedMotion;
-    const key=JSON.stringify(event?.targets||[]);if(key===this.feedbackKey)return;this.feedbackKey=key;
-    clearLayer(this.feedbackLayer);
+    const key=JSON.stringify([event?.id,event?.kind,event?.targets||[]]);if(key===this.feedbackKey)return;this.feedbackKey=key;
+    clearLayer(this.feedbackLayer);this.feedbackStart=performance.now();
     for(const target of event?.targets||[]) {
+      const shadow=['robber','steal','blocked'].includes(event.targetKinds?.[`${target.kind}:${target.id}`]||event.kind);
       const points=feedbackPoints(this.board,{targets:[target]});if(!points.length)continue;
       if(target.kind==='edge') {
         const a=points[0],b=points[1];
@@ -287,7 +294,7 @@ export class Board {
         // Fine ground rails follow the built road, leave both intersections
         // free, and preserve its painted owner colour and original material.
         for(const side of [-1,1]) {
-          const mesh=new THREE.Mesh(this.assets.geometries.box,this.assets.materials.get('feedback')),offset=side*.112;
+          const mesh=new THREE.Mesh(this.assets.geometries.box,this.assets.materials.get(shadow?'robber-feedback':'feedback')),offset=side*.112;
           mesh.position.set((a.x+b.x)/2+Math.sin(angle)*offset,.323,(a.z+b.z)/2+Math.cos(angle)*offset);mesh.scale.set(length,.012,.018);mesh.rotation.y=angle;mesh.renderOrder=23;this.feedbackLayer.add(mesh);
         }
       } else if(target.kind==='tile') {
@@ -295,15 +302,15 @@ export class Board {
         // Trace the actual shared-edge hexagon, not a circle through its trees.
         for(let i=0;i<tile.vertices.length;i++) {
           const va=this.board.vertices[tile.vertices[i]],vb=this.board.vertices[tile.vertices[(i+1)%tile.vertices.length]],a={x:tile.x+(va.x-tile.x)*.94,z:tile.z+(va.z-tile.z)*.94},b={x:tile.x+(vb.x-tile.x)*.94,z:tile.z+(vb.z-tile.z)*.94};
-          const mesh=new THREE.Mesh(this.assets.geometries.box,this.assets.materials.get('feedback'));
-          mesh.position.set((a.x+b.x)/2,.294,(a.z+b.z)/2);mesh.scale.set(Math.hypot(b.x-a.x,b.z-a.z)*.90,.009,.018);mesh.rotation.y=-Math.atan2(b.z-a.z,b.x-a.x);mesh.renderOrder=23;this.feedbackLayer.add(mesh);
+          const mesh=new THREE.Mesh(this.assets.geometries.box,this.assets.materials.get(shadow?'robber-feedback':'feedback'));
+          mesh.position.set((a.x+b.x)/2,.294,(a.z+b.z)/2);mesh.scale.set(Math.hypot(b.x-a.x,b.z-a.z)*(shadow?.82:.93),.025,.055);mesh.rotation.y=-Math.atan2(b.z-a.z,b.x-a.x);mesh.renderOrder=23;this.feedbackLayer.add(mesh);
         }
       } else {
-        const p=this.board.vertices[target.id],mesh=new THREE.Mesh(this.assets.geometries.ring,this.assets.materials.get('feedback'));
+        const p=this.board.vertices[target.id],mesh=new THREE.Mesh(this.assets.geometries.ring,this.assets.materials.get(shadow?'robber-feedback':'feedback'));
         mesh.position.set(p.x,.323,p.z);mesh.rotation.x=-Math.PI/2;mesh.scale.setScalar(.255);mesh.renderOrder=23;this.feedbackLayer.add(mesh);
       }
     }
-    this.renderer.domElement.dataset.feedbackTargets=key;this.invalidate();
+    this.renderer.domElement.dataset.feedbackTargets=JSON.stringify(event?.targets||[]);this.invalidate();
   }
   focusFeedback(event,{reducedMotion=false,manual=false}={}) {
     if(this.disposed||this.pointers.size||reducedMotion&&!manual)return false;
@@ -437,9 +444,8 @@ export class Board {
       for(const tile of b.tiles)if(tile.number){const token=this.numberToken(tile.number);token.position.set(tile.x,.43,tile.z);this.land.add(token);}
       this.portBounds=[];this.portTargets=[];
       for(const port of b.ports) {
-        const a=b.vertices[port.vertices[0]],v=b.vertices[port.vertices[1]],x=(a.x+v.x)/2,z=(a.z+v.z)/2,l=Math.hypot(x,z);
-        const p={x:x+x/l*.69,y:.4,z:z+z/l*.69};this.portBounds.push(p);
-        const label=this.portToken(port.resource);label.position.set(p.x,p.y,p.z);this.land.add(label);this.portTargets.push(label);
+        const g=portGeometry(b,port),p={...g.label,y:.4};this.portBounds.push(p);
+        const label=this.portToken(port.resource);label.userData={port:port.resource,kind:'port',id:port.id};label.position.set(p.x,p.y,p.z);this.land.add(label);this.portTargets.push(label);
       }
       // A newly created map uses the play canvas's current orientation. The
       // narrow home preview can otherwise carry its low landscape pitch into a
@@ -458,6 +464,7 @@ export class Board {
       if(state.robber!==null&&state.robber!==undefined) {
         const t=b.tiles[state.robber];add('cone',0x283e38,t.x,.53,t.z+.4,.14,.4,.14);add('wool',0x283e38,t.x,.8,t.z+.4,.09,.10,.09);
       }
+      for(const port of b.ports)for(const arm of portGeometry(b,port).arms)if(arm.owner){const a=arm.from,c=arm.to;add('box',color(arm.owner),(a.x+c.x)/2,.225,(a.z+c.z)/2,Math.hypot(c.x-a.x,c.z-a.z),.025,.07,-Math.atan2(c.z-a.z,c.x-a.x));}
       batch.finish(this.pieces);
     }
     const markerKey=JSON.stringify([mode,state.legal?.[mode]||[]]);

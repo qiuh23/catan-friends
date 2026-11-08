@@ -10,13 +10,16 @@ import './immersive-polish.css';
 import './home-family.css';
 import './home-showcase.css';
 import './visual-first.css';
+import './commerce.css';
+import {tradePanel,costPanel,buildAvailability,awardPanel,normalizeTradeDraft} from './commerce.js';
+import {portOwners} from './ports.js';
 import { Board, FlatBoard } from './board.js';
 import { Connection } from './connection.js';
 import { icon, resourceIllustration, dieFace } from './icons.js';
 import { newId } from './id.js';
 import { readRoom, readInvitation, invitationURL, lobbyOrigins } from './invitation.js';
 import { createBoard, RESOURCES, LABELS, emptyHand, total } from '../shared/board.js';
-import { COSTS, DEV_NAMES, afford } from '../shared/game.js';
+import { COSTS, DEV_NAMES } from '../shared/game.js';
 import { variantOptions, rulesLabel, roomAvailability, remainingTime, gameLobbyURL, leaveDescription, mergeRoomPages, expansionForCount } from './room-ui.js';
 import { requiredTask } from './table-layout.js';
 import { ActionFeedbackCursor, mergeFeedbackEvents } from './action-feedback.js';
@@ -36,6 +39,7 @@ const homeExample=createHomeExample();
 const sceneState=()=>state?.board?state:state?state.players.length>4?largePreview:preview:code?preview:homeExample;
 let showcaseInterrupted=false,pageAway=false;
 let stagePanel='', focusedPlayer='';
+let inspectedBuild='',selectedPort=null,tradeView='players',tradePage='compose';
 const savedBoardViews=new Map();
 const feedbackCursor=new ActionFeedbackCursor(), motionQuery=matchMedia('(prefers-reduced-motion:reduce)');
 let autoFollow=storage.get('auto-follow')!==false, followPaused=false, motionPreference=storage.get('reduce-motion');
@@ -46,7 +50,7 @@ let draftScope='home';
 let viewSaveTimer=0;
 let lastTaskKey='';
 let selectedNickname=DOMESTIC?(NICKNAMES.find(n=>n.id===storage.get('nicknameId'))||randomNickname()):null;
-if(DOMESTIC){storage.set('name',null);const last=storage.get('last');if(last)storage.set('last',{...last,name:undefined});for(let i=sessionStorage.length-1;i>=0;i--){const key=sessionStorage.key(i);if(key?.startsWith('catan:drafts:'))sessionStorage.removeItem(key);}}
+if(DOMESTIC){storage.set('name',null);const last=storage.get('last');if(last)storage.set('last',{...last,name:undefined});for(let i=sessionStorage.length-1;i>=0;i--){const key=sessionStorage.key(i);if(key?.startsWith('catan:drafts:')){try{const safe=JSON.parse(sessionStorage.getItem(key)||'[]').filter(([id,value])=>/^(give|want)-(wood|brick|sheep|wheat|ore)$/.test(id)&&/^\d+$/.test(value)||/^bank-(give|want)$/.test(id)&&RESOURCES.includes(value));sessionStorage.setItem(key,JSON.stringify(safe));}catch{sessionStorage.removeItem(key);}}}}
 const entryNickname=()=>DOMESTIC?selectedNickname.id:$('#nickname')?.value.trim();
 let backendId='local',invite='',entryError='';
 let replaceViewURL=url=>history.replaceState(null,'',url);
@@ -60,7 +64,7 @@ try {
 const displayCode=value=>backendId==='aliyun'?`A-${value}`:backendId==='cloudflare'?`C-${value}`:value;
 const mine=()=>state?.players.find(p=>p.id===state.me);
 const myTurn=()=>state && state.players[state.turn]?.id===state.me;
-const ownRatio=r=>{const ports=state.board.ports.filter(p=>p.vertices.some(v=>state.board.vertices[v].owner===state.me));return ports.some(p=>p.resource===r)?2:ports.some(p=>p.resource==='any')?3:4;};
+
 const resCost=cost=>Object.entries(cost).map(([r,n])=>`<span class="mini-resource ${r}" title="${LABELS[r]} ${n}">${icon(r)}${n}</span>`).join('');
 const button=(text,action,disabled=false,cls='')=>`<button type="button" class="${cls}" data-action="${action}" ${disabled?'disabled':''}>${text}</button>`;
 document.querySelector('#app').innerHTML=`
@@ -180,6 +184,7 @@ function receiveActionFeedback(next){
 }
 function hover(text){$('#tile-hint').textContent=text|| (flat?'拖动平移 · 双指或加减键缩放':'拖动旋转 · 双指或滚轮缩放');if(text?.startsWith('相邻落点较近'))toast(text);}
 async function select(target){
+  if(target.kind==='port'){selectedPort=target.id;return openStagePanel('port');}
   if(busy||status!=='connected')return;
   const m=mode();
   if(target.kind==='tile'&&m==='robber')return send({type:'moveRobber',tile:target.id});
@@ -188,7 +193,7 @@ async function select(target){
 }
 async function send(action){
   if(busy)return;$('#stage-feedback').textContent='';busy=true;render();
-  try{await connection.action(action);if(['buildRoad','buildCity','buildSettlement','playDevelopment'].includes(action.type)){selectedBuild='';panel='';cardId='';stagePanel='';$('#stage-dialog').close();}if(['discard','offerTrade','playDevelopment'].includes(action.type)){const prefix={discard:'discard',offerTrade:'give',playDevelopment:'plenty'}[action.type];for(const key of inputDrafts.keys())if(key.startsWith(prefix+'-')||action.type==='offerTrade'&&key.startsWith('want-'))inputDrafts.delete(key);for(const el of document.querySelectorAll(`[id^="${prefix}-"]${action.type==='offerTrade'?', [id^="want-"]':''}`))if(el.matches('input'))el.value='0';}return true;}catch(error){toast(error.message);return false;}finally{busy=false;render();}
+  try{await connection.action(action);if(['buildRoad','buildCity','buildSettlement','buyDevelopment','playDevelopment'].includes(action.type)){inspectedBuild='';selectedBuild='';panel='';cardId='';stagePanel='';$('#stage-dialog').close();}if(action.type==='offerTrade')tradePage='offers';if(action.type==='bankTrade')toast('兑换完成');if(['discard','offerTrade','playDevelopment'].includes(action.type)){const prefix={discard:'discard',offerTrade:'give',playDevelopment:'plenty'}[action.type];for(const key of inputDrafts.keys())if(key.startsWith(prefix+'-')||action.type==='offerTrade'&&key.startsWith('want-'))inputDrafts.delete(key);for(const el of document.querySelectorAll(`[id^="${prefix}-"]${action.type==='offerTrade'?', [id^="want-"]':''}`))if(el.matches('input'))el.value='0';}return true;}catch(error){toast(error.message);if(['offerTrade','acceptTrade','cancelTrade','bankTrade'].includes(action.type))connection.sync();return false;}finally{busy=false;render();}
 }
 function connect(room,token,name){
   if(entryError)return toast(entryError);
@@ -197,7 +202,7 @@ function connect(room,token,name){
   connection?.close();clearActionFeedback();feedbackEpoch='';followPaused=false;code=room;state=null;seenChatIds=new Set();chatBusy=false;stagePanel='';lastTaskKey='';status='connecting';
   $('#entry-dialog').close();$('#rooms-dialog').close();
   terminalMessage='';if(!DOMESTIC)storage.set('name',name);replaceViewURL(invitationURL(location.origin,code,backendId));
-  connection=new Connection(code,token,name,(next)=>{const old=state;receivedAt=Date.now();if(next.room?.closed)return terminal({type:'closed',message:next.room.closeReason||'房间已关闭。'});if(!old)for(const chat of next.chat)seenChatIds.add(chat.id);if(DOMESTIC){next.chat=[];const me=next.players.find(p=>p.id===next.me);selectedNickname=NICKNAMES.find(n=>n.id===me?.nicknameId)||selectedNickname;storage.set('nicknameId',selectedNickname.id);}state=next;storage.set('last',{code,token,...(DOMESTIC?{nicknameId:selectedNickname.id}:{name})});storage.set(`token:${code}`,token);if(old?.turnNo!==next.turnNo||old?.phase!==next.phase){selectedBuild='';panel='';cardId='';}render();if(!old)restoreBoardView();receiveActionFeedback(next);},s=>{status=s;if(s!=='connected'){feedbackCursor.consume(state,{connected:false,roomKey:code});clearActionFeedback();}render();},toast,terminal);
+  connection=new Connection(code,token,name,(next)=>{const old=state;receivedAt=Date.now();if(next.room?.closed)return terminal({type:'closed',message:next.room.closeReason||'房间已关闭。'});if(!old)for(const chat of next.chat)seenChatIds.add(chat.id);if(DOMESTIC){next.chat=[];const me=next.players.find(p=>p.id===next.me);selectedNickname=NICKNAMES.find(n=>n.id===me?.nicknameId)||selectedNickname;storage.set('nicknameId',selectedNickname.id);}state=next;storage.set('last',{code,token,...(DOMESTIC?{nicknameId:selectedNickname.id}:{name})});storage.set(`token:${code}`,token);if(old?.turnNo!==next.turnNo||old?.phase!==next.phase){selectedBuild='';inspectedBuild='';if(panel!=='trade')panel='';cardId='';}if(old&&next.offer&&next.offer.from!==next.me&&old.offer?.id!==next.offer.id)toast('收到新报价 · 点交易查看');render();if(!old)restoreBoardView();receiveActionFeedback(next);},s=>{status=s;if(s!=='connected'){feedbackCursor.consume(state,{connected:false,roomKey:code});clearActionFeedback();}render();},toast,terminal);
   render();
 }
 async function create(practice=false){
@@ -258,16 +263,16 @@ function retention(){const room=state?.room;if(!room)return '';const remaining=r
 function roomNavigation(){return `<div class="room-navigation">${isHost()&&state.phase!=='lobby'&&state.phase!=='finished'&&!state.room?.paused?button('暂停对局','pauseGame',busy||status!=='connected','secondary'):''}${isHost()&&state.phase!=='lobby'&&!state.room?.practice&&state.players.some(p=>p.id!==state.me&&!p.bot&&p.online)?button('转交房主','transferMenu',busy,'text-button'):''}${button(state.phase==='lobby'&&!isHost()?'退出座位':'暂离房间','home',busy,'text-button')}${isHost()?button('解散房间','dissolve',busy||status!=='connected','danger-button'):''}</div>`;}
 function lobbyControls(){const host=isHost(),disabled=busy||status!=='connected',unready=state.players.some(p=>!p.bot&&p.id!==state.me&&(!p.ready||!p.online));return `<div class="waiting-actions">${button(`${icon('link')}<span>邀请</span>`,'invite',false,'secondary')}${host?button(`${icon('bot')}<span>加电脑</span>`,'addBot',disabled||state.players.length>=6,'secondary'):''}${button(`${icon('settings')}<span>玩法</span>`,'openSettings',false,'secondary')}${host?button(`开始探索 ${icon('arrow')}`,'start',disabled||state.players.length<3||unready,'primary'):button(mine().ready?`${icon('check')}已准备`:'准备好了','ready',disabled,'primary')}</div>`;}
 function gamePanel(){
-  return `<div class="game-goal">${icon('trophy')}<strong>${state.targetPoints||10}</strong><span>分获胜</span><small>${state.options?.playerExpansion==='five-six-2025'?'配对回合':'基础规则'}</small></div><div class="player-stat-legend">${icon('cards')}资源 ${icon('development')}发展卡${state.options?.harbormaster?`${icon('harbor')}港口分`:''}</div>${playerList()}<div class="awards"><span>${icon('road')}最长道路 <b>${state.longest?esc(state.players.find(p=>p.id===state.longest).name):'待争夺'}</b></span><span>${icon('knight')}最大军队 <b>${state.army?esc(state.players.find(p=>p.id===state.army).name):'待争夺'}</b></span>${state.options?.harbormaster?`<span>${icon('harbor')}卡坦港口 <b>${state.harbormaster?esc(state.players.find(p=>p.id===state.harbormaster)?.name):'待争夺'}</b></span>`:''}</div>`;
+  return `<div class="game-goal">${icon('trophy')}<strong>${state.targetPoints||10}</strong><span>分获胜</span><small>${state.options?.playerExpansion==='five-six-2025'?'配对回合':'基础规则'}</small></div><div class="player-stat-legend">${icon('cards')}资源 ${icon('development')}发展卡${state.options?.harbormaster?`${icon('harbor')}港口分`:''}</div>${playerList()}${awardPanel(state)}`;
 }
 function gameControls(){
-  const me=mine(),active=myTurn(),disabled=busy||status!=='connected'||state.room?.paused;
+  const active=myTurn(),disabled=busy||status!=='connected'||state.room?.paused;
   return `<section class="build-section" aria-label="建造">${['road','settlement','city','development'].map(k=>{
     const name=({road:'道路',settlement:'村庄',city:'城市',development:'发展卡'})[k];
     const cost=Object.entries(COSTS[k]).map(([r,n])=>`${LABELS[r]} ${n}`).join('，');
-    const can=active&&state.phase==='action'&&afford(me.hand,COSTS[k])&&(k==='development'?state.deckCount>0:state.legal[k].length>0);
-    return `<button type="button" class="build-button ${selectedBuild===k?'selected':''}" data-build="${k}" aria-label="建造${name}，${cost}" aria-pressed="${selectedBuild===k}" title="${name} · ${cost}" ${!can||disabled?'disabled':''}>${icon(k)}<span>${name}</span></button>`;
-  }).join('')}</section><div class="turn-actions">${button(`${icon('trade')}<span>交易</span>`,'trade',disabled||!active||state.phase!=='action','secondary')}${state.phase==='roll'&&active?button(`${icon('dice')}<span>掷骰</span>`,'roll',disabled,'primary'):button(`${icon('arrow')}<span>${state.pairStep==='secondary'?'结束阶段':'结束回合'}</span>`,'endTurn',disabled||!active||state.phase!=='action','primary')}</div>`;
+
+    return `<button type="button" class="build-button ${selectedBuild===k?'selected':''}" data-build="${k}" aria-label="建造${name}，${cost}" aria-pressed="${selectedBuild===k}" title="${name} · ${cost}" aria-description="${esc(buildAvailability(state,k).reason||'点击查看费用')}">${icon(k)}<span>${name}</span></button>`;
+  }).join('')}</section><div class="turn-actions">${button(`${icon('trade')}<span>交易${state.offer?' · 1':''}</span>`,'trade',false,'secondary')}${state.phase==='roll'&&active?button(`${icon('dice')}<span>掷骰</span>`,'roll',disabled,'primary'):button(`${icon('arrow')}<span>${state.pairStep==='secondary'?'结束阶段':'结束回合'}</span>`,'endTurn',disabled||!active||state.phase!=='action','primary')}</div>`;
 }
 function field(r,prefix,max=state?.profile?.resourceCount||19){return `<label class="resource-input ${r}" for="${prefix}-${r}"><span>${icon(r)}${LABELS[r]}</span><input data-persist id="${prefix}-${r}" type="number" inputmode="numeric" min="0" max="${max}" value="0" aria-label="${prefix==='discard'?'弃掉':prefix==='give'?'提供':prefix==='want'?'需要':'获取'}${LABELS[r]}数量"></label>`;}
 function formBundle(prefix){return Object.fromEntries(RESOURCES.map(r=>[r,Number($(`#${prefix}-${r}`)?.value||0)]));}
@@ -276,11 +281,11 @@ function actionPanel(){
   if(state.room?.paused)return `<section class="choice-panel"><h2>对局已暂停</h2><p>${isHost()?'点击恢复继续原局面。':'等待房主恢复。'}电脑与对局操作已停止，牌局、资源与交易保持原状。</p>${isHost()?button('恢复对局','resumeGame',busy||status!=='connected','primary'):''}</section>`;
   if(state.phase==='discard'&&state.discards[state.me])return `<section class="choice-panel quantity-choice"><h2>放下 ${state.discards[state.me]} 张资源</h2><p>掷出 7 · 选择要弃掉的资源</p><form id="discard-form" data-required-count="${state.discards[state.me]}"><div class="quantity-fields">${RESOURCES.map(r=>field(r,'discard',mine().hand[r])).join('')}</div><div class="decision-submit"><output class="quantity-summary" aria-live="polite">已选 0 / ${state.discards[state.me]} 张</output><button class="primary" ${busy?'disabled':''}>确认弃牌</button></div></form></section>`;
   if(state.phase==='steal'&&myTurn())return `<section class="choice-panel"><h2>选择一位对手</h2><p>随机抽取对方的一张资源牌。</p>${state.legal.victims.map(id=>`<button class="secondary" data-victim="${id}">${esc(state.players.find(p=>p.id===id).name)} ${icon('arrow')}</button>`).join('')}</section>`;
-  if(panel==='trade')return `<section class="choice-panel"><div class="panel-heading"><h2>交换资源</h2>${button(icon('close'),'closePanel',false,'square')}</div><form id="bank-form"><label for="bank-give">向银行提供</label><div class="bank-row"><select id="bank-give" data-persist>${resourceOptions('wood')}</select><b id="bank-ratio">4 : 1</b><select id="bank-want" data-persist aria-label="从银行获取">${resourceOptions('wheat')}</select></div><button class="primary" ${busy?'disabled':''}>确认银行交易</button></form>${state.pairStep!=='secondary'?`<form id="trade-form"><h3>向朋友发起交易</h3><div class="offer-columns"><div><b>我提供</b>${RESOURCES.map(r=>field(r,'give',mine().hand[r])).join('')}</div><div><b>我需要</b>${RESOURCES.map(r=>field(r,'want')).join('')}</div></div><button class="secondary" ${busy?'disabled':''}>发布交易请求</button></form>`:'<p class="muted small">配对伙伴建设阶段仅可向银行或港口交易，不能与其他玩家交易。</p>'}</section>`;
+  if(panel==='trade')return tradePanel(state,{draft:inputDrafts,view:tradeView,page:tradePage,busy:busy||status!=='connected'});
   if(panel==='development'&&cardId){const card=mine().dev.find(c=>c.id===cardId);if(!card)return '';return `<section class="choice-panel ${card.type==='plenty'?'quantity-choice':''}"><div class="panel-heading"><h2>${DEV_NAMES[card.type]}</h2>${button(icon('close'),'closePanel',false,'square')}</div>${card.type==='plenty'?'<p>从银行选择共两张资源。</p>':''}<form id="development-form" ${card.type==='plenty'?'data-required-count="2"':''}>${card.type==='plenty'?`<div class="quantity-fields">${RESOURCES.map(r=>field(r,'plenty',state.bank[r])).join('')}</div>`:card.type==='monopoly'?`<label for="monopoly-resource">收取所有对手的哪种资源？</label><select id="monopoly-resource" data-persist>${resourceOptions('ore')}</select>`:`<p>${card.type==='knight'?'移动强盗，并从一位相邻对手手中抽一张资源。':'免费铺设两条道路，仍需连接自己的路网。'}</p>`}<div class="decision-submit">${card.type==='plenty'?'<output class="quantity-summary" aria-live="polite">已选 0 / 2 张</output>':''}<button class="primary" ${busy?'disabled':''}>打出${DEV_NAMES[card.type]}</button></div></form></section>`;}
   return '';
 }
-function offer(){if(state.room?.paused)return '';const o=state.offer;if(!o)return '';return `<section class="trade-offer"><h3>${esc(state.players.find(p=>p.id===o.from).name)} 想和你交易</h3><div><span>提供</span>${resCost(Object.fromEntries(Object.entries(o.give).filter(([,n])=>n)))}</div><div><span>需要</span>${resCost(Object.fromEntries(Object.entries(o.want).filter(([,n])=>n)))}</div>${o.from===state.me?button('取消交易','cancelTrade',busy,'secondary'):button('接受这笔交易','acceptTrade',busy||!afford(mine().hand,o.want),'primary')}</section>`;}
+
 function chatMapObstacles(){
   if(!state?.board||!board)return [];
   const box=$('#board').getBoundingClientRect(),points=state.board.vertices.map(v=>board.projectFeedbackTarget({kind:'vertex',id:v.id})).filter(p=>p&&Number.isFinite(p.x)&&Number.isFinite(p.y));
@@ -298,7 +303,7 @@ function banner(){
   if(state?.phase==='lobby')return `<div class="waiting-banner"><strong>房间 ${esc(displayCode(code))} <small>${state.room?.visibility==='private'?'私密':'公开'}</small></strong><span>${state.players.length} / 6 人 · ${state.players.length>4?'5–6 人扩充 · 配对建设':'基础版 · 3–4 人'}</span><small>${state.players.length<3?`再来 ${3-state.players.length} 人即可开局`:state.players.some(p=>!p.bot&&p.id!==(state.room?.hostId||state.players[0]?.id)&&(!p.ready||!p.online))?'等待朋友在线并准备':'已就绪 · 房主可开始'}${state.options?.friendlyRobber?' · 友善强盗':''}${state.options?.harbormaster?' · 卡坦港口':''}</small></div>`;
   if(!state?.board)return '';
   const p=state.players[state.turn],self=myTurn(),task=requiredTask(state);
-  const descriptions={'setup-settlement':'放置村庄','setup-road':'铺设起始道路',roll:'等待掷骰',action:selectedBuild?`选择${{road:'道路',settlement:'村庄',city:'城市'}[selectedBuild]}位置`:state.pairStep==='secondary'?'配对建设阶段':'交易 · 建造',discard:'等待弃牌',robber:'选择强盗地块',steal:'选择偷取对象','road-building':`免费道路 · 还可建 ${state.freeRoads} 条`,finished:'对局结束'};
+  const descriptions={'setup-settlement':'放置村庄','setup-road':'铺设起始道路',roll:'等待掷骰',action:selectedBuild?`选择${{road:'道路',settlement:'村庄',city:'城市'}[selectedBuild]}位置`:state.pairStep==='secondary'?'配对建设阶段':'交易 · 建造',discard:'等待弃牌',robber:'选择强盗地块',steal:'选择被抢玩家','road-building':`免费道路 · 还可建 ${state.freeRoads} 条`,finished:'对局结束'};
   const glyph=status!=='connected'?'offline':state.room?.paused?'pause':({'setup-settlement':'settlement','setup-road':'road',roll:'dice',action:selectedBuild||'trade',discard:'cards',robber:'shield',steal:'cards','road-building':'road',finished:'trophy'})[state.phase]||'island';
   return `<div class="turn-banner ${self?'your-turn':''} ${task?'needs-attention':''}"><span class="turn-dot" style="background:${p.color}"></span><div><strong>${state.room?.paused?'对局已暂停':task?task.title:state.phase==='finished'?'对局结束':self?'你的回合':esc(p.name)}</strong><span class="turn-description ${status!=='connected'?'connection-warning':''}">${icon(glyph)}${status!=='connected'?statusText():state.room?.paused?'电脑与操作已停止':task?'需要处理':descriptions[state.phase]||''}</span></div>${state.room?.paused&&isHost()?button('恢复','resumeGame',busy||status!=='connected','task-shortcut'):task?button('去处理','focusTask',false,'task-shortcut'):state.phase==='finished'?button('结算','openResult',false,'task-shortcut'):state.dice?`<div class="dice-pair" role="img" aria-label="骰子 ${state.dice.join(' 加 ')}，合计 ${state.dice.reduce((a,b)=>a+b,0)}">${state.dice.map(n=>`<span title="${n}">${dieFace(n)}</span>`).join('')}<b>${state.dice.reduce((a,b)=>a+b,0)}</b></div>`:''}</div>`;
 }
@@ -320,9 +325,13 @@ function stageContent(){
   if(stagePanel==='settings'&&state.phase==='lobby')return `${roomSettings()}${retention()}${roomNavigation()}`;
   if(stagePanel==='settings')return `<p class="settings-meta"><span class="connection ${status}"><i></i>${statusText()}</span>房间 ${displayCode(code)}</p>${retention()}<p class="rules-summary">${esc(rulesLabel(state.options))} · ${state.targetPoints||10} 分获胜</p><fieldset class="action-preferences"><legend>行动与镜头</legend><label><input id="auto-follow" type="checkbox" ${autoFollow?'checked':''}>${icon('follow')}自动跟随</label><label><input id="reduce-motion" type="checkbox" ${reducedMotion()?'checked':''}>${icon('pause')}减少动态</label><details class="preference-help"><summary>镜头说明</summary><p>拖动或缩放后，点「跟随」恢复。选择落点、输入或打开面板时保持视角。提示随地图位置显示，约 1.25 秒后收起；完整行动可在记录查看。</p></details></fieldset><div class="settings-grid">${button(`${icon('zoom')}放大`,'zoomIn')}${button(`${icon('minus')}缩小`,'zoomOut')}${button(`${icon('reset')}复位`,'reset')}${button(flat?'3D 三维棋盘':'2D 二维棋盘','toggleFlat')}${button(`${icon('book')}玩法指南`,'rules')}${button(`${icon('link')}邀请好友`,'invite')}</div>${!DOMESTIC?button(`${icon('shield')}隐私 / 举报`,'report',false,'text-button'):''}${roomNavigation()}${lobbyOrigins[backendId]?`<a class="settings-lobby" data-lobby-link href="${lobbyOrigins[backendId]}">返回游戏大厅 ${icon('arrow')}</a>`:''}`;
   if(stagePanel==='hand')return developmentPanel();
+  if(stagePanel==='port')return portDetail();
   if(stagePanel==='result')return resultPanel();
-  const task=requiredTask(state);
-  return `<section id="decision-panel" tabindex="-1" aria-label="当前操作">${task?.key.startsWith('offer:')?'':actionPanel()}${offer()}</section>`;
+  return `<section id="decision-panel" tabindex="-1" aria-label="当前操作">${actionPanel()}</section>`;
+}
+function portDetail(){
+  const p=state.board.ports.find(p=>p.id===selectedPort);if(!p)return '';
+  return `<section class="port-detail">${p.resource==='any'?icon('harbor'):resourceIllustration(p.resource)}<h3>${p.resource==='any'?'普通港口 · 3:1':LABELS[p.resource]+'港口 · 2:1'}</h3><div class="port-endpoints">${p.vertices.map(id=>{const v=state.board.vertices[id],owner=state.players.find(p=>p.id===v.owner);return `<span style="--player:${owner?.color||'#b7c4ad'}">${icon(v.level===2?'city':'settlement')}落点 ${id+1}<br>${owner?esc(owner.name):'建造后可用'}</span>`;}).join('')}</div><p>${portOwners(state.board,p).includes(state.me)?'你可使用此港口':'任一端点建村庄或城市即可使用'}</p></section>`;
 }
 function restoreDrafts(){try{const saved=JSON.parse(sessionStorage.getItem(`catan:drafts:${draftScope}`)||'[]');for(const [id,value]of saved)if(typeof id==='string'&&['string','boolean'].includes(typeof value))inputDrafts.set(id,value);}catch{}}
 function saveDrafts(){const selector=draftScope==='home'?'#entry-content [data-persist],#practice-dialog [data-persist]':'#left-panel [data-persist],#stage-dialog-content [data-persist]';for(const el of document.querySelectorAll(selector))inputDrafts.set(el.id,['checkbox','radio'].includes(el.type)?el.checked:el.value);try{sessionStorage.setItem(`catan:drafts:${draftScope}`,JSON.stringify([...inputDrafts]));}catch{}}
@@ -336,8 +345,9 @@ function renderStage(task){
   if(taskKey!==lastTaskKey){lastTaskKey=taskKey;if(task){saveDrafts();stagePanel='decision';$('#stage-feedback').textContent='';panelScroll.set('decision',0);}else if(stagePanel==='decision'){stagePanel='';}}
   if(state.phase==='finished'&&renderStage.phase!=='finished')stagePanel='result';
   renderStage.phase=state.phase;
+  dialog.classList.toggle('commerce-dialog',stagePanel==='decision'&&panel==='trade');
   if(!stagePanel){dialog.close();return;}
-  $('#stage-dialog-title').textContent=({chat:'围桌聊聊',players:`本桌玩家 · ${state.players.length} 人`,log:'岛屿记事',settings:'对局设置',hand:'你的手牌',result:'本局结算',decision:task?.title||(panel==='development'?DEV_NAMES[mine().dev.find(c=>c.id===cardId)?.type]||'发展卡':panel==='trade'?'交换资源':'交换与行动')})[stagePanel];
+  $('#stage-dialog-title').textContent=({chat:'围桌聊聊',players:`本桌玩家 · ${state.players.length} 人`,log:'岛屿记事',settings:'对局设置',hand:'你的手牌',port:'海岸港口',result:'本局结算',decision:task?.title||(panel==='development'?DEV_NAMES[mine().dev.find(c=>c.id===cardId)?.type]||'发展卡':panel==='trade'?'交换资源':'交换与行动')})[stagePanel];
   const scroller=$('#stage-dialog-content'),scroll=scroller.scrollTop,changed=scroller.dataset.panel!==stagePanel;
   if(!changed&&stagePanel==='chat'&&$('#chat-form')){paint('#chat-messages',chatMessages());$('#chat-form button').disabled=chatBusy||status!=='connected';}else paint('#stage-dialog-content',stageContent());
   scroller.dataset.panel=stagePanel;
@@ -351,6 +361,7 @@ function render(){
   const nextScope=state?.me&&code?`${backendId}:${code}:${state.me}`:'home';
   if(nextScope!==draftScope){saveDrafts();inputDrafts.clear();draftScope=nextScope;restoreDrafts();paint('#stage-dialog-content','');$('#stage-dialog-content').dataset.panel='';}else saveDrafts();
   const activeElement=document.activeElement,active=activeElement?.id,start=activeElement?.selectionStart;
+  if(state?.board)normalizeTradeDraft(state,inputDrafts);
   const task=requiredTask(state);
   $('#table').className=`table ${state?'in-room':'home'} ${state?'playing':''} ${state?.phase==='lobby'?'waiting':''} ${task?'has-required-task':''} ${panel?'has-open-panel':''}`;
   $('#board').setAttribute('aria-busy',String(busy||Boolean(code)&&status!=='connected'));
@@ -363,6 +374,9 @@ function render(){
   if(!state){paint('#entry-content',homePanel());paint('#rooms-content',publicRooms());}
   else {$('#entry-dialog').close();$('#rooms-dialog').close();}
   paint('#play-dock',state?.phase==='lobby'?lobbyControls():state?.board?gameControls():'');
+  $('#play-dock .build-cost')?.remove();
+  if(state?.board&&inspectedBuild)$('#play-dock').insertAdjacentHTML('beforeend',costPanel(state,inspectedBuild));
+  if(busy||status!=='connected')$('#play-dock .build-cost .primary')?.setAttribute('disabled','');
   paint('#right-panel',state?rightPanel():'');paint('#turn-banner',banner());paint('#hand',hand());renderStage(task);paint('#stage-tools',state?tools():'');
   paint('#player-orbit',state?playerOrbit():'');
   $('#home-dock').hidden=Boolean(state);
@@ -386,7 +400,7 @@ function render(){
   updateAmbient();paintActionFeedback();
   for(const el of document.querySelectorAll('.activity-log'))el.scrollTop=el.scrollHeight;
   if($('#chat-messages'))$('#chat-messages').scrollTop=followChat?$('#chat-messages').scrollHeight:chatScroll;
-  bindForms();updateRatio();
+  bindForms();
   document.querySelector('[data-action="confirmRoomDialog"]').disabled=busy;
   syncViewport();
   chatPreview?.update(state,{connected:status==='connected',room:code,open:stagePanel==='chat'||Boolean(document.querySelector('dialog[open]'))});
@@ -402,7 +416,7 @@ function updateAmbient(){
   control.setAttribute('aria-label',`${label}${staticView?'，二维或减少动态效果已开启':'首页岛屿'}`);control.title=control.getAttribute('aria-label');control.setAttribute('aria-pressed',String(home&&!paused&&!staticView));
 }
 function paint(selector,markup){const el=$(selector);if(el._markup!==markup){el.innerHTML=markup;el._markup=markup;}}
-function updateRatio(){if($('#bank-ratio'))$('#bank-ratio').textContent=`${ownRatio($('#bank-give').value)} : 1`;}
+
 function bindQuantityForms(){
   for(const form of document.querySelectorAll('form[data-required-count]')){
     const update=()=>{
@@ -419,9 +433,6 @@ function bindForms(){
   if($('#room-settings-form'))$('#room-settings-form').onsubmit=e=>{e.preventDefault();const options=readOptions('room');send({type:'configure',visibility:$('#room-visibility').value,options});};
   if($('#entry-form'))$('#entry-form').onsubmit=e=>{e.preventDefault();join();};if($('#create-room'))$('#create-room').onclick=()=>create();
   if($('#discard-form'))$('#discard-form').onsubmit=e=>{e.preventDefault();send({type:'discard',cards:formBundle('discard')});};
-  if($('#bank-form'))$('#bank-form').onsubmit=e=>{e.preventDefault();send({type:'bankTrade',give:$('#bank-give').value,want:$('#bank-want').value});};
-  if($('#bank-give'))$('#bank-give').onchange=updateRatio;
-  if($('#trade-form'))$('#trade-form').onsubmit=e=>{e.preventDefault();send({type:'offerTrade',give:formBundle('give'),want:formBundle('want')});};
   if(!DOMESTIC&&$('#chat-form'))$('#chat-form').onsubmit=sendChat;
   if($('#development-form'))$('#development-form').onsubmit=e=>{e.preventDefault();send({type:'playDevelopment',cardId,cards:formBundle('plenty'),resource:$('#monopoly-resource')?.value});};
   bindQuantityForms();
@@ -431,7 +442,13 @@ document.addEventListener('click',async e=>{
   const b=e.target.closest('button');if(!b||b.disabled)return;
   if(b.dataset.player){focusedPlayer=b.dataset.player;return openStagePanel('players');}
   if(b.dataset.reportMessage){const message=state?.chat.find(message=>message.id===b.dataset.reportMessage);return openReport(message);}
-  if(b.dataset.build){if(b.dataset.build==='development')return send({type:'buyDevelopment'});selectedBuild=selectedBuild===b.dataset.build?'':b.dataset.build;panel='';return render();}
+  if(b.dataset.build){inspectedBuild=b.dataset.build;selectedBuild=inspectedBuild!=='development'&&buildAvailability(state,inspectedBuild).can?inspectedBuild:'';panel='';return render();}
+  if(b.dataset.tradeView){tradeView=b.dataset.tradeView;return render();}
+  if(b.dataset.tradePage){tradePage=b.dataset.tradePage;return render();}
+  if(b.dataset.bankSide){inputDrafts.set('bank-'+b.dataset.bankSide,b.dataset.resource);saveDrafts();return render();}
+  if(b.dataset.side){const side=b.dataset.side,r=b.dataset.resource,key=side+'-'+r,other=(side==='give'?'want':'give')+'-'+r,max=side==='give'?mine().hand[r]:state.profile?.resourceCount||19;
+    if(Number(b.dataset.delta)>0&&Number(inputDrafts.get(other)))return;
+    inputDrafts.set(key,String(Math.max(0,Math.min(max,(Number(inputDrafts.get(key))||0)+Number(b.dataset.delta)))));saveDrafts();return render();}
   if(b.dataset.listRoom){const room=b.dataset.listRoom,name=entryNickname()||(!DOMESTIC&&storage.get('name'));if(!name){$('#rooms-dialog').close();$('#entry-dialog').showModal();$('#join-code').value=displayCode(room);saveDrafts();$('#nickname')?.focus({preventScroll:true});toast('填写昵称后即可加入已选房间。');return;}return connect(room,storage.get(`token:${room}`)||newId(),name);}
   if(b.dataset.kick)return openConfirmation({type:'kick',playerId:b.dataset.kick},'移出玩家',`将 ${state.players.find(p=>p.id===b.dataset.kick)?.name||'该玩家'} 移出等待房间？对方席位及原身份将失效。`,'确认移出');
   if(b.dataset.transfer)return openConfirmation({type:'transferHost',playerId:b.dataset.transfer},'转交房主',`将房主权限交给 ${state.players.find(p=>p.id===b.dataset.transfer)?.name||'该玩家'}？你的座位保留，解散与房间设置权限会立即转移。`,'确认转交');
@@ -473,13 +490,17 @@ document.addEventListener('click',async e=>{
   if(action==='cancelRoomDialog'){confirmation=null;$('#room-dialog').close();return render();}
   if(action==='confirmRoomDialog')return confirmRoomDialog();
   if(['start','addBot','roll','endTurn','cancelTrade','rematch'].includes(action))return send({type:action});
-  if(action==='acceptTrade')return send({type:'acceptTrade',offerId:state.offer.id});
+  if(action==='acceptTrade')return send({type:'acceptTrade',offerId:b.dataset.offerId});
+  if(action==='publishTrade')return send({type:'offerTrade',give:Object.fromEntries(RESOURCES.map(r=>[r,Math.min(mine().hand[r],Number(inputDrafts.get('give-'+r))||0)])),want:Object.fromEntries(RESOURCES.map(r=>[r,Number(inputDrafts.get('want-'+r))||0]))});
+  if(action==='exchangeBank')return send({type:'bankTrade',give:inputDrafts.get('bank-give')||'wood',want:inputDrafts.get('bank-want')||'ore'});
+  if(action==='buyDevelopment')return send({type:'buyDevelopment'});
+  if(action==='closeCost'){inspectedBuild='';selectedBuild='';return render();}
   if(action==='rules'){saveDrafts();return $('#rules-dialog').showModal();}if(action==='closeRules'){ $('#rules-dialog').close();return render();}
   if(action==='reset'){if(!state&&!code){board.reset({defaultOrientation:true});return;}pauseFollowing();return board.reset();}
   if(action==='zoomIn'||action==='zoomOut')return board.zoomBy(action==='zoomIn'?1.25:.8);
   if(action==='practice')return openPractice();
   if(action==='closePractice')return $('#practice-dialog').close();
-  if(action==='trade'){panel='trade';selectedBuild='';return openStagePanel('decision');}
+  if(action==='trade'){panel='trade';selectedBuild='';inspectedBuild='';if(state.offer){tradePage='offers';tradeView='players';}return openStagePanel('decision');}
   if(action==='closePanel')return closeStagePanel();
   if(action==='resume'){const last=storage.get('last');if(last)connect(last.code,last.token,DOMESTIC?(last.nicknameId||selectedNickname.id):last.name);return;}
   if(action==='home')return openLeave('home');

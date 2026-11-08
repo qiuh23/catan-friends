@@ -1,0 +1,31 @@
+import {chromium} from 'playwright';
+import assert from 'node:assert/strict';
+import {writeFile} from 'node:fs/promises';
+import {openFixture} from './map-first-fixture.js';
+const browser=await chromium.launch({headless:true,channel:process.env.BROWSER_CHANNEL||'msedge'}),errors=[],edition=process.env.TEST_EDITION||'global';
+try{
+  const c=await openFixture(browser,{count:6,viewport:{width:667,height:320},touch:true,errors}),p=c.page;
+  await p.locator('[data-action="trade"]:visible').click();
+  await p.locator('.resource-pick[data-side="give"][data-resource="wood"]').tap();
+  await p.locator('.resource-pick[data-side="want"][data-resource="ore"]').tap();
+  await p.reload();await p.locator('.playing #board canvas').waitFor();
+  await p.locator('[data-action="trade"]:visible').click();
+  assert.equal(await p.locator('.exchange-card.wood output').first().textContent(),'1','refresh lost draft');
+  let g=structuredClone(c.game);g.players[0].hand.ore=0;c.set(g);
+  assert.equal(await p.locator('.resource-pick[data-side="want"][data-resource="ore"]').isEnabled(),true,'cannot request unowned resource');
+  g=structuredClone(c.game);g.pairStep='secondary';c.set(g);
+  await p.locator('.exchange-reason').filter({hasText:'配对建设'}).waitFor();
+  await p.locator('[data-trade-view="bank"]').click();assert.equal(await p.locator('[data-action="exchangeBank"]').isEnabled(),true);
+  g=structuredClone(c.game);g.bank.ore=0;c.set(g);await p.locator('.exchange-reason').filter({hasText:'缺货'}).waitFor();assert.equal(await p.locator('[data-action="exchangeBank"]').isDisabled(),true);
+  await p.keyboard.press('Escape');g=structuredClone(c.game);g.pairStep='primary';g.turn=1;c.set(g);c.action('p1',{type:'offerTrade',give:{ore:1},want:{wood:1}});
+  await p.locator('[data-action="trade"]:visible').click();
+  await p.locator('[data-action="acceptTrade"]').waitFor();
+  g=structuredClone(c.game);g.players[1].hand.ore=0;c.set(g,{send:false});
+  await p.locator('[data-action="acceptTrade"]').click();await p.locator('#stage-feedback').filter({hasText:'资源不足'}).waitFor();
+  assert.ok(c.game.offer,'failed trade changed offer');
+  c.action('p1',{type:'endTurn'});await p.locator('.exchange-empty').waitFor();
+  await p.keyboard.press('Escape');await p.locator('[data-build="development"]:visible').click();await p.locator('.build-cost').waitFor();
+  g=structuredClone(c.game);g.turn=0;g.deck=[];c.set(g);assert.match(await p.locator('.build-cost').textContent(),/售罄/);assert.equal(await p.locator('[data-action="buyDevelopment"]').isDisabled(),true);
+  await c.context.close();assert.deepEqual(errors,[]);
+  await writeFile(`docs/qa/commerce/edgecases-${edition}.json`,JSON.stringify({edition,draftRefresh:true,unownedDemand:true,pairedBank:true,bankEmpty:true,staleOfferFeedback:true,turnExpiry:true,deckEmpty:true,errors},null,2));console.log(`${edition}: commerce edge cases passed`);
+}finally{await browser.close();}

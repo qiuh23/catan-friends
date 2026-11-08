@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import {portGeometry} from './ports.js';
 
 export const terrain = {wood:0x648c68,brick:0xc08459,sheep:0xa5be70,wheat:0xddbd61,ore:0x88989b,desert:0xdfc88d};
 
@@ -142,10 +143,12 @@ export function buildTerrain(board,assets,group) {
     if(!portEdges.has(edge.id))batch.add('rock',0x829b8c,x+nx*.16,.12,z+nz*.16,.08,.06,.09,rotation);
   }
   for(const port of board.ports) {
-    const a=board.vertices[port.vertices[0]],b=board.vertices[port.vertices[1]],x=(a.x+b.x)/2,z=(a.z+b.z)/2,l=Math.hypot(x,z);
-    const rotation=Math.atan2(x,z);
-    batch.add('box',0x957449,x+x/l*.27,.155,z+z/l*.27,.28,.06,.65,rotation);
-    for(let i=0;i<5;i++)batch.add('box',0xc8ac78,x+x/l*(.05+i*.105),.195,z+z/l*(.05+i*.105),.29,.018,.065,rotation);
+    for(const arm of portGeometry(board,port).arms){
+      const a=arm.from,b=arm.to,length=Math.hypot(b.x-a.x,b.z-a.z),rotation=-Math.atan2(b.z-a.z,b.x-a.x);
+      batch.add('box',0x957449,(a.x+b.x)/2,.155,(a.z+b.z)/2,length,.06,.16,rotation);
+      for(let i=0;i<4;i++){const t=(i+.5)/4;batch.add('box',0xc8ac78,a.x+(b.x-a.x)*t,.195,a.z+(b.z-a.z)*t,length/5,.018,.17,rotation);}
+      for(const end of [a,b])batch.add('box',0x69543c,end.x,.08,end.z,.065,.22,.065);
+    }
   }
   batch.finish(group);
 }

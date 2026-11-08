@@ -7,12 +7,12 @@ test('off-turn discards take priority over incoming offers and optional panels',
   const state={...table,phase:'discard',discards:{b:5},offer:{id:'trade-1',from:'a'}};
   assert.match(requiredTask(state).title,/5/);
   assert.match(requiredTask(state).key,/^discard/);
-  assert.match(requiredTask({...state,discards:{}}).key,/^offer/);
+  assert.equal(requiredTask({...state,discards:{}}),null);
 });
-test('only the player who must steal gets the task, while all recipients see incoming trades',()=>{
+test('only the player who must steal gets the task, incoming trades stay optional',()=>{
   assert.equal(requiredTask({...table,phase:'steal'}),null);
   assert.match(requiredTask({...table,phase:'steal',turn:1}).key,/^steal/);
-  assert.match(requiredTask({...table,offer:{id:'t',from:'a'}}).key,/^offer/);
+  assert.equal(requiredTask({...table,offer:{id:'t',from:'a'}}),null);
   assert.equal(requiredTask({...table,offer:{id:'t',from:'b'}}),null);
 });
 test('pause supersedes action tasks and finished or absent boards do not announce stale work',()=>{
