@@ -1,0 +1,103 @@
+{
+  "entry": "http://127.0.0.1:5187",
+  "scope": "Formal React root, local shared-rule/privacy WebSocket fixtures; room leave/rematch and delayed ACK adapter in test only. Not durable-authority or physical-device verification.",
+  "results": [
+    {
+      "name": "desktop",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "canvasRetainedThroughUIUpdates": true,
+      "costBackdropKeepsSelection": true,
+      "tradeDraftSwitchDismissRefresh": true,
+      "chat": {
+        "delayedAcknowledgement": true,
+        "newDraftRetained": true,
+        "focusAndSelectionRetained": true
+      },
+      "developmentCountAndSelection": true,
+      "requiredDiscardBackdropBlocked": true,
+      "originalIdentityAndHandRecovery": true,
+      "publicFinalRanking": true,
+      "settlementActionsInFirstViewport": true,
+      "rematchLobby": true,
+      "privacyProjectedSnapshots": 16
+    },
+    {
+      "name": "portrait",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "canvasRetainedThroughUIUpdates": true,
+      "costBackdropKeepsSelection": true,
+      "tradeDraftSwitchDismissRefresh": true,
+      "chat": {
+        "delayedAcknowledgement": true,
+        "newDraftRetained": true,
+        "focusAndSelectionRetained": true
+      },
+      "developmentCountAndSelection": true,
+      "requiredDiscardBackdropBlocked": true,
+      "originalIdentityAndHandRecovery": true,
+      "publicFinalRanking": true,
+      "settlementActionsInFirstViewport": true,
+      "rematchLobby": true,
+      "privacyProjectedSnapshots": 16
+    },
+    {
+      "name": "landscape",
+      "viewport": {
+        "width": 844,
+        "height": 390
+      },
+      "canvasRetainedThroughUIUpdates": true,
+      "costBackdropKeepsSelection": true,
+      "tradeDraftSwitchDismissRefresh": true,
+      "chat": {
+        "delayedAcknowledgement": true,
+        "newDraftRetained": true,
+        "focusAndSelectionRetained": true
+      },
+      "developmentCountAndSelection": true,
+      "requiredDiscardBackdropBlocked": true,
+      "originalIdentityAndHandRecovery": true,
+      "publicFinalRanking": true,
+      "settlementActionsInFirstViewport": true,
+      "rematchLobby": true,
+      "privacyProjectedSnapshots": 16
+    }
+  ],
+  "screenshots": [
+    "output/playwright/react-migration/global-desktop-table.png",
+    "output/playwright/react-migration/global-desktop-trade.png",
+    "output/playwright/react-migration/global-desktop-chat.png",
+    "output/playwright/react-migration/global-desktop-development.png",
+    "output/playwright/react-migration/global-desktop-discard.png",
+    "output/playwright/react-migration/global-desktop-home.png",
+    "output/playwright/react-migration/global-desktop-settlement.png",
+    "output/playwright/react-migration/global-desktop-settlement-ranking.png",
+    "output/playwright/react-migration/global-desktop-room.png",
+    "output/playwright/react-migration/global-portrait-table.png",
+    "output/playwright/react-migration/global-portrait-trade.png",
+    "output/playwright/react-migration/global-portrait-chat.png",
+    "output/playwright/react-migration/global-portrait-development.png",
+    "output/playwright/react-migration/global-portrait-discard.png",
+    "output/playwright/react-migration/global-portrait-home.png",
+    "output/playwright/react-migration/global-portrait-settlement.png",
+    "output/playwright/react-migration/global-portrait-settlement-ranking.png",
+    "output/playwright/react-migration/global-portrait-room.png",
+    "output/playwright/react-migration/global-landscape-table.png",
+    "output/playwright/react-migration/global-landscape-trade.png",
+    "output/playwright/react-migration/global-landscape-chat.png",
+    "output/playwright/react-migration/global-landscape-development.png",
+    "output/playwright/react-migration/global-landscape-discard.png",
+    "output/playwright/react-migration/global-landscape-home.png",
+    "output/playwright/react-migration/global-landscape-settlement.png",
+    "output/playwright/react-migration/global-landscape-settlement-ranking.png",
+    "output/playwright/react-migration/global-landscape-room.png"
+  ],
+  "errors": [],
+  "consoleErrors": []
+}

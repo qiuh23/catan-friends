@@ -35,7 +35,7 @@ try{
       camera.position.fromArray(point.eye);camera.lookAt(...point.target);camera.view=point.view;camera.updateProjectionMatrix();camera.updateMatrixWorld();const v=new Vector3(label.x,.4,label.z).project(camera);
       await p.mouse.click(point.bounds.left+(v.x+1)*point.bounds.width/2,point.bounds.top+(1-v.y)*point.bounds.height/2);
     }
-    await p.locator('.port-detail').waitFor();assert.equal(await p.locator('.port-endpoints span').count(),2);await shot(p,`shared-port-${mode}`);
+    await p.locator('.port-detail').waitFor();assert.equal(await p.locator('.port-endpoints > span').count(),2);await shot(p,`shared-port-${mode}`);
     await p.keyboard.press('Escape');
     results.push({edition,mode,production:true,blocked:true,robberPrivacy:true,award:true,sharedPort:true,dedup:true});await c.context.close();
   }

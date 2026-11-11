@@ -1,0 +1,571 @@
+/* The same semantic vocabulary as Wizard, with Catan's sea-glass palette.
+   Tokens style the interface; the existing map and camera own the scene. */
+:root {
+  --ui-font:
+    -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei",
+    system-ui, sans-serif;
+  --ui-text: #173b3d;
+  --ui-text-muted: #536b5e;
+  --ui-surface: rgba(248, 247, 239, 0.95);
+  --ui-control: #e4ece4;
+  --ui-control-hover: #d0dfd3;
+  --ui-control-active: #dce8d5;
+  --ui-border: #d1d9c6;
+  --ui-control-border: #b8c9bf;
+  --ui-accent: #397456;
+  --ui-gold: #a28027;
+  --ui-focus: #9a4c26;
+  --ui-radius: 14px;
+  --ui-space: 4px;
+  --ui-space-2: calc(var(--ui-space) * 2);
+  --ui-space-3: calc(var(--ui-space) * 3);
+  --ui-touch-size: 44px;
+  --ui-shadow: 0 8px 24px rgba(23, 59, 61, 0.18);
+  --ui-duration: 150ms;
+  --font: var(--ui-font);
+  font-family: var(--ui-font);
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+}
+
+button,
+input,
+select {
+  font-family: var(--ui-font);
+  font-variant-numeric: tabular-nums;
+}
+button {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background-color var(--ui-duration) ease,
+    border-color var(--ui-duration) ease,
+    box-shadow var(--ui-duration) ease;
+}
+:is(button, a, input, select, summary):focus-visible {
+  outline: 3px solid var(--ui-focus);
+  outline-offset: 3px;
+}
+button:active:not(:disabled) {
+  filter: brightness(1.08);
+}
+dialog {
+  max-width: min(440px, calc(100vw - var(--ui-space-3) * 2));
+  max-height: calc(var(--visual-height) - var(--ui-space-3) * 2);
+  border-radius: var(--ui-radius);
+  box-shadow: var(--ui-shadow);
+  overscroll-behavior: contain;
+}
+#stage-dialog {
+  border-color: var(--ui-border);
+  border-radius: var(--ui-radius);
+  box-shadow: var(--ui-shadow);
+}
+
+/* Static SVG bridges do not add flex/grid cells. The explicit child selectors
+   also override old compact rules which used to hide textual span elements. */
+.icon-fragment,
+.art-fragment,
+.at-home .topbar nav button > .icon-fragment,
+.home .board-controls #home-motion > .icon-fragment,
+.exchange .resource-pick > .art-fragment,
+.exchange .exchange-resource > .art-fragment {
+  display: contents;
+}
+button .icon {
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.player-circle .circle-face .icon {
+  width: 24px;
+  height: 24px;
+}
+.waiting .circle-score .icon {
+  width: 13px;
+  height: 13px;
+}
+.circle-turn .icon {
+  width: 17px;
+  height: 17px;
+}
+.settings-grid button .icon {
+  width: 20px;
+  height: 20px;
+}
+.exchange-empty .icon {
+  width: 32px;
+  height: 32px;
+}
+.port-detail > .art-fragment > svg,
+.port-detail > .icon-fragment > .icon {
+  width: 44px;
+  height: 44px;
+}
+
+/* A label and a check retain the original two-column option cards. */
+.variant-card > .icon-fragment:first-of-type > .icon {
+  width: 25px;
+  height: 25px;
+  color: #426d63;
+}
+.variant-card > .icon-fragment:last-child > .icon {
+  width: 18px;
+  height: 18px;
+  margin-left: auto;
+  border: 1px solid #c4cfc1;
+  border-radius: 5px;
+  padding: 2px;
+  color: transparent;
+}
+.variant-card:has(input:checked) > .icon-fragment:last-child > .icon {
+  color: #fff;
+  background: #386d60;
+  border-color: #386d60;
+}
+.at-home :is(#entry-dialog, #practice-dialog) .variant-card > .icon-fragment {
+  flex-basis: auto;
+}
+.at-home
+  :is(#entry-dialog, #practice-dialog)
+  .variant-card
+  > .icon-fragment:first-of-type
+  > .icon {
+  width: 24px;
+  height: 24px;
+}
+
+/* Compact floating controls keep the map as the largest surface. */
+.at-table button {
+  border-radius: 12px;
+}
+.at-table :is(.stage-utilities, #camera-toolbar, .turn-banner, #play-dock) {
+  border-color: #fdfbf1cc;
+  box-shadow: 0 6px 20px #294c4618;
+}
+.at-table .stage-utilities button {
+  width: var(--ui-touch-size);
+  min-width: var(--ui-touch-size);
+  height: var(--ui-touch-size);
+  min-height: var(--ui-touch-size);
+}
+.at-table :is(.stage-utilities, #camera-toolbar) button:hover:not(:disabled) {
+  background: var(--ui-control-hover);
+}
+.at-table .player-circle {
+  width: 48px;
+  height: 48px;
+  min-height: 48px;
+  border-radius: 50%;
+}
+.at-table .circle-score {
+  min-width: 22px;
+  height: 22px;
+  font-size: 16px;
+  font-weight: 650;
+}
+.at-table:not(.domestic-site) .circle-face {
+  font-size: 20px;
+}
+.at-table .turn-banner {
+  width: max-content;
+  min-width: 230px;
+  max-width: calc(100vw - 24px);
+  padding: 6px 12px;
+  border-radius: var(--ui-radius);
+}
+.at-table .turn-banner strong {
+  font-size: 14px;
+}
+.at-table .turn-description {
+  font-size: 12px;
+}
+.at-table .dice-pair > b {
+  font-size: 18px;
+}
+.at-table #play-dock {
+  border-radius: 16px;
+  gap: var(--ui-space-2);
+  padding: 6px;
+}
+.at-table #play-dock :is(.build-button, .turn-actions button) {
+  font-size: 12px;
+  min-height: 48px;
+}
+.at-table #play-dock .build-section {
+  gap: var(--ui-space);
+}
+.at-table .resource-card > strong {
+  font-size: 19px;
+  font-weight: 650;
+}
+.at-table .resource-hand {
+  gap: 6px;
+}
+.at-table .hand-entry {
+  font-size: 16px;
+}
+.at-table .tile-hint {
+  display: none;
+}
+#stage-dialog-content
+  :is(p, .player-stats > span, .bank-stock, .settings-grid button) {
+  font-size: 14px;
+}
+#stage-dialog-content .player-stats b {
+  font-size: 16px;
+}
+#stage-dialog-content .avatar {
+  font-size: 24px;
+}
+#stage-dialog-content .player-management > button {
+  min-height: var(--ui-touch-size);
+}
+#stage-dialog-content .player-management > .remove-bot {
+  min-width: var(--ui-touch-size);
+}
+#action-feedback p {
+  font-size: 14px;
+}
+.cost-resources b {
+  font-size: 14px;
+}
+.cost-resources small {
+  font-size: 12px;
+}
+.build-cost {
+  border-color: var(--ui-control-border);
+  border-radius: var(--ui-radius);
+  box-shadow: var(--ui-shadow);
+}
+.exchange-card small {
+  font-size: 14px;
+}
+.exchange-stepper output {
+  font-size: 16px;
+}
+.exchange-tabs {
+  gap: var(--ui-space);
+}
+.exchange-tabs button {
+  min-height: var(--ui-touch-size);
+}
+.exchange .resource-pick {
+  min-height: 64px;
+}
+.exchange .resource-label {
+  font-size: 12px;
+}
+.exchange-preview {
+  gap: var(--ui-space-2);
+}
+.exchange-preview b {
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+}
+.exchange-preview > div {
+  min-width: 0;
+}
+.exchange-resource {
+  flex-wrap: nowrap;
+}
+.exchange-resource .resource-illustration {
+  flex: none;
+}
+
+/* The winner and primary actions appear first; all public scores remain easy
+   to scan below them without exposing anyone's hidden cards. */
+.winner {
+  margin: 0;
+  padding: 16px;
+  border-radius: var(--ui-radius);
+}
+.winner h2 {
+  margin-top: var(--ui-space-2);
+  overflow-wrap: anywhere;
+}
+.result-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ui-space-2);
+}
+.winner .result-actions :is(button, a) {
+  flex: 1;
+  width: auto;
+  min-width: 110px;
+  min-height: var(--ui-touch-size);
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+.result-ranking {
+  display: grid;
+  gap: var(--ui-space-2);
+  margin: 20px 0 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: result-rank;
+  text-align: left;
+}
+.result-ranking li {
+  counter-increment: result-rank;
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-2);
+  min-height: 44px;
+  padding: 8px 10px;
+  border-left: 4px solid var(--player);
+  border-radius: 8px;
+  background: #f9faf0b3;
+}
+.result-ranking li::before {
+  content: counter(result-rank);
+  width: 18px;
+  flex: none;
+  color: var(--ui-text-muted);
+  font-size: 14px;
+  font-weight: 600;
+}
+.result-ranking li > span {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 14px;
+}
+.result-ranking li > strong {
+  flex: none;
+  font-size: 18px;
+}
+.result-ranking small {
+  font-size: 12px;
+}
+
+@media (max-width: 700px) {
+  .at-table #player-orbit {
+    gap: var(--ui-space-2);
+  }
+  .at-table .board-top {
+    width: max-content;
+    max-width: calc(100% - 24px);
+    left: 12px;
+    right: auto;
+  }
+  .at-table .turn-banner {
+    min-width: 242px;
+  }
+  .at-table #play-dock {
+    width: max-content;
+    max-width: calc(100% - 16px);
+    left: 8px;
+    right: 8px;
+    gap: var(--ui-space);
+    padding: var(--ui-space);
+  }
+  .at-table #play-dock .build-section {
+    gap: 2px;
+  }
+  .at-table #play-dock .turn-actions button {
+    min-width: 48px;
+  }
+  .at-table .hand-tray {
+    bottom: calc(75px + max(8px, env(safe-area-inset-bottom)));
+  }
+  .at-table .resource-hand {
+    gap: 5px;
+  }
+  .at-table .resource-card {
+    width: 48px;
+    height: 42px;
+  }
+  .at-table #camera-toolbar button > span:not(.icon-fragment) {
+    display: none;
+  }
+  .at-table #camera-toolbar button {
+    width: var(--ui-touch-size);
+    min-width: var(--ui-touch-size);
+  }
+}
+
+@media (max-width: 359px) {
+  .at-table .player-circle {
+    width: 44px;
+    height: 44px;
+    min-height: 44px;
+  }
+  .at-table #player-orbit {
+    gap: 6px;
+  }
+  .at-table .stage-brand {
+    display: none;
+  }
+  .at-table .resource-hand {
+    gap: 3px;
+  }
+  .at-table .resource-card {
+    width: 43px;
+  }
+  .at-table .resource-art,
+  .at-table .resource-art .resource-illustration {
+    width: 23px;
+    height: 23px;
+  }
+  #stage-dialog-content {
+    padding: 12px;
+  }
+  .exchange-resources {
+    gap: 3px;
+  }
+  .exchange-stepper button {
+    min-width: 0;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 600px) {
+  .at-table .board-top {
+    left: 64px;
+    width: max-content;
+    right: auto;
+  }
+  .at-table .turn-banner {
+    min-width: 170px;
+    max-width: 180px;
+    padding: 6px 8px;
+  }
+  .at-table .turn-description {
+    display: flex;
+  }
+  .at-table .turn-banner > div:not(.dice-pair) {
+    display: block;
+  }
+  .at-table #play-dock {
+    left: auto;
+    right: max(8px, env(safe-area-inset-right));
+    margin: 0;
+  }
+  .at-table .hand-tray {
+    bottom: max(15px, env(safe-area-inset-bottom));
+  }
+  .at-table .resource-hand {
+    gap: var(--ui-space);
+  }
+  .at-table .resource-card {
+    width: 43px;
+  }
+  .at-table .resource-card > strong {
+    font-size: 18px;
+  }
+  .at-table .resource-art,
+  .at-table .resource-art .resource-illustration {
+    width: 24px;
+    height: 24px;
+  }
+  .at-table #player-orbit {
+    gap: var(--ui-space);
+  }
+  .at-table .stage-utilities {
+    gap: 0;
+  }
+  .at-table .waiting-banner {
+    width: 170px;
+    max-width: 170px;
+  }
+  .at-table .waiting-banner > strong {
+    font-size: 13px;
+  }
+  .at-table .waiting-banner > span {
+    font-size: 12px;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 600px) and (max-width: 740px) {
+  .at-table .stage-brand {
+    display: none;
+  }
+  .at-table .board-top,
+  .at-table .playing.waiting.compact-hud .board-top {
+    left: max(8px, env(safe-area-inset-left));
+    width: 140px;
+  }
+  .at-table .turn-banner {
+    min-width: 140px;
+    max-width: 140px;
+  }
+  .at-table .waiting-banner {
+    width: 140px;
+    max-width: 140px;
+  }
+  .at-table .player-circle {
+    width: 44px;
+    height: 44px;
+    min-height: 44px;
+  }
+  .at-table #player-orbit {
+    left: max(156px, calc(env(safe-area-inset-left) + 148px));
+    right: auto;
+    transform: none;
+    gap: 4px;
+  }
+  .at-table .stage-utilities button {
+    padding: 8px;
+  }
+  .at-table .playing.compact-hud .resource-card {
+    width: 36px;
+  }
+  .at-table .playing.compact-hud .resource-art,
+  .at-table .playing.compact-hud .resource-art .resource-illustration {
+    width: 16px;
+    height: 20px;
+  }
+  .at-table .playing.compact-hud .resource-card > strong {
+    font-size: 14px;
+  }
+  .at-table .playing.stacked-hud #play-dock {
+    left: 8px;
+    right: 8px;
+    margin: auto;
+  }
+  .at-table .playing.stacked-hud .hand-tray {
+    bottom: calc(75px + max(8px, env(safe-area-inset-bottom)));
+  }
+}
+
+@media (max-width: 480px) {
+  .exchange .exchange-resource > .resource-label {
+    display: none;
+  }
+  .exchange .resource-pick > .art-fragment,
+  .exchange .exchange-resource > .art-fragment {
+    display: contents;
+  }
+}
+@media (max-height: 480px) and (min-width: 540px) {
+  .exchange .resource-pick {
+    min-height: 44px;
+  }
+  .exchange .resource-pick > .resource-label {
+    display: none;
+  }
+  .exchange .resource-pick > .art-fragment,
+  .exchange .exchange-resource > .art-fragment {
+    display: contents;
+  }
+  .exchange-preview {
+    padding: 6px 8px;
+  }
+  .exchange-preview .resource-label {
+    display: none;
+  }
+  .exchange-footer {
+    column-gap: 10px;
+  }
+  #stage-dialog-content .exchange-reason {
+    font-size: 12px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --ui-duration: 0ms;
+  }
+}

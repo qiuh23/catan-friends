@@ -32,11 +32,14 @@ export async function toggleBoard(page, label) {
 }
 
 export async function boardCamera(page,bounds,far=150) {
-  const canvas=page.locator('#board canvas');
+  // The WS frame can arrive before React commits and the scene's next frame.
+  // Read one rendered camera atomically rather than mixing frame attributes.
+  await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+  const shot=await page.locator('#board canvas').evaluate(canvas=>({position:JSON.parse(canvas.dataset.camera),target:JSON.parse(canvas.dataset.cameraTarget||'[0,0,0]'),view:JSON.parse(canvas.dataset.cameraView||'null')}));
   const camera=new PerspectiveCamera(34,bounds.width/bounds.height,.1,far);
-  camera.position.fromArray(JSON.parse(await canvas.getAttribute('data-camera')));
-  camera.lookAt(0,0,0);
-  const view=JSON.parse(await canvas.getAttribute('data-camera-view')||'null');
+  camera.position.fromArray(shot.position);
+  camera.lookAt(...shot.target);
+  const view=shot.view;
   if(view?.enabled) camera.setViewOffset(view.fullWidth,view.fullHeight,view.offsetX,view.offsetY,view.width,view.height);
   camera.updateMatrixWorld();
   return camera;

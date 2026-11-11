@@ -1,0 +1,463 @@
+{
+  "scope": "Production React entry; local permission-filtered map fixtures; Chromium viewport/touch simulation.",
+  "results": [
+    {
+      "count": 3,
+      "name": "desktop",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "bounds": {
+        "left": 42.197695112310534,
+        "right": 1397.8023048876894,
+        "top": 168.2868230910586,
+        "bottom": 741.7131769089415
+      },
+      "frame": {
+        "left": 12,
+        "right": 12,
+        "top": 150,
+        "bottom": 140,
+        "width": 1416,
+        "height": 610,
+        "centerX": 0,
+        "centerY": -0.011111111111111112,
+        "halfWidth": 0.944,
+        "halfHeight": 0.6506666666666667
+      },
+      "camera": {
+        "position": [
+          8.249575537971134,
+          4.714043164554938,
+          0.1767766186708102
+        ],
+        "target": [
+          0,
+          0,
+          0
+        ],
+        "view": {
+          "enabled": true,
+          "fullWidth": 1416,
+          "fullHeight": 610,
+          "offsetX": -12.165456113508004,
+          "offsetY": -87.88933606551058,
+          "width": 1440,
+          "height": 900
+        },
+        "padding": {
+          "top": 150,
+          "bottom": 140,
+          "left": 12,
+          "right": 12
+        }
+      },
+      "ports": 9,
+      "portsAndMapFit": true,
+      "ordinaryModalPreservesView": true,
+      "screenshot": "output/playwright/react-migration/map-fit/3-desktop.png"
+    },
+    {
+      "count": 3,
+      "name": "portrait",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "bounds": {
+        "left": 19.576089845218423,
+        "right": 370.4239101547816,
+        "top": 285.5933559346854,
+        "bottom": 607.4066440653148
+      },
+      "frame": {
+        "left": 12,
+        "right": 12,
+        "top": 186,
+        "bottom": 137,
+        "width": 366,
+        "height": 521,
+        "centerX": 0,
+        "centerY": -0.058056872037914695,
+        "halfWidth": 0.9009230769230769,
+        "halfHeight": 0.59260663507109
+      },
+      "camera": {
+        "position": [
+          0.46363010157627277,
+          24.726938750734508,
+          4.636301015762728
+        ],
+        "target": [
+          0,
+          0,
+          0
+        ],
+        "view": {
+          "enabled": true,
+          "fullWidth": 366,
+          "fullHeight": 521,
+          "offsetX": -24.55666345218878,
+          "offsetY": -180.19755523410575,
+          "width": 390,
+          "height": 844
+        },
+        "padding": {
+          "top": 186,
+          "bottom": 137,
+          "left": 12,
+          "right": 12
+        }
+      },
+      "ports": 9,
+      "portsAndMapFit": true,
+      "ordinaryModalPreservesView": true,
+      "screenshot": "output/playwright/react-migration/map-fit/3-portrait.png"
+    },
+    {
+      "count": 3,
+      "name": "small",
+      "viewport": {
+        "width": 320,
+        "height": 568
+      },
+      "bounds": {
+        "left": 20.197406681142294,
+        "right": 299.8025933188577,
+        "top": 190.95016780016257,
+        "bottom": 426.0498321998374
+      },
+      "frame": {
+        "left": 12,
+        "right": 12,
+        "top": 186,
+        "bottom": 137,
+        "width": 296,
+        "height": 245,
+        "centerX": 0,
+        "centerY": -0.08626760563380281,
+        "halfWidth": 0.888,
+        "halfHeight": 0.41408450704225347
+      },
+      "camera": {
+        "position": [
+          0.2574047565395323,
+          13.728253682108395,
+          6.269892887331178
+        ],
+        "target": [
+          0,
+          0,
+          0
+        ],
+        "view": {
+          "enabled": true,
+          "fullWidth": 296,
+          "fullHeight": 245,
+          "offsetX": -21.088786617679254,
+          "offsetY": -174.91058229730504,
+          "width": 320,
+          "height": 568
+        },
+        "padding": {
+          "top": 186,
+          "bottom": 137,
+          "left": 12,
+          "right": 12
+        }
+      },
+      "ports": 9,
+      "portsAndMapFit": true,
+      "ordinaryModalPreservesView": true,
+      "screenshot": "output/playwright/react-migration/map-fit/3-small.png"
+    },
+    {
+      "count": 3,
+      "name": "landscape",
+      "viewport": {
+        "width": 844,
+        "height": 390
+      },
+      "bounds": {
+        "left": 166.11016752365722,
+        "right": 677.8898324763423,
+        "top": 85.83785090201644,
+        "bottom": 302.1621490979838
+      },
+      "frame": {
+        "left": 12,
+        "right": 12,
+        "top": 82,
+        "bottom": 84,
+        "width": 820,
+        "height": 224,
+        "centerX": 0,
+        "centerY": 0.005128205128205128,
+        "halfWidth": 0.9327014218009478,
+        "halfHeight": 0.5513846153846154
+      },
+      "camera": {
+        "position": [
+          8.08088722417962,
+          4.617649842388356,
+          0.17316186908956346
+        ],
+        "target": [
+          0,
+          0,
+          0
+        ],
+        "view": {
+          "enabled": true,
+          "fullWidth": 820,
+          "fullHeight": 224,
+          "offsetX": -12.144685815142795,
+          "offsetY": -57.50252064036777,
+          "width": 844,
+          "height": 390
+        },
+        "padding": {
+          "top": 82,
+          "bottom": 84,
+          "left": 12,
+          "right": 12
+        }
+      },
+      "ports": 9,
+      "portsAndMapFit": true,
+      "ordinaryModalPreservesView": true,
+      "screenshot": "output/playwright/react-migration/map-fit/3-landscape.png"
+    },
+    {
+      "count": 6,
+      "name": "desktop",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "bounds": {
+        "left": 103.35582795240069,
+        "right": 1336.6441720475996,
+        "top": 161.01200766480127,
+        "bottom": 748.9879923351986
+      },
+      "frame": {
+        "left": 12,
+        "right": 12,
+        "top": 150,
+        "bottom": 140,
+        "width": 1416,
+        "height": 610,
+        "centerX": 0,
+        "centerY": -0.011111111111111112,
+        "halfWidth": 0.944,
+        "halfHeight": 0.6506666666666667
+      },
+      "camera": {
+        "position": [
+          9.742909333352031,
+          5.567376761915451,
+          0.20877662857182946
+        ],
+        "target": [
+          0,
+          0,
+          0
+        ],
+        "view": {
+          "enabled": true,
+          "fullWidth": 1416,
+          "fullHeight": 610,
+          "offsetX": -18.789305726268573,
+          "offsetY": -72.77103353890791,
+          "width": 1440,
+          "height": 900
+        },
+        "padding": {
+          "top": 150,
+          "bottom": 140,
+          "left": 12,
+          "right": 12
+        }
+      },
+      "ports": 11,
+      "portsAndMapFit": true,
+      "ordinaryModalPreservesView": true,
+      "screenshot": "output/playwright/react-migration/map-fit/6-desktop.png"
+    },
+    {
+      "count": 6,
+      "name": "portrait",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "bounds": {
+        "left": 19.659146773719037,
+        "right": 370.34085322628084,
+        "top": 270.2296338717934,
+        "bottom": 622.7703661282068
+      },
+      "frame": {
+        "left": 12,
+        "right": 12,
+        "top": 186,
+        "bottom": 137,
+        "width": 366,
+        "height": 521,
+        "centerX": 0,
+        "centerY": -0.058056872037914695,
+        "halfWidth": 0.9009230769230769,
+        "halfHeight": 0.59260663507109
+      },
+      "camera": {
+        "position": [
+          0.5409769101030093,
+          28.852101872160443,
+          5.409769101030093
+        ],
+        "target": [
+          0,
+          0,
+          0
+        ],
+        "view": {
+          "enabled": true,
+          "fullWidth": 366,
+          "fullHeight": 521,
+          "offsetX": -22.64987570109135,
+          "offsetY": -179.09013652489153,
+          "width": 390,
+          "height": 844
+        },
+        "padding": {
+          "top": 186,
+          "bottom": 137,
+          "left": 12,
+          "right": 12
+        }
+      },
+      "ports": 11,
+      "portsAndMapFit": true,
+      "ordinaryModalPreservesView": true,
+      "screenshot": "output/playwright/react-migration/map-fit/6-portrait.png"
+    },
+    {
+      "count": 6,
+      "name": "small",
+      "viewport": {
+        "width": 320,
+        "height": 568
+      },
+      "bounds": {
+        "left": 34.64570446366846,
+        "right": 285.3542955363315,
+        "top": 191.04058836224797,
+        "bottom": 425.95941163775194
+      },
+      "frame": {
+        "left": 12,
+        "right": 12,
+        "top": 186,
+        "bottom": 137,
+        "width": 296,
+        "height": 245,
+        "centerX": 0,
+        "centerY": -0.08626760563380281,
+        "halfWidth": 0.888,
+        "halfHeight": 0.41408450704225347
+      },
+      "camera": {
+        "position": [
+          0.33476746928781415,
+          17.8542650286834,
+          8.15430220799034
+        ],
+        "target": [
+          0,
+          0,
+          0
+        ],
+        "view": {
+          "enabled": true,
+          "fullWidth": 296,
+          "fullHeight": 245,
+          "offsetX": -18.449441915285146,
+          "offsetY": -173.89602790476357,
+          "width": 320,
+          "height": 568
+        },
+        "padding": {
+          "top": 186,
+          "bottom": 137,
+          "left": 12,
+          "right": 12
+        }
+      },
+      "ports": 11,
+      "portsAndMapFit": true,
+      "ordinaryModalPreservesView": true,
+      "screenshot": "output/playwright/react-migration/map-fit/6-small.png"
+    },
+    {
+      "count": 6,
+      "name": "landscape",
+      "viewport": {
+        "width": 844,
+        "height": 390
+      },
+      "bounds": {
+        "left": 195.56017288743905,
+        "right": 648.4398271125611,
+        "top": 86.0437536342877,
+        "bottom": 301.9562463657123
+      },
+      "frame": {
+        "left": 12,
+        "right": 12,
+        "top": 82,
+        "bottom": 84,
+        "width": 820,
+        "height": 224,
+        "centerX": 0,
+        "centerY": 0.005128205128205128,
+        "halfWidth": 0.9327014218009478,
+        "halfHeight": 0.5513846153846154
+      },
+      "camera": {
+        "position": [
+          9.742909333352031,
+          5.567376761915451,
+          0.20877662857182946
+        ],
+        "target": [
+          0,
+          0,
+          0
+        ],
+        "view": {
+          "enabled": true,
+          "fullWidth": 820,
+          "fullHeight": 224,
+          "offsetX": -14.493122102760989,
+          "offsetY": -53.64051067658261,
+          "width": 844,
+          "height": 390
+        },
+        "padding": {
+          "top": 82,
+          "bottom": 84,
+          "left": 12,
+          "right": 12
+        }
+      },
+      "ports": 11,
+      "portsAndMapFit": true,
+      "ordinaryModalPreservesView": true,
+      "screenshot": "output/playwright/react-migration/map-fit/6-landscape.png"
+    }
+  ],
+  "errors": [],
+  "warnings": []
+}
