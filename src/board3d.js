@@ -32,7 +32,7 @@ export class Board {
     this.scene=new THREE.Scene();this.scene.background=new THREE.Color('#b8d8d2');
     this.camera=new THREE.PerspectiveCamera(34,1,.1,150);
     this.renderer.outputColorSpace=THREE.SRGBColorSpace;this.renderer.toneMapping=THREE.ACESFilmicToneMapping;
-    this.renderer.shadowMap.type=THREE.PCFSoftShadowMap;this.renderer.shadowMap.autoUpdate=false;
+    this.renderer.shadowMap.type=THREE.PCFShadowMap;this.renderer.shadowMap.autoUpdate=false;
     container.append(this.renderer.domElement);
     const canvas=this.renderer.domElement;
     canvas.setAttribute('aria-label','卡坦岛 3D 棋盘，拖动旋转，双指或滚轮缩放；加减键缩放，0 回到全局；也可切换二维棋盘用键盘落子');canvas.tabIndex=0;
@@ -188,22 +188,36 @@ export class Board {
     this.paddingKey=key;this.padding=padding;this.cancelFocus();this.updateProjection();
     if(this.board&&!preserveView&&(!this.viewMode||this.viewMode==='overview')&&(this.homeShowcase||!this.reducedMotion))this.fit(!this.homeShowcase);else this.invalidate();
   }
-  updateProjection() {
+  updateProjection({preserveCorrection=true}={}) {
     if(!this.width||!this.height)return;
+    // fit() adds a projected-bounds correction on top of the HUD offset. Keep
+    // it for manual views when a reconnect label briefly changes the HUD's
+    // measured height, so returning to the same frame restores the exact view.
+    const previous=this.viewportFrame,view=this.camera.view;
+    const correction=preserveCorrection&&['manual','focused'].includes(this.viewMode)&&previous&&view?.enabled?{
+      x:(view.offsetX+previous.left)*this.width/view.width,
+      y:(view.offsetY+previous.top)*this.height/view.height,
+    }:{x:0,y:0};
     this.viewportFrame=boardFrame(this.width,this.height,this.padding);
     const f=this.viewportFrame;
     // Off-axis projection centers the island in the unobscured play area while
     // rendering the sea to every edge of the full viewport.
     this.camera.setViewOffset(f.width,f.height,-f.left,-f.top,this.width,this.height);
+    this.camera.view.offsetX+=correction.x;this.camera.view.offsetY+=correction.y;
     this.camera.updateProjectionMatrix();
   }
   reset({defaultOrientation=false}={}) {
     this.cancelFocus();this.followBaseline=null;this.viewMode='overview';this.focusEvent='';
     const scale=this.boardScale||1;
     const portrait=(this.container?.clientWidth||this.width)<(this.container?.clientHeight||this.height);
+    // A short portrait's HUD can leave a landscape-shaped map frame. A slightly
+    // lower initial pitch uses that width while fit() still includes every port.
+    // Only a new island/default reset chooses this pose; manual views stay exact.
+    const frame=this.viewportFrame||boardFrame(this.width,this.height,this.padding);
+    const portraitDepth=3+4.5*Math.max(0,Math.min(1,(1-frame.height/frame.width)/.18));
     const offset=this.camera.position.clone().sub(this.controls.target);
     if(this.homeShowcase){this.homeAngle=defaultOrientation ? .25 : this.homeAngle;offset.set(Math.sin(this.homeAngle)*Math.sin(.78),Math.cos(.78),Math.cos(this.homeAngle)*Math.sin(.78)).multiplyScalar(16);}
-    else if(defaultOrientation||offset.lengthSq()<1)offset.set(...(portrait?[.3*scale,16*scale,3*scale]:[14*scale,8*scale,.3*scale]));
+    else if(defaultOrientation||offset.lengthSq()<1)offset.set(...(portrait?[.3*scale,16*scale,portraitDepth*scale]:[14*scale,8*scale,.3*scale]));
     this.controls.target.set(0,0,0);this.camera.position.copy(offset);this.updateProjection();
     this.fit(false);
   }
@@ -257,7 +271,7 @@ export class Board {
     // exactly on a renderer toggle; resize uses the current unobscured frame.
     if(view.width===this.width&&view.height===this.height&&view.paddingKey===this.paddingKey&&view.view) {
       this.camera.view={...view.view};this.camera.updateProjectionMatrix();
-    }else this.updateProjection();
+    }else this.updateProjection({preserveCorrection:false});
     this.controls.update();this.camera.updateMatrixWorld();this.invalidate();return true;
   }
   siteMesh(marker,material,factor,order){
@@ -317,7 +331,7 @@ export class Board {
     this.followBaseline??=this.camera.position.distanceTo(this.controls.target);
     const plan=planActionCamera(this.board,event,{position:this.camera.position,target:this.controls.target,fov:this.camera.fov,frame:this.viewportFrame,scale:this.boardScale||1,minDistance:Math.max(this.controls.minDistance,this.followBaseline*.86),maxDistance:this.controls.maxDistance});
     if(!plan)return false;
-    this.cancelFocus();this.controls.update();this.updateProjection();this.viewMode='focused';this.focusEvent=String(event.id||'');
+    this.cancelFocus();this.controls.update();this.updateProjection({preserveCorrection:false});this.viewMode='focused';this.focusEvent=String(event.id||'');
     const position=new THREE.Vector3(plan.position.x,plan.position.y,plan.position.z),target=new THREE.Vector3(plan.target.x,plan.target.y,plan.target.z);
     if(reducedMotion) {this.camera.position.copy(position);this.controls.target.copy(target);this.controls.update();}
     else this.focusAnimation={start:performance.now(),from:this.camera.position.clone(),fromTarget:this.controls.target.clone(),position,target};

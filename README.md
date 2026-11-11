@@ -1,5 +1,7 @@
 # 卡坦岛 · 好友桌
 
+正式首页、候场、对局和结算现使用 React 19 + TypeScript，保留既有规则权威、联机协议和 Three.js 海岛场景。界面沿用已确认的沉浸布局，并与巫师牌统一主题变量、图标、控件和浮窗表达；架构见 [界面迁移](docs/react-ui-migration.md)，本地测试、截图及未验证范围见 [迁移验收](docs/qa/react-migration/README.md)。本地完成不代表已合并或公网发布。
+
 | 线路 | 游戏大厅 | 卡坦岛直达 |
 | --- | --- | --- |
 | 国内（阿里云） | [国内游戏大厅](https://magical-athlete-online.cn/) | [进入卡坦岛](https://catan.magical-athlete-online.cn/) |

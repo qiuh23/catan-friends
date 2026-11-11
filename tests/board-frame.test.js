@@ -59,3 +59,28 @@ test('an extremely small visual viewport retains a finite play frame',()=>{
   assert.ok(frame.width>0&&frame.height>0);
   assert.equal(frame.left,0);assert.equal(frame.right,0);
 });
+
+test('a temporary HUD height change restores the exact manual or focused projection',()=>{
+  for(const mode of ['manual','focused']){
+    const padding={top:82,bottom:84,left:12,right:12},view=cameraFixture(667,320,padding,true);
+    view.viewMode=mode;const projection={...view.camera.view},eye=view.camera.position.toArray();
+    view.setViewportPadding({...padding,top:64});
+    view.setViewportPadding(padding);
+    assert.deepEqual(view.camera.view,projection,'reconnection discarded the fitted island offset');
+    assert.deepEqual(view.camera.position.toArray(),eye,'HUD status change moved the eye');
+  }
+});
+
+test('a short portrait uses more available width while its initial map and ports stay inside the frame',()=>{
+  const view=cameraFixture(320,568,{top:186,bottom:137,left:12,right:12},true);
+  const bounds=()=>{
+    const right=new Vector3().setFromMatrixColumn(view.camera.matrixWorld,0),up=new Vector3().setFromMatrixColumn(view.camera.matrixWorld,1);
+    const points=view.fitPoints.map(p=>new Vector3(p.x,p.y,p.z));
+    for(const p of view.portBounds)for(const x of [-.46,.46])for(const y of [-.23,.23])points.push(new Vector3(p.x,p.y,p.z).addScaledVector(right,x).addScaledVector(up,y));
+    const projected=points.map(p=>p.project(view.camera)),f=view.viewportFrame;
+    for(const p of projected){assert.ok(Math.abs(p.x-f.centerX)<=f.halfWidth*1.007);assert.ok(Math.abs(p.y-f.centerY)<=f.halfHeight*1.007);}
+    return Math.max(...projected.map(p=>p.x))-Math.min(...projected.map(p=>p.x));
+  };
+  view.camera.position.set(.3,16,3);view.updateProjection();view.fit(false);const previousWidth=bounds();
+  view.reset({defaultOrientation:true});assert.ok(bounds()>previousWidth*1.05,'short portrait left avoidable horizontal sea');
+});

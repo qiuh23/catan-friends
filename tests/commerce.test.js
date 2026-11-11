@@ -1,11 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {fixture} from '../scripts/map-first-fixture.js';
-import {act,viewFor,tradeRatio,updateAwards,points,COSTS,legal} from '../shared/game.js';
+import {act,viewFor,tradeRatio,updateAwards,points,COSTS} from '../shared/game.js';
 import {longestRoad,emptyHand} from '../shared/board.js';
 import {Room} from '../shared/room.js';
 import {portGeometry,portOwners} from '../src/ports.js';
-import {buildAvailability,tradePanel,tradeRestriction,normalizeTradeDraft} from '../src/commerce.js';
+import {buildAvailability,tradeRestriction,normalizeTradeDraft} from '../src/commerce.js';
 
 test('every rendered port uses the exact coast edge and both endpoints in both map editions',()=>{
   for(const n of [4,6]){
@@ -31,7 +31,7 @@ test('best 4:1, 3:1, 2:1 is shared, endpoint buildings unlock for both owners; r
   g.robber=g.board.edges[specific.edge].tiles[0];
   assert.equal(tradeRatio(g,'p0','wood'),2);assert.equal(tradeRatio(g,'p1','wood'),2);
   for(const id of ['p0','p1']){
-    const v=viewFor(g,id);assert.match(tradePanel(v,{draft:new Map([['bank-give','wood']]),view:'bank'}),/专属港 2:1/);
+    const v=viewFor(g,id);assert.equal(tradeRatio(v,id,'wood'),2,'the personal projection preserves the unlocked specialized rate');
   }
 });
 test('bank exchange is one atomic transaction and rejects shortages, identical resources and bad phases',()=>{
@@ -57,7 +57,14 @@ test('public offer lifecycle: replacement, withdrawal, spent resources, turn cha
   const ended=act(g,'p0',{type:'endTurn'});assert.equal(ended.offer,null);
   assert.throws(()=>act(ended,'p1',{type:'acceptTrade',offerId:id}));
   const s=viewFor(g,'p1');assert.ok(s.players.filter(p=>p.id!=='p1').every(p=>!p.hand&&!p.dev));
-  const html=tradePanel(s,{draft:new Map(),page:'offers'});assert.match(html,/接受并成交/);assert.ok(html.indexOf('你付出')<html.indexOf('你获得'));
+  assert.equal(tradeRestriction(s,true),'','another player may accept during the offer owner’s turn');
+  assert.throws(()=>act(g,'p0',{type:'acceptTrade',offerId:id}),/失效/,'the owner cannot accept their own offer');
+  assert.equal(s.offer.give.wood,1);assert.equal(s.offer.want.ore,1);
+  const accepted=act(g,'p1',{type:'acceptTrade',offerId:id});
+  assert.equal(accepted.players[1].hand.ore,g.players[1].hand.ore-1,'the acceptor pays the requested ore');
+  assert.equal(accepted.players[1].hand.wood,g.players[1].hand.wood+1,'the acceptor receives the offered wood');
+  assert.equal(accepted.players[0].hand.wood,g.players[0].hand.wood-1);
+  assert.equal(accepted.players[0].hand.ore,g.players[0].hand.ore+1);assert.equal(accepted.offer,null);
   const secondary=fixture(6);secondary.pairStep='secondary';assert.match(tradeRestriction(viewFor(secondary,'p0'),true),/银行/);assert.throws(()=>act(secondary,'p0',action));
   assert.doesNotThrow(()=>act(secondary,'p0',{type:'bankTrade',give:'wood',want:'ore'}));
 });

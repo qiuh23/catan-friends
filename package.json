@@ -31,15 +31,23 @@
     "test:node:restart": "node scripts/node-restart-smoke.js",
     "build:cn": "node scripts/build-site.mjs cn",
     "build:global": "node scripts/build-site.mjs global",
-    "test:site": "node --test tests/site-policy.test.js tests/worker-lifecycle.test.js tests/integration-policy.test.js tests/deploy-release.test.js"
+    "test:site": "node --test tests/site-policy.test.js tests/worker-lifecycle.test.js tests/integration-policy.test.js tests/deploy-release.test.js",
+    "typecheck": "tsc --noEmit",
+    "check": "node --check src/main.js && npm run typecheck",
+    "test:migration": "node scripts/react-migration-browser.mjs"
   },
   "dependencies": {
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
     "three": "^0.186.1",
     "ws": "^8.18.3"
   },
   "devDependencies": {
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "playwright": "^1.56.0",
+    "typescript": "^5.9.3",
     "vite": "^7.1.0",
-    "wrangler": "4.157.0",
-    "playwright": "^1.56.0"
+    "wrangler": "4.157.0"
   }
 }
