@@ -266,7 +266,7 @@ function Interface() {
           </Button>
         </div>
       </dialog>
-      <div id="toast" role="status" aria-live="polite" />
+      <div id="toast" popover="manual" role="status" aria-live="polite" aria-atomic="true" />
       <dialog id="rules-dialog">
         <div className="dialog-heading">
           <h2>玩法规则</h2>

@@ -55,6 +55,7 @@ export async function openFixture(browser,{count=6,viewport={width:1366,height:7
     set(next,{send=true}={}){game=next;if(send)publish();},
     setPaused(value){paused=value;publish();},
     chat(text){chat=[...chat,{id:`peer-${revision}`,seq:chat.length+1,sentAt:Date.now(),name:names[1],text}];publish();},
+    notice(message){socket?.send(JSON.stringify({type:'error',message}));},
     disconnect(){socket?.close({code:1012,reason:'local reconnect fixture'});socket=null;},
     legal(actor='p0'){return legal(game,actor);},
   };

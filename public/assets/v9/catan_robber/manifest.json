@@ -1,0 +1,13 @@
+{
+  "file": "hooded.glb",
+  "bytes": 137072,
+  "sha256": "d56a79fa80181819a17676dd5a02f21d7b3dd7b062af6d7f5d7c1de812b4191a",
+  "triangles": 1763,
+  "meshes": 1,
+  "materials": 1,
+  "textures": 0,
+  "source": "Owner-approved hooded character preview, 2026-11-12; unchanged geometry and colours.",
+  "approval": "Owner approved adding the preview and requested a modest highlight. Runtime rim and ground accent are applied separately.",
+  "footOrigin": "local minimum Y=0",
+  "animations": 0
+}

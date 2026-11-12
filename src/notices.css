@@ -1,0 +1,85 @@
+/* Quiet sea-glass surfaces. No scale/bounce animation and no pointer layer over
+   map actions; modal controls retain their existing 44px touch targets. */
+#action-feedback {
+  width: min(264px, calc(100vw - 32px));
+  max-width: min(264px, calc(100vw - 32px));
+  min-height: 56px;
+  padding: 11px 14px;
+  border: 1px solid #d8eee02e;
+  border-radius: 14px;
+  background: linear-gradient(145deg, #244b48f7, #173c3af7);
+  color: #fffbed;
+  box-shadow: 0 10px 28px #0b30292b, inset 0 1px #ffffff14;
+  pointer-events: none;
+  transition: none;
+}
+#action-feedback p {
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.55;
+  -webkit-line-clamp: 3;
+}
+#action-feedback-leader path {
+  stroke: #395e52;
+  stroke-width: 1.4;
+  opacity: .65;
+}
+#toast, .at-table #toast {
+  position: fixed;
+  inset: auto auto max(24px, env(safe-area-inset-bottom)) 50%;
+  margin: 0;
+  width: max-content;
+  max-width: min(400px, calc(100vw - 32px));
+  padding: 12px 18px;
+  border: 1px solid #d8eee033;
+  border-radius: 14px;
+  background: linear-gradient(145deg, #244b48fa, #173c3afa);
+  box-shadow: 0 10px 32px #0b302933, inset 0 1px #ffffff14;
+  color: #fffbed;
+  font-size: 13px;
+  line-height: 1.6;
+  text-align: center;
+  overflow-wrap: anywhere;
+  pointer-events: none;
+  transform: translateX(-50%);
+  transition: none;
+}
+.at-table #toast {
+  bottom: max(154px, calc(140px + env(safe-area-inset-bottom)));
+}
+#toast.show { transform: translateX(-50%); }
+/* Native popover puts failures above any modal without moving focus or the
+   form. One consistent position also prevents inline errors shifting buttons. */
+#toast::backdrop { background: transparent; pointer-events: none; }
+dialog, #stage-dialog {
+  border: 1px solid #f5faf0cc;
+  background: linear-gradient(155deg, #fafbf4, #edf2e8);
+  box-shadow: 0 24px 72px #092c3940, 0 4px 18px #092c3918, inset 0 1px #fff;
+}
+dialog::backdrop { background: #153e4259; }
+dialog .dialog-heading { border-bottom-color: #35594a18; }
+dialog .dialog-heading h2 { font-weight: 650; letter-spacing: .02em; }
+dialog .dialog-heading .square {
+  border: 1px solid #385d4d14;
+  border-radius: 12px;
+  background: #e4ece280;
+  color: #35594e;
+}
+dialog .dialog-heading .square:hover { background: #dce7da; }
+#stage-dialog-content { scrollbar-width: thin; scrollbar-color: #a8bba7 transparent; }
+@media (max-width: 700px) {
+  #action-feedback { width: min(230px, calc(100vw - 32px)); max-width: min(230px, calc(100vw - 32px)); padding: 10px 12px; }
+  #action-feedback p { font-size: 12px; }
+  dialog, #stage-dialog { border-radius: 18px; }
+}
+@media (orientation: landscape) and (max-height: 600px) {
+  #action-feedback { width: 214px; max-width: min(214px, calc(100vw - 32px)); min-height: 0; padding: 8px 11px; }
+  #action-feedback p { -webkit-line-clamp: 2; }
+  #toast, .at-table #toast { bottom: max(12px, env(safe-area-inset-bottom)); max-width: min(340px, calc(100vw - 32px)); }
+}
+.build-cost, .chat-preview button {
+  border-color: #e8efe1;
+  background: linear-gradient(150deg, #fafbf5, #edf2e8);
+  border-radius: 14px;
+  box-shadow: 0 10px 28px #173b3d20, inset 0 1px #fff;
+}
