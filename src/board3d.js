@@ -1,5 +1,6 @@
 import {SceneClock, HOME_DAY_MS} from './visuals/day-night.js';
 import {createNightLights} from './visuals/night-lights.js';
+import {createRoadLights} from './visuals/road-lights.js';
 import {portGeometry} from './ports.js';
 import {createRobberHighlight} from './visuals/robber.js';
 import {BoardModels} from './visuals/board-models.js';
@@ -51,6 +52,7 @@ export class Board {
     this.environment=createBoardEnvironment({scene:this.scene,camera:this.camera,renderer:this.renderer,seaMesh:this.seaBase,invalidate:()=>this.invalidate()});
     this.sun=this.environment.lighting.sun;this.sceneClock=new SceneClock();this.homeSceneElapsed=0;
     this.nightLights=createNightLights(this.scene);
+    this.roadLights=createRoadLights(this.scene);
     this.land=new THREE.Group();this.pieces=new THREE.Group();this.markers=new THREE.Group();this.selectionLayer=new THREE.Group();this.feedbackLayer=new THREE.Group();
     this.scene.add(this.land,this.pieces,this.markers,this.selectionLayer,this.feedbackLayer);
     // These are small ground inlays. Depth remains enabled so a nearby roof,
@@ -114,6 +116,7 @@ export class Board {
     if(home){if(running&&this.homeSceneLast)this.homeSceneElapsed+=Math.max(0,now-this.homeSceneLast);this.homeSceneLast=running?now:0;}
     const appearance=this.environment.setCycle(home?this.homeSceneElapsed:this.sceneClock.elapsed(now),home?HOME_DAY_MS:undefined);
     this.models.setNight(appearance.night);this.nightLights.setNight(appearance.night,{mobile:this.mobile,lowPower:this.lowPower});
+    this.roadLights.setNight(appearance.night,{lowPower:this.lowPower});
     this.invalidate();
     // One bounded timer, no hidden/offscreen work. Reduced motion stays still
     // between public room updates. Mobile/low-power keep the existing caps.
@@ -155,6 +158,7 @@ export class Board {
   }
   buildDemo(state) {
     this.clearDemo();const layer=this.demoLayer=new THREE.Group(),color=state.players[0].color,b=state.board;
+    this.roadLights.setBoard(b);
     this.scene.add(layer);const vertex=b.vertices[state.homeDemo.vertex];
     const building=level=>{const group=new THREE.Group(),batch=new Batches(this.assets),v={id:vertex.id,x:0,z:0,level,owner:state.players[0].id};if(!this.models.buildings([v],()=>color,group).size)addBuilding(batch,v,color);batch.finish(group);group.position.set(vertex.x,0,vertex.z);layer.add(group);return group;};
     const village=building(1),city=building(2);
@@ -170,6 +174,7 @@ export class Board {
       group.visible=amount>.001;group.scale.set(1,Math.max(.001,amount),1);group.position.y=.27*(1-amount);
     }
     roads.forEach((group,i)=>{group.visible=pose.roads[i]>.001;group.scale.x=Math.max(.001,pose.roads[i]);});
+    this.roadLights.setReveal(new Map(this.latestState.homeDemo.roads.map((road,i)=>[road.edge,pose.roads[i]])));
     this.renderer.domElement.dataset.demo=JSON.stringify({time,pose});this.environment.lighting.markDirty();
   }
   invalidate() {
@@ -178,6 +183,8 @@ export class Board {
       this.frame=0;
       const dt=this.environmentLast?Math.min(.1,(now-this.environmentLast)/1000):0;
       const environmentActive=this.environment.update(dt,this.reducedMotion||this.environmentPaused);
+      this.roadLights.setNight(this.environment.getState().night,{lowPower:this.lowPower});
+      this.renderer.domElement.dataset.roadLights=JSON.stringify(this.roadLights.getState());
       this.environmentLast=environmentActive?now:0;
       const shot=this.focusAnimation;
       if(shot) {
@@ -524,6 +531,7 @@ export class Board {
     const colors=state.players.map(p=>[p.id,p.color]);
     const pieceKey=JSON.stringify([b.edges.map(e=>e.owner),b.vertices.map(v=>[v.owner,v.level]),colors,state.robber]);
     if(pieceKey!==this.pieceKey) {
+      this.roadLights.setBoard(b);
       this.pieceKey=pieceKey;this.models.releaseLayer(this.pieces);clearLayer(this.pieces);this.metrics.pieceBuilds++;changed=true;
       const batch=new Batches(this.assets),color=id=>state.players.find(p=>p.id===id)?.color||'#e57c54';
       const add=(shape,c,x,y,z,sx,sy,sz,r=0)=>batch.add(shape,c,x,y,z,sx,sy,sz,r,'pieces');
@@ -565,6 +573,6 @@ export class Board {
     if(this.disposed)return;this.disposed=true;this.onProjectionChange=null;this.stopFrame();this.stopAmbient();this.stopScene();this.clearDemo();this.events.abort();this.observer.disconnect();this.intersection.disconnect();this.controls.dispose();
     this.loadGeneration=(this.loadGeneration||0)+1;this.models.dispose();
     for(const group of [this.land,this.pieces,this.markers,this.selectionLayer,this.feedbackLayer])clearLayer(group);
-    this.nightLights.dispose();this.environment.dispose();this.scene.clear();this.assets.dispose();this.renderer.dispose();this.renderer.forceContextLoss();this.renderer.domElement.remove();
+    this.roadLights.dispose();this.nightLights.dispose();this.environment.dispose();this.scene.clear();this.assets.dispose();this.renderer.dispose();this.renderer.forceContextLoss();this.renderer.domElement.remove();
   }
 }

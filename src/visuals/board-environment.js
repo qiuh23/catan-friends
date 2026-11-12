@@ -11,8 +11,9 @@ export function createBoardEnvironment({scene,camera,renderer,seaMesh,invalidate
   const sky=createSkyEnvironment({THREE,scene,camera,profile:'catan',style:'physical',starMode:'diorama'});
   const sea=createCatanSeaMaterial(THREE,{radius:5.8,phase:'day'});
   const previousSea=seaMesh.material;seaMesh.material=sea.material;
-  let phase='day',weather='clear',transition=null,disposed=false,cycle=null;
+  let phase='day',weather='clear',transition=null,disposed=false,cycle=null,night=0;
   function apply(state) {
+    night=state.night??((state.from==='night'?1:0)*(1-state.mix)+(state.to==='night'?1:0)*state.mix);
     lighting.setState({...state,weather});sky.setState(state);sea.setState(state);
     sky.setSourceDirection(lighting.getLightingState().direction);
   }
@@ -51,7 +52,7 @@ export function createBoardEnvironment({scene,camera,renderer,seaMesh,invalidate
     },
     setQuality({mobile=false,lowPower=false}={}){if(disposed)return;lighting.setQuality({mobile,lowPower});sky.setQuality(mobile||lowPower);},
     setRadius(scale){if(disposed)return;lighting.setBoardRadius(6.6*scale);sea.setRadius(5.8*scale);},
-    getState(){return {phase,weather,cycle,transitionActive:Boolean(transition),target:transition?.to??phase};},
+    getState(){return {phase,weather,cycle,night,transitionActive:Boolean(transition),target:transition?.to??phase};},
     dispose(){if(disposed)return;disposed=true;transition=null;seaMesh.material=previousSea;sea.dispose();sky.dispose();lighting.dispose();},
   };
 }

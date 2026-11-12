@@ -1,11 +1,25 @@
 import { Color } from 'three';
+import {roadFrame} from './visuals/road-geometry.js';
 
 const shade=(value,light)=>new Color(value).offsetHSL(0,0,light).getHex();
 export function addRoad(batch,a,b,color) {
-  const x=(a.x+b.x)/2,z=(a.z+b.z)/2,r=-Math.atan2(b.z-a.z,b.x-a.x);
-  const add=(shape,c,y,sx,sy,sz)=>batch.add(shape,c,x,y,z,sx,sy,sz,r,'pieces');
-  add('box',0x203a3e,.31,.84,.055,.21);add('box',0xfff6df,.35,.81,.05,.17);
-  add('box',color,.40,.77,.09,.125);add('box',shade(color,.15),.451,.69,.012,.035);
+  const f=roadFrame(a,b),length=Math.min(.79,f.length*.79);
+  const add=(shape,c,along,side,y,sx,sy,sz)=>batch.add(shape,c,f.x+f.dx*along-f.dz*side,y,f.z+f.dz*along+f.dx*side,sx,sy,sz,f.rotation,'pieces');
+  // The shared edge is level at .2675. Set the bedding into that surface and
+  // leave both junctions free for buildings and legal-move targets.
+  add('paving',0x48534c,0,0,.284,length+.035,.034,.196);
+  add('paving',0xc4b59b,0,0,.306,length,.022,.180);
+  // Owner-colour curbs remain continuous and readable from the full map.
+  for(const side of [-.078,.078]){
+    add('paving',shade(color,-.07),0,side,.329,length-.018,.038,.033);
+    add('box',shade(color,.12),0,side,.350,length-.045,.008,.012);
+  }
+  const count=6,step=(length-.032)/count;
+  for(let row=0;row<2;row++)for(let i=0;i<count;i++){
+    const along=(i-(count-1)/2)*step,side=(row-.5)*.058;
+    const tint=[0xa6a18f,0xbcb49f,0xcfc3a8,0xaaa797][(i+row*3)%4];
+    add('paving',tint,along,side,.328+(i%3)*.0015,step-.010,.032,.054);
+  }
 }
 export function addBuilding(batch,v,owner) {
   const dark=0x203a3e,ivory=0xfff5da;
