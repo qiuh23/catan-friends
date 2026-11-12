@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import {portGeometry} from './ports.js';
+import {createPavingGeometry} from './visuals/road-geometry.js';
 
 export const terrain = {wood:0x648c68,brick:0xc08459,sheep:0xa5be70,wheat:0xddbd61,ore:0x88989b,desert:0xdfc88d};
 
@@ -13,6 +14,7 @@ export class BoardAssets {
       rock:new THREE.DodecahedronGeometry(1,0),
       wool:new THREE.IcosahedronGeometry(1,0),
       box:new THREE.BoxGeometry(1,1,1),
+      paving:createPavingGeometry(),
       cylinder:new THREE.CylinderGeometry(1,1,1,8),
       ring:new THREE.RingGeometry(.83,1.08,16),
       sea:new THREE.CylinderGeometry(1,1,1,48),
