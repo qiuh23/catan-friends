@@ -1,0 +1,156 @@
+{
+  "blender": "4.3.2",
+  "units": "Existing Catan board units; GLB Y-up; bottom anchor",
+  "assets": [
+    {
+      "id": "village_timber",
+      "file": "models/village_timber.glb",
+      "triangles": 4500,
+      "primitives": 2,
+      "dimensions_xyz": [
+        0.4099999964237213,
+        0.4569999873638153,
+        0.4099999964237213
+      ],
+      "placement_y": 0.27,
+      "nodes": [
+        "village_timber_static",
+        "village_timber_owner"
+      ],
+      "root": "Catan_village_timber",
+      "bytes": 471512,
+      "sha256": "b594828b07d2bdee487a761c653ff264775f156c742ff73e9225697c2115459c"
+    },
+    {
+      "id": "village_dormer",
+      "file": "models/village_dormer.glb",
+      "triangles": 6912,
+      "primitives": 2,
+      "dimensions_xyz": [
+        0.4099999964237213,
+        0.4455000162124634,
+        0.4099999964237213
+      ],
+      "placement_y": 0.27,
+      "nodes": [
+        "village_dormer_static",
+        "village_dormer_owner"
+      ],
+      "root": "Catan_village_dormer",
+      "bytes": 688920,
+      "sha256": "167ef58853e7101116c6c2cd29b031fa0f98cca9fee2e8343cf393a3c647a662"
+    },
+    {
+      "id": "city_citadel",
+      "file": "models/city_citadel.glb",
+      "triangles": 5084,
+      "primitives": 2,
+      "dimensions_xyz": [
+        0.4699999988079071,
+        0.5690000057220459,
+        0.4699999988079071
+      ],
+      "placement_y": 0.27,
+      "nodes": [
+        "city_citadel_static",
+        "city_citadel_owner"
+      ],
+      "root": "Catan_city_citadel",
+      "bytes": 502560,
+      "sha256": "d738448f4bc2828d7c67c17d9b3b53defab12d6aa8814f61aab5ab1d63ad9134"
+    },
+    {
+      "id": "city_clockhall",
+      "file": "models/city_clockhall.glb",
+      "triangles": 6908,
+      "primitives": 2,
+      "dimensions_xyz": [
+        0.4699999988079071,
+        0.5839999914169312,
+        0.4699999988079071
+      ],
+      "placement_y": 0.27,
+      "nodes": [
+        "city_clockhall_static",
+        "city_clockhall_owner"
+      ],
+      "root": "Catan_city_clockhall",
+      "bytes": 685640,
+      "sha256": "498f4462503259d147a4038f6933aea7a853cd9e80c279932c789f89ce4b087e"
+    },
+    {
+      "id": "lighthouse",
+      "file": "models/lighthouse.glb",
+      "triangles": 960,
+      "primitives": 1,
+      "dimensions_xyz": [
+        0.2377641350030899,
+        0.4814999997615814,
+        0.25
+      ],
+      "placement_y": 0.03,
+      "nodes": [
+        "lighthouse_static"
+      ],
+      "root": "Catan_lighthouse",
+      "bytes": 82564,
+      "sha256": "9ded554cac4ea176b74e9463feb17911cb93df095cb77ae53c7c63c61d0ab2fb"
+    },
+    {
+      "id": "cargo_cluster",
+      "file": "models/cargo_cluster.glb",
+      "triangles": 1008,
+      "primitives": 1,
+      "dimensions_xyz": [
+        0.18012958765029907,
+        0.1184999942779541,
+        0.164000004529953
+      ],
+      "placement_y": 0.204,
+      "nodes": [
+        "cargo_cluster_static"
+      ],
+      "root": "Catan_cargo_cluster",
+      "bytes": 96608,
+      "sha256": "387215b53273a35c3e0c3c5cbe28d85b5da27af71266b02062cfe56ade6db470"
+    },
+    {
+      "id": "pier_detailed",
+      "file": "models/pier_detailed.glb",
+      "triangles": 1652,
+      "primitives": 1,
+      "dimensions_xyz": [
+        0.41999998688697815,
+        0.2369999885559082,
+        0.17000000178813934
+      ],
+      "placement_y": -0.006,
+      "nodes": [
+        "pier_detailed_static"
+      ],
+      "root": "Catan_pier_detailed",
+      "bytes": 165424,
+      "sha256": "57e2ea4ff63049c4bf7c37a493f2c7e3f3df5cd755ee3e8c6891781031b8a817"
+    },
+    {
+      "id": "harbor_house",
+      "file": "models/harbor_house.glb",
+      "triangles": 3072,
+      "primitives": 1,
+      "dimensions_xyz": [
+        0.2601155936717987,
+        0.2929999828338623,
+        0.28242821991443634
+      ],
+      "placement_y": 0.02,
+      "nodes": [
+        "harbor_house_static"
+      ],
+      "root": "Catan_harbor_house",
+      "bytes": 304888,
+      "sha256": "097fd605dd5a6c5f7acdbd0064ba4157cf907249e368564162ac7c69211a4dc4"
+    }
+  ],
+  "version": "v7",
+  "static_palette_bake": "palette_bake_v7.json; OwnerTint untouched"
+}

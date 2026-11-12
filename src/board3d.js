@@ -1,4 +1,6 @@
 import {portGeometry} from './ports.js';
+import {BoardModels} from './visuals/board-models.js';
+import {createBoardEnvironment} from './visuals/board-environment.js';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { LABELS } from '../shared/board.js';
@@ -25,7 +27,7 @@ export class Board {
     this.container=container;this.onSelect=onSelect;this.onHover=onHover;
     this.frame=0;this.visible=true;this.lowPower=(navigator.deviceMemory||8)<=2;this.metrics={renders:0,landBuilds:0,pieceBuilds:0,markerBuilds:0};
     this.renderer=new THREE.WebGLRenderer({antialias:true,alpha:false,powerPreference:'low-power'});
-    this.assets=new BoardAssets();
+    this.assets=new BoardAssets();this.models=new BoardModels();
     this.assets.geometries.roof.dispose();this.assets.geometries.roof=gableRoof();
     this.assets.geometries['site-ring']=new THREE.RingGeometry(.095,.125,24);
     this.assets.geometries['site-city-ring']=new THREE.RingGeometry(.225,.25,24);
@@ -41,12 +43,10 @@ export class Board {
     this.controls.enablePan=false;this.controls.minPolarAngle=.15;this.controls.maxPolarAngle=1.12;
     this.controls.addEventListener('change',()=>{if(!this.homeShowcase||!this.ambientEnabled)this.invalidate();});
     this.controls.addEventListener('start',()=>this.cancelFocus());
-    this.scene.add(new THREE.HemisphereLight(0xfff9e9,0x78988c,2.3));
-    this.sun=new THREE.DirectionalLight(0xffeed2,2.3);this.sun.position.set(-5,13,8);
-    this.sun.shadow.mapSize.set(1024,1024);Object.assign(this.sun.shadow.camera,{left:-9,right:9,top:9,bottom:-9});
-    this.sun.shadow.normalBias=.035;this.sun.shadow.bias=-.0001;this.scene.add(this.sun);
     this.seaBase=new THREE.Mesh(this.assets.geometries.sea,this.assets.material('sea'));
-    this.seaBase.material.color.set(0xa7cdc7);this.seaBase.position.y=-.04;this.scene.add(this.seaBase);
+    this.seaBase.position.y=-.04;this.scene.add(this.seaBase);
+    this.environment=createBoardEnvironment({scene:this.scene,camera:this.camera,renderer:this.renderer,seaMesh:this.seaBase,invalidate:()=>this.invalidate()});
+    this.sun=this.environment.lighting.sun;
     this.land=new THREE.Group();this.pieces=new THREE.Group();this.markers=new THREE.Group();this.selectionLayer=new THREE.Group();this.feedbackLayer=new THREE.Group();
     this.scene.add(this.land,this.pieces,this.markers,this.selectionLayer,this.feedbackLayer);
     // These are small ground inlays. Depth remains enabled so a nearby roof,
@@ -83,7 +83,7 @@ export class Board {
         :tile===undefined?'':`${LABELS[this.board.tiles[tile].resource]}${this.board.tiles[tile].number?` · ${this.board.tiles[tile].number} 点生产`:' · 不生产资源'}`);
     },options);
     canvas.addEventListener('pointerleave',()=>{if(!this.pointers.size)this.selectSite(null);},options);
-    document.addEventListener('visibilitychange',()=>{if(document.hidden){this.stopFrame();this.stopAmbient();}else {this.scheduleAmbient();this.invalidate();}},options);
+    document.addEventListener('visibilitychange',()=>{if(document.hidden){this.environment.update(0,true);this.environmentLast=0;this.stopFrame();this.stopAmbient();}else {this.scheduleAmbient();this.invalidate();}},options);
     this.observer=new ResizeObserver(()=>this.resize());this.observer.observe(container);
     this.intersection=new IntersectionObserver(entries=>{
       this.visible=entries[0].isIntersecting;if(this.visible){this.scheduleAmbient();this.invalidate();}else {this.stopFrame();this.stopAmbient();}
@@ -92,6 +92,7 @@ export class Board {
   }
   stopFrame() {cancelAnimationFrame(this.frame);this.frame=0;}
   setAmbient(enabled,{reducedMotion=false}={}) {
+    this.reducedMotion=reducedMotion;if(reducedMotion)this.environment.update(0,true);
     this.ambientEnabled=Boolean(enabled)&&this.homeShowcase&&!reducedMotion;
     this.controls.enableDamping=!reducedMotion&&!this.ambientEnabled;
     if(reducedMotion&&this.demoParts){this.homeTime=21;this.animateDemo(21);this.invalidate();}
@@ -125,20 +126,20 @@ export class Board {
     this.ambientInterrupted=false;this.reset({defaultOrientation:true});this.scheduleAmbient();
   }
   clearDemo() {
-    if(this.demoLayer){clearLayer(this.demoLayer);this.scene.remove(this.demoLayer);}
+    if(this.demoLayer){this.demoLayer.traverse(group=>{if(group.isGroup)this.models.releaseLayer(group);});clearLayer(this.demoLayer);this.scene.remove(this.demoLayer);}
     this.demoLayer=null;this.demoParts=null;
     if(this.renderer)this.renderer.domElement.dataset.demo='none';
   }
   buildDemo(state) {
     this.clearDemo();const layer=this.demoLayer=new THREE.Group(),color=state.players[0].color,b=state.board;
     this.scene.add(layer);const vertex=b.vertices[state.homeDemo.vertex];
-    const building=level=>{const group=new THREE.Group(),batch=new Batches(this.assets);addBuilding(batch,{x:0,z:0,level},color);batch.finish(group);group.position.set(vertex.x,0,vertex.z);layer.add(group);return group;};
+    const building=level=>{const group=new THREE.Group(),batch=new Batches(this.assets),v={id:vertex.id,x:0,z:0,level,owner:state.players[0].id};if(!this.models.buildings([v],()=>color,group).size)addBuilding(batch,v,color);batch.finish(group);group.position.set(vertex.x,0,vertex.z);layer.add(group);return group;};
     const village=building(1),city=building(2);
     const roads=state.homeDemo.roads.map(({from,to})=>{
       const a=b.vertices[from],v=b.vertices[to],group=new THREE.Group(),batch=new Batches(this.assets);
       addRoad(batch,{x:0,z:0},{x:1,z:0},color);batch.finish(group);group.position.set(a.x,0,a.z);group.rotation.y=-Math.atan2(v.z-a.z,v.x-a.x);layer.add(group);return group;
     });
-    this.demoParts={village,city,roads};this.animateDemo(0);
+    this.demoParts={village,city,roads};this.animateDemo(this.homeTime||0);
   }
   animateDemo(time) {
     if(!this.demoParts)return;const pose=showcasePose(time),{village,city,roads}=this.demoParts;
@@ -146,12 +147,15 @@ export class Board {
       group.visible=amount>.001;group.scale.set(1,Math.max(.001,amount),1);group.position.y=.27*(1-amount);
     }
     roads.forEach((group,i)=>{group.visible=pose.roads[i]>.001;group.scale.x=Math.max(.001,pose.roads[i]);});
-    this.renderer.domElement.dataset.demo=JSON.stringify({time,pose});
+    this.renderer.domElement.dataset.demo=JSON.stringify({time,pose});this.environment.lighting.markDirty();
   }
   invalidate() {
     if(this.disposed||this.frame||document.hidden||!this.visible)return;
     this.frame=requestAnimationFrame(now=>{
       this.frame=0;
+      const dt=this.environmentLast?Math.min(.1,(now-this.environmentLast)/1000):0;
+      const environmentActive=this.environment.update(dt,this.reducedMotion||this.environmentPaused);
+      this.environmentLast=environmentActive?now:0;
       const shot=this.focusAnimation;
       if(shot) {
         const t=Math.min(1,(now-shot.start)/650),ease=t*t*(3-2*t);
@@ -160,16 +164,17 @@ export class Board {
       }
       const feedbackAge=now-(this.feedbackStart||0);
       if(this.feedback&&feedbackAge<1250&&!this.reducedMotion&&!this.lowPower){const opacity=.72+.28*Math.sin(Math.PI*feedbackAge/1250);this.assets.materials.get('feedback').transparent=true;this.assets.materials.get('feedback').opacity=opacity;}
-      this.controls.update();this.renderer.render(this.scene,this.camera);this.metrics.renders++;
+      this.controls.update();const renderStart=performance.now();this.renderer.render(this.scene,this.camera);this.metrics.renders++;
+      this.metrics.renderMs=Number((performance.now()-renderStart).toFixed(2));
       const {calls,triangles}=this.renderer.info.render;
-      this.renderer.domElement.dataset.renderStats=JSON.stringify({...this.metrics,calls,triangles,...this.renderer.info.memory,dpr:this.renderer.getPixelRatio(),shadows:this.renderer.shadowMap.enabled});
+      this.renderer.domElement.dataset.renderStats=JSON.stringify({...this.metrics,calls,triangles,...this.renderer.info.memory,programs:this.renderer.info.programs?.length||0,environment:this.environment.getState(),dpr:this.renderer.getPixelRatio(),shadows:this.renderer.shadowMap.enabled});
       this.renderer.domElement.dataset.camera=JSON.stringify(this.camera.position.toArray());
       this.renderer.domElement.dataset.cameraTarget=JSON.stringify(this.controls.target.toArray());
       this.renderer.domElement.dataset.cameraFocus=this.focusAnimation?'moving':this.viewMode||'overview';
       this.renderer.domElement.dataset.cameraEvent=this.focusEvent||'';
       this.renderer.domElement.dataset.cameraView=JSON.stringify(this.camera.view);
       this.onProjectionChange?.();
-      if(this.focusAnimation||(this.feedback&&!this.reducedMotion&&!this.lowPower&&feedbackAge<1250))this.invalidate();
+      if(environmentActive||this.focusAnimation||(this.feedback&&!this.reducedMotion&&!this.lowPower&&feedbackAge<1250))this.invalidate();
     });
   }
   resize() {
@@ -178,10 +183,16 @@ export class Board {
     const dpr=Math.min(devicePixelRatio||1,mobile?1.35:1.75,Math.sqrt((mobile?1200000:2000000)/(w*h)));
     const changed=w!==this.width||h!==this.height;
     this.width=w;this.height=h;this.renderer.setPixelRatio(dpr);this.renderer.setSize(w,h,false);
-    this.renderer.shadowMap.enabled=!mobile;this.sun.castShadow=!mobile;this.renderer.shadowMap.needsUpdate=true;
+    this.environment.setQuality({mobile,lowPower:this.lowPower});
     if(changed){this.cancelFocus();this.updateProjection();if(this.board&&(!this.viewMode||this.viewMode==='overview'))this.fit(true);else this.invalidate();}
     else this.invalidate();
   }
+  setQuality({lowPower=this.lowPower}={}) {this.lowPower=Boolean(lowPower);this.resize();}
+  setEnvironment(next={}) {
+    this.environment.setEnvironment(next,this.reducedMotion||this.environmentPaused||document.hidden);
+    this.environmentLast=0;this.invalidate();
+  }
+  update(deltaSeconds) {return this.environment.update(deltaSeconds,this.reducedMotion||this.environmentPaused||document.hidden);}
   setViewportPadding(padding={},{preserveView=false}={}) {
     const key=JSON.stringify([padding.top||0,padding.right||0,padding.bottom||0,padding.left||0]);
     if(key===this.paddingKey)return;
@@ -435,7 +446,8 @@ export class Board {
     },256,128);sprite.scale.set(.92,.46,1);sprite.userData={port:resource};return sprite;
   }
   set(state,mode) {
-    const b=state.board;if(!b||this.disposed)return;this.board=b;this.mode=mode;
+    const b=state.board;if(!b||this.disposed)return;this.board=b;this.mode=mode;this.latestState=state;
+    this.environmentPaused=Boolean(state.room?.paused);if(this.environmentPaused)this.environment.update(0,true);
     const sceneChanged=Boolean(state.homeDemo)!==Boolean(this.homeShowcase);
     if(sceneChanged){
       this.stopAmbient();this.ambientEnabled=false;this.ambientInterrupted=false;this.clearDemo();
@@ -445,12 +457,29 @@ export class Board {
     }
     const key=JSON.stringify([b.tiles.map(t=>[t.id,t.x,t.z,t.resource,t.number]),b.vertices.map(v=>[v.x,v.z]),b.ports]);
     let changed=false;
-    if(key!==this.landKey) {
-      this.stopAmbient();this.ambientEnabled=false;this.ambientInterrupted=false;this.ambientOffset=null;this.followBaseline=null;
-      this.landKey=key;this.pieceKey=this.markerKey=null;clearLayer(this.land);this.metrics.landBuilds++;changed=true;
+    const mapChanged=key!==this.landKey;
+    if(mapChanged||this.refreshModels) {
+      this.refreshModels=false;
+      if(mapChanged){this.stopAmbient();this.ambientEnabled=false;this.ambientInterrupted=false;this.ambientOffset=null;this.followBaseline=null;}
+      this.landKey=key;this.pieceKey=this.markerKey=null;this.models.releaseLayer(this.land);clearLayer(this.land);this.metrics.landBuilds++;changed=true;
       this.boardScale=b.tiles.length>19?Math.max(...b.tiles.map(t=>Math.hypot(t.x,t.z)+1.5))/5.8:1;
       this.seaBase.scale.set(5.8*this.boardScale,.14,5.8*this.boardScale);
-      buildTerrain(b,this.assets,this.land);
+      this.environment.setRadius(this.boardScale);
+      const loadedTiles=this.models.terrain(b,this.land),loadedPorts=this.models.ports(b,this.land);
+      buildTerrain(b,this.assets,this.land,{loadedTiles,loadedPorts});
+      this.renderer.domElement.dataset.models=JSON.stringify({version:9,tiles:loadedTiles.size,total:b.tiles.length,ports:loadedPorts});
+      // Only a new map schedules requests. A stale completion cannot repaint a
+      // newer room. The cache remains owned by this Board until dispose.
+      if(this.requestedLandKey!==key){
+        this.requestedLandKey=key;const generation=this.loadGeneration=(this.loadGeneration||0)+1;
+        this.models.prepare(b).then(result=>{
+          if(this.disposed||generation!==this.loadGeneration||this.requestedLandKey!==key)return;
+          this.renderer.domElement.dataset.modelLoad=JSON.stringify(result);
+          this.refreshModels=true;this.set(this.latestState,this.mode);
+          if(this.homeShowcase)this.buildDemo(this.latestState);
+          this.environment.lighting.markDirty();this.invalidate();
+        });
+      }
       this.tiles=b.tiles.map(t=>{
         // Invisible raycast surfaces share geometry/material and cost no draw calls.
         const hex=new THREE.Mesh(this.assets.geometries.hex,this.assets.material());hex.position.set(t.x,.235,t.z);hex.scale.set(.942,.075,.942);hex.userData={tile:t.id};hex.visible=false;this.land.add(hex);return hex;
@@ -464,17 +493,17 @@ export class Board {
       // A newly created map uses the play canvas's current orientation. The
       // narrow home preview can otherwise carry its low landscape pitch into a
       // portrait game and leave most of the available play area empty.
-      this.fitPoints=[...b.vertices.map(v=>({x:v.x,y:.4,z:v.z})),...b.tiles.map(t=>({x:t.x,y:1,z:t.z}))];this.reset({defaultOrientation:true});
+      this.fitPoints=[...b.vertices.map(v=>({x:v.x,y:.4,z:v.z})),...b.tiles.map(t=>({x:t.x,y:1,z:t.z}))];if(mapChanged)this.reset({defaultOrientation:true});
     }
     if(sceneChanged){if(this.homeShowcase)this.buildDemo(state);this.reset({defaultOrientation:true});changed=true;}
     const colors=state.players.map(p=>[p.id,p.color]);
     const pieceKey=JSON.stringify([b.edges.map(e=>e.owner),b.vertices.map(v=>[v.owner,v.level]),colors,state.robber]);
     if(pieceKey!==this.pieceKey) {
-      this.pieceKey=pieceKey;clearLayer(this.pieces);this.metrics.pieceBuilds++;changed=true;
+      this.pieceKey=pieceKey;this.models.releaseLayer(this.pieces);clearLayer(this.pieces);this.metrics.pieceBuilds++;changed=true;
       const batch=new Batches(this.assets),color=id=>state.players.find(p=>p.id===id)?.color||'#e57c54';
       const add=(shape,c,x,y,z,sx,sy,sz,r=0)=>batch.add(shape,c,x,y,z,sx,sy,sz,r,'pieces');
       if(!this.homeShowcase)for(const edge of b.edges.filter(e=>e.owner))addRoad(batch,b.vertices[edge.a],b.vertices[edge.b],color(edge.owner));
-      if(!this.homeShowcase)for(const v of b.vertices.filter(v=>v.owner))addBuilding(batch,v,color(v.owner));
+      if(!this.homeShowcase){const vertices=b.vertices.filter(v=>v.owner),loaded=this.models.buildings(vertices,color,this.pieces);for(const v of vertices)if(!loaded.has(v.id))addBuilding(batch,v,color(v.owner));}
       if(state.robber!==null&&state.robber!==undefined) {
         const t=b.tiles[state.robber];add('cone',0x283e38,t.x,.53,t.z+.4,.14,.4,.14);add('wool',0x283e38,t.x,.8,t.z+.4,.09,.10,.09);
       }
@@ -504,7 +533,8 @@ export class Board {
   }
   dispose() {
     if(this.disposed)return;this.disposed=true;this.onProjectionChange=null;this.stopFrame();this.stopAmbient();this.clearDemo();this.events.abort();this.observer.disconnect();this.intersection.disconnect();this.controls.dispose();
+    this.loadGeneration=(this.loadGeneration||0)+1;this.models.dispose();
     for(const group of [this.land,this.pieces,this.markers,this.selectionLayer,this.feedbackLayer])clearLayer(group);
-    this.scene.clear();this.sun.shadow.dispose();this.assets.dispose();this.renderer.dispose();this.renderer.forceContextLoss();this.renderer.domElement.remove();
+    this.environment.dispose();this.scene.clear();this.assets.dispose();this.renderer.dispose();this.renderer.forceContextLoss();this.renderer.domElement.remove();
   }
 }

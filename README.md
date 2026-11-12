@@ -19,7 +19,7 @@
 
 昵称库与稳定 ID 在 [`shared/site-policy.js`](shared/site-policy.js)；不拼接前后缀。国内服务器按 ID 分配显示名，真人、电脑和离线保留席位优先使用不同名字，电脑另显示徽标；随机昵称不推进发牌/地图/骰子的随机流。卡坦岛当前仍不支持观战。
 
-本轮源码与本地验证见 [站点策略记录](docs/site-editions.md)。**本轮未合并、未公网发布；下列历史线上 SHA 及验收记录不代表当前策略已上线。** 此前关于国内自由昵称、自由聊天、快捷短句或表情的方案均由本方案替代。真人等待房最多 6 人，开局按实际人数使用 3–4 人基础版或 5–6 人扩充（2025 配对回合）；程序化 Three.js 岛屿不涉及 Blender 资产。
+本轮源码与本地验证见 [站点策略记录](docs/site-editions.md)。**本轮未合并、未公网发布；下列历史线上 SHA 及验收记录不代表当前策略已上线。** 此前关于国内自由昵称、自由聊天、快捷短句或表情的方案均由本方案替代。真人等待房最多 6 人，开局按实际人数使用 3–4 人基础版或 5–6 人扩充（2025 配对回合）；3D 岛屿现接入 V9 素材包的 Blender GLB，加载失败时保留程序化回退。
 
 ## 本地启动
 
@@ -125,6 +125,6 @@ npm run test:worker:restart
 
 `shared/board.js` 管地图拓扑，`shared/game.js` 管规则和个人视图，`shared/random.js` 管随机算法，`shared/room.js` 管私有随机流、身份/版本/去重及聊天，`shared/moderation.js` 管处置白名单；`server/` 与 `worker/` 提供两端存储和网络。`src/` 提供棋盘及界面，`ops/` 与 `scripts/deploy/` 提供运维工具。`.data/`、`.wrangler/`、备份及测试产物不进 Git。
 
-原作者：[Jack15678](https://github.com/Jack15678)，上游：[Jack15678/catan-friends](https://github.com/Jack15678/catan-friends)。本 Fork 保留原历史和 upstream 关联；作者已授权朋友间适配，未新增开源许可证，按原项目个人非商业娱乐说明使用。3D 为程序化几何，没有宣称 Blender 资产。
+原作者：[Jack15678](https://github.com/Jack15678)，上游：[Jack15678/catan-friends](https://github.com/Jack15678/catan-friends)。本 Fork 保留原历史和 upstream 关联；作者已授权朋友间适配，未新增开源许可证，按原项目个人非商业娱乐说明使用。3D 地形、村庄/城市与码头使用用户提供的 V9 Blender GLB；道路、号码牌、强盗、边岸与加载失败回退继续使用程序化几何。素材范围、运行接线和未验证项目见 [V9 接入记录](docs/visuals/v9-integration.md)。
 
 实现参考：[巫师牌](https://github.com/qiuh23/wizard-friends) · [胡闹运动会](https://github.com/qiuh23/magical-athlete-online) · [RFC 8439](https://www.rfc-editor.org/rfc/rfc8439) · [Cloudflare Web Crypto](https://developers.cloudflare.com/workers/runtime-apis/web-crypto/)。规则参考：[CATAN 官方 FAQ](https://www.catan.com/faq/basegame)。
