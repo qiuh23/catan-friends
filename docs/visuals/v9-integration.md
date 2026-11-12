@@ -1,5 +1,7 @@
 # Catan V9 Blender integration
 
+Historical integration record. The fixed-day behaviour and terrain sizes below are superseded by [automatic day/night](automatic-day-night.md) and [continuous relief](continuous-relief.md). The original V9 hashes remain in Git history; current terrain hashes are in the runtime manifest.
+
 ## Scope
 
 Based on main `f8b37ea`. This change preserves the current React immersive UI, authoritative rules, networking, private player data, camera limits, 2D board and deployment configuration.

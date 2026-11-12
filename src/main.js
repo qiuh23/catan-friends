@@ -295,7 +295,7 @@ function render(){
 function updateAmbient(){
   const home=!state&&!code;
   const paused=pageAway||document.hidden||Boolean(document.querySelector('dialog[open]'))||showcaseInterrupted;
-  board?.setAmbient?.(home&&!paused,{reducedMotion:reducedMotion()});
+  board?.setAmbient?.(home&&!paused,{reducedMotion:reducedMotion(),sceneEnabled:home&&!pageAway&&!document.hidden&&!document.querySelector('dialog[open]')});
   renderUI(uiModel());
 }
 

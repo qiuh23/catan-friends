@@ -1,3 +1,5 @@
+import {SceneClock, HOME_DAY_MS} from './visuals/day-night.js';
+import {createNightLights} from './visuals/night-lights.js';
 import {portGeometry} from './ports.js';
 import {BoardModels} from './visuals/board-models.js';
 import {createBoardEnvironment} from './visuals/board-environment.js';
@@ -46,7 +48,8 @@ export class Board {
     this.seaBase=new THREE.Mesh(this.assets.geometries.sea,this.assets.material('sea'));
     this.seaBase.position.y=-.04;this.scene.add(this.seaBase);
     this.environment=createBoardEnvironment({scene:this.scene,camera:this.camera,renderer:this.renderer,seaMesh:this.seaBase,invalidate:()=>this.invalidate()});
-    this.sun=this.environment.lighting.sun;
+    this.sun=this.environment.lighting.sun;this.sceneClock=new SceneClock();this.homeSceneElapsed=0;
+    this.nightLights=createNightLights(this.scene);
     this.land=new THREE.Group();this.pieces=new THREE.Group();this.markers=new THREE.Group();this.selectionLayer=new THREE.Group();this.feedbackLayer=new THREE.Group();
     this.scene.add(this.land,this.pieces,this.markers,this.selectionLayer,this.feedbackLayer);
     // These are small ground inlays. Depth remains enabled so a nearby roof,
@@ -83,21 +86,37 @@ export class Board {
         :tile===undefined?'':`${LABELS[this.board.tiles[tile].resource]}${this.board.tiles[tile].number?` · ${this.board.tiles[tile].number} 点生产`:' · 不生产资源'}`);
     },options);
     canvas.addEventListener('pointerleave',()=>{if(!this.pointers.size)this.selectSite(null);},options);
-    document.addEventListener('visibilitychange',()=>{if(document.hidden){this.environment.update(0,true);this.environmentLast=0;this.stopFrame();this.stopAmbient();}else {this.scheduleAmbient();this.invalidate();}},options);
+    document.addEventListener('visibilitychange',()=>{if(document.hidden){this.environment.update(0,true);this.environmentLast=0;this.stopFrame();this.stopAmbient();this.stopScene();}else {this.scheduleAmbient();this.syncScene();this.invalidate();}},options);
     this.observer=new ResizeObserver(()=>this.resize());this.observer.observe(container);
     this.intersection=new IntersectionObserver(entries=>{
-      this.visible=entries[0].isIntersecting;if(this.visible){this.scheduleAmbient();this.invalidate();}else {this.stopFrame();this.stopAmbient();}
+      this.visible=entries[0].isIntersecting;if(this.visible){this.scheduleAmbient();this.syncScene();this.invalidate();}else {this.stopFrame();this.stopAmbient();this.stopScene();}
     });this.intersection.observe(container);
     this.resize();
   }
   stopFrame() {cancelAnimationFrame(this.frame);this.frame=0;}
-  setAmbient(enabled,{reducedMotion=false}={}) {
+  setAmbient(enabled,{reducedMotion=false,sceneEnabled=enabled}={}) {
     this.reducedMotion=reducedMotion;if(reducedMotion)this.environment.update(0,true);
-    this.ambientEnabled=Boolean(enabled)&&this.homeShowcase&&!reducedMotion;
-    this.controls.enableDamping=!reducedMotion&&!this.ambientEnabled;
+    this.autoOrbitEnabled=Boolean(enabled);
+    this.ambientEnabled=Boolean(sceneEnabled)&&this.homeShowcase&&!reducedMotion;
+    this.controls.enableDamping=!reducedMotion&&!(this.ambientEnabled&&this.autoOrbitEnabled&&!this.ambientInterrupted);
+    this.syncScene();
     if(reducedMotion&&this.demoParts){this.homeTime=21;this.animateDemo(21);this.invalidate();}
     if(!this.ambientEnabled){this.stopAmbient();return;}
     this.scheduleAmbient();
+  }
+  stopScene(){clearTimeout(this.sceneTimer);this.sceneTimer=0;this.homeSceneLast=0;}
+  syncScene(){
+    clearTimeout(this.sceneTimer);this.sceneTimer=0;
+    if(this.disposed||!this.latestState||this.sceneOverride||document.hidden||!this.visible){this.homeSceneLast=0;return;}
+    const now=performance.now(),home=Boolean(this.homeShowcase);
+    const running=home?this.ambientEnabled:Boolean(this.sceneClock.sample?.running)&&!this.environmentPaused;
+    if(home){if(running&&this.homeSceneLast)this.homeSceneElapsed+=Math.max(0,now-this.homeSceneLast);this.homeSceneLast=running?now:0;}
+    const appearance=this.environment.setCycle(home?this.homeSceneElapsed:this.sceneClock.elapsed(now),home?HOME_DAY_MS:undefined);
+    this.models.setNight(appearance.night);this.nightLights.setNight(appearance.night,{mobile:this.mobile,lowPower:this.lowPower});
+    this.invalidate();
+    // One bounded timer, no hidden/offscreen work. Reduced motion stays still
+    // between public room updates. Mobile/low-power keep the existing caps.
+    if(running&&!this.reducedMotion)this.sceneTimer=setTimeout(()=>this.syncScene(),1000/(this.mobile||this.lowPower?20:30));
   }
   stopAmbient(interrupted=false) {
     clearTimeout(this.ambientTimer);this.ambientTimer=0;
@@ -106,18 +125,21 @@ export class Board {
     if(this.renderer?.domElement)this.renderer.domElement.dataset.ambient='stopped';
   }
   scheduleAmbient() {
-    if(this.disposed||!this.homeShowcase||!this.ambientEnabled||this.ambientInterrupted||this.ambientTimer||document.hidden||!this.visible)return;
-    this.renderer.domElement.dataset.ambient='running';
+    if(this.disposed||!this.homeShowcase||!this.ambientEnabled||this.ambientTimer||document.hidden||!this.visible)return;
+    this.renderer.domElement.dataset.ambient=this.autoOrbitEnabled&&!this.ambientInterrupted?'running':'stopped';
     this.ambientLast=performance.now();
     // One capped clock for the camera and the tiny reusable demonstration.
     // Hidden pages/modal dialogs schedule nothing and resume without catch-up.
     this.ambientTimer=setTimeout(()=>{
       this.ambientTimer=0;
       const dt=Math.min(.1,(performance.now()-this.ambientLast)/1000);
-      this.homeTime+=dt;this.homeAngle+=dt*Math.PI*2/ORBIT_SECONDS;
+      this.homeTime+=dt;
+      if(this.autoOrbitEnabled&&!this.ambientInterrupted){
+      this.homeAngle+=dt*Math.PI*2/ORBIT_SECONDS;
       const radius=this.camera.position.distanceTo(this.controls.target),polar=.78;
       this.controls.target.set(0,0,0);
       this.camera.position.set(Math.sin(this.homeAngle)*Math.sin(polar)*radius,Math.cos(polar)*radius,Math.cos(this.homeAngle)*Math.sin(polar)*radius);
+      }
       this.animateDemo(this.homeTime);this.invalidate();this.scheduleAmbient();
     },1000/(this.mobile?20:24));
   }
@@ -189,6 +211,7 @@ export class Board {
   }
   setQuality({lowPower=this.lowPower}={}) {this.lowPower=Boolean(lowPower);this.resize();}
   setEnvironment(next={}) {
+    this.sceneOverride=true;this.stopScene();
     this.environment.setEnvironment(next,this.reducedMotion||this.environmentPaused||document.hidden);
     this.environmentLast=0;this.invalidate();
   }
@@ -238,7 +261,7 @@ export class Board {
     const distance=Math.max(this.controls.minDistance,Math.min(this.controls.maxDistance,offset.length()/factor));
     this.camera.position.copy(this.controls.target).add(offset.setLength(distance));this.controls.update();this.invalidate();
   }
-  manualInput(){this.stopAmbient(true);this.cancelFocus();this.followBaseline=null;this.viewMode='manual';this.onManual?.();}
+  manualInput(){this.ambientInterrupted=true;if(this.renderer?.domElement)this.renderer.domElement.dataset.ambient='stopped';if(this.controls)this.controls.enableDamping=!this.reducedMotion;this.cancelFocus();this.followBaseline=null;this.viewMode='manual';this.onManual?.();}
   cancelFocus(){if(!this.focusAnimation)return;this.focusAnimation=null;this.invalidate();}
   projectFeedbackTarget(target) {
     const anchor=feedbackAnchor(this.board,target);if(!anchor||this.disposed)return null;
@@ -447,11 +470,12 @@ export class Board {
   }
   set(state,mode) {
     const b=state.board;if(!b||this.disposed)return;this.board=b;this.mode=mode;this.latestState=state;
-    this.environmentPaused=Boolean(state.room?.paused);if(this.environmentPaused)this.environment.update(0,true);
+    this.environmentPaused=Boolean(state.room?.paused);
+    this.sceneClock.receive(state.room?.sceneClock||{elapsedMs:Math.max(0,(state.turnNo||1)-1)*15000,sampledAt:state.turnNo||0,running:false},performance.now());if(this.environmentPaused)this.environment.update(0,true);
     const sceneChanged=Boolean(state.homeDemo)!==Boolean(this.homeShowcase);
     if(sceneChanged){
       this.stopAmbient();this.ambientEnabled=false;this.ambientInterrupted=false;this.clearDemo();
-      this.homeShowcase=Boolean(state.homeDemo);this.homeTime=0;this.homeAngle=.25;this.viewMode='overview';
+      this.homeShowcase=Boolean(state.homeDemo);this.homeTime=0;this.homeSceneElapsed=0;this.homeSceneLast=0;this.sceneOverride=false;this.homeAngle=.25;this.viewMode='overview';
       this.homeFitPoints=this.homeShowcase?showcaseEnvelope(b):null;
       this.pieceKey=null;
     }
@@ -464,7 +488,7 @@ export class Board {
       this.landKey=key;this.pieceKey=this.markerKey=null;this.models.releaseLayer(this.land);clearLayer(this.land);this.metrics.landBuilds++;changed=true;
       this.boardScale=b.tiles.length>19?Math.max(...b.tiles.map(t=>Math.hypot(t.x,t.z)+1.5))/5.8:1;
       this.seaBase.scale.set(5.8*this.boardScale,.14,5.8*this.boardScale);
-      this.environment.setRadius(this.boardScale);
+      this.environment.setRadius(this.boardScale);this.nightLights.setBoard(b);
       const loadedTiles=this.models.terrain(b,this.land),loadedPorts=this.models.ports(b,this.land);
       buildTerrain(b,this.assets,this.land,{loadedTiles,loadedPorts});
       this.renderer.domElement.dataset.models=JSON.stringify({version:9,tiles:loadedTiles.size,total:b.tiles.length,ports:loadedPorts});
@@ -529,12 +553,13 @@ export class Board {
       this.renderer.domElement.dataset.siteShape=mode||'';
     }
     this.targets=[...this.tiles,...this.portTargets];
+    this.syncScene();
     if(changed){this.renderer.shadowMap.needsUpdate=true;this.invalidate();}
   }
   dispose() {
-    if(this.disposed)return;this.disposed=true;this.onProjectionChange=null;this.stopFrame();this.stopAmbient();this.clearDemo();this.events.abort();this.observer.disconnect();this.intersection.disconnect();this.controls.dispose();
+    if(this.disposed)return;this.disposed=true;this.onProjectionChange=null;this.stopFrame();this.stopAmbient();this.stopScene();this.clearDemo();this.events.abort();this.observer.disconnect();this.intersection.disconnect();this.controls.dispose();
     this.loadGeneration=(this.loadGeneration||0)+1;this.models.dispose();
     for(const group of [this.land,this.pieces,this.markers,this.selectionLayer,this.feedbackLayer])clearLayer(group);
-    this.environment.dispose();this.scene.clear();this.assets.dispose();this.renderer.dispose();this.renderer.forceContextLoss();this.renderer.domElement.remove();
+    this.nightLights.dispose();this.environment.dispose();this.scene.clear();this.assets.dispose();this.renderer.dispose();this.renderer.forceContextLoss();this.renderer.domElement.remove();
   }
 }

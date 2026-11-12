@@ -95,3 +95,33 @@ test('one explicit day/dusk/night state drives lighting, sky and sea with finite
   assert.throws(()=>environment.setEnvironment({phase:'rain'}),RangeError);
   environment.dispose();environment.dispose();assert.equal(seaMesh.material,previous);assert.equal(scene.children.filter(o=>o.isLight).length,0);seaMesh.geometry.dispose();previous.dispose();
 });
+
+test('all four real building GLBs expose warm windows without recolouring owners',async()=>{
+  const models=new BoardModels({Loader:LocalLoader}),board=createBoard(randomFor(7));await models.prepare(board);
+  models.setNight(.75);
+  for(const name of ['village_timber','village_dormer','city_citadel','city_clockhall']){
+    const source=models.ready.get(ARCHITECTURE_URL+name+'.glb');let windows=0,patched=0;
+    source.traverse(mesh=>{
+      if(!mesh.isMesh)return;const colors=mesh.geometry.attributes.color;
+      for(let i=0;i<(colors?.count||0);i++)if(Math.abs(colors.getX(i)-.019)<.004&&Math.abs(colors.getY(i)-.058)<.004&&Math.abs(colors.getZ(i)-.068)<.004)windows++;
+      if(mesh.material.name==='OwnerTint')assert.notEqual(mesh.material.customProgramCacheKey(),'catan-warm-windows-v1');
+      else if(mesh.material.customProgramCacheKey()==='catan-warm-windows-v1'){
+        patched++;const shader={uniforms:{},fragmentShader:'#include <emissivemap_fragment>'};mesh.material.onBeforeCompile(shader);
+        assert.equal(shader.uniforms.uWindowNight,models.nightUniform);assert.match(shader.fragmentShader,/totalEmissiveRadiance/);
+      }
+    });
+    assert.ok(windows>0,`${name} has no window mask vertices`);assert.ok(patched>0);
+  }
+  await models.dispose();assert.equal(models.windowMaterials.size,0);
+});
+
+test('approved relief stays within the measured 19/30-hex geometry and download budget',()=>{
+  const assets=new Map(manifest.assets.map(a=>[a.id,a]));
+  for(const expanded of [false,true])for(let seed=1;seed<=100;seed++){
+    const board=createBoard(randomFor(seed),expanded?{playerExpansion:'five-six-2025'}:{});
+    const groups=groupTerrainVariants(board.tiles,{seed:deriveTerrainAppearanceSeed(board)});
+    let triangles=0,bytes=0,parts=0;
+    for(const group of groups){const asset=assets.get(group.url.split('/').at(-1).replace('.glb',''));triangles+=asset.triangles*group.instances.length;bytes+=asset.bytes;parts+=asset.primitives;}
+    assert.ok(triangles<=(expanded?450000:285000));assert.ok(bytes<=13100000);assert.ok(parts<=34);
+  }
+});

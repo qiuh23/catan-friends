@@ -1,0 +1,6146 @@
+{
+  "scope": "Finite geometry diagnostic on actual reimported production GLBs, including ground and decoration. Horizontal token plane z=.34155, 17 assets x 6 rotations x 3 inclinations. No adjacent tiles/buildings/shadows.",
+  "important_runtime_difference": "Current game numbers and dots use billboard SpriteMaterial with depthTest:false, y=.43. These horizontal physical-token geometry diagnostics are NOT a claim that the actual always-on-top game sprite becomes occluded. Browser/phone screenshots remain untested.",
+  "summary": {
+    "runtime_home_polar_0_78": {
+      "cases": 102,
+      "cases_with_core_occlusion": 3,
+      "max_core_fraction": 0.7792,
+      "max_dot_fraction": 0.8
+    },
+    "approved_board": {
+      "cases": 102,
+      "cases_with_core_occlusion": 5,
+      "max_core_fraction": 1.0,
+      "max_dot_fraction": 1.0
+    },
+    "low_orbit_limit": {
+      "cases": 102,
+      "cases_with_core_occlusion": 12,
+      "max_core_fraction": 1.0,
+      "max_dot_fraction": 1.0
+    }
+  },
+  "cases": [
+    {
+      "asset": "catan_terrain_forest_01",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 0,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_forest_01",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 1,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_forest_01",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 2,
+      "number_core": {
+        "samples": 317,
+        "occluded": 159,
+        "fraction": 0.5016
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 114,
+        "fraction": 0.3596
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_forest_01",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 3,
+      "number_core": {
+        "samples": 317,
+        "occluded": 43,
+        "fraction": 0.1356
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 79,
+        "fraction": 0.2492
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 10,
+        "fraction": 0.4
+      }
+    },
+    {
+      "asset": "catan_terrain_forest_01",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 4,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_forest_01",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 5,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_forest_01",
+      "profile": "approved_board",
+      "rotation_step": 0,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_forest_01",
+      "profile": "approved_board",
+      "rotation_step": 1,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_forest_01",
+      "profile": "approved_board",
+      "rotation_step": 2,
+      "number_core": {
+        "samples": 317,
+        "occluded": 153,
+        "fraction": 0.4826
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 155,
+        "fraction": 0.489
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_forest_01",
+      "profile": "approved_board",
+      "rotation_step": 3,
+      "number_core": {
+        "samples": 317,
+        "occluded": 32,
+        "fraction": 0.1009
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 98,
+        "fraction": 0.3091
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 15,
+        "fraction": 0.6
+      }
+    },
+    {
+      "asset": "catan_terrain_forest_01",
+      "profile": "approved_board",
+      "rotation_step": 4,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_forest_01",
+      "profile": "approved_board",
+      "rotation_step": 5,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_forest_01",
+      "profile": "low_orbit_limit",
+      "rotation_step": 0,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_forest_01",
+      "profile": "low_orbit_limit",
+      "rotation_step": 1,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_forest_01",
+      "profile": "low_orbit_limit",
+      "rotation_step": 2,
+      "number_core": {
+        "samples": 317,
+        "occluded": 57,
+        "fraction": 0.1798
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 111,
+        "fraction": 0.3502
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 19,
+        "fraction": 0.76
+      }
+    },
+    {
+      "asset": "catan_terrain_forest_01",
+      "profile": "low_orbit_limit",
+      "rotation_step": 3,
+      "number_core": {
+        "samples": 317,
+        "occluded": 108,
+        "fraction": 0.3407
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 86,
+        "fraction": 0.2713
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_forest_01",
+      "profile": "low_orbit_limit",
+      "rotation_step": 4,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_forest_01",
+      "profile": "low_orbit_limit",
+      "rotation_step": 5,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_forest_02",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 0,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_forest_02",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 1,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_forest_02",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 2,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_forest_02",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 3,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_forest_02",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 4,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 53,
+        "fraction": 0.1672
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_forest_02",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 5,
+      "number_core": {
+        "samples": 317,
+        "occluded": 247,
+        "fraction": 0.7792
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 175,
+        "fraction": 0.5521
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 20,
+        "fraction": 0.8
+      }
+    },
+    {
+      "asset": "catan_terrain_forest_02",
+      "profile": "approved_board",
+      "rotation_step": 0,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_forest_02",
+      "profile": "approved_board",
+      "rotation_step": 1,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_forest_02",
+      "profile": "approved_board",
+      "rotation_step": 2,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_forest_02",
+      "profile": "approved_board",
+      "rotation_step": 3,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_forest_02",
+      "profile": "approved_board",
+      "rotation_step": 4,
+      "number_core": {
+        "samples": 317,
+        "occluded": 28,
+        "fraction": 0.0883
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 72,
+        "fraction": 0.2271
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_forest_02",
+      "profile": "approved_board",
+      "rotation_step": 5,
+      "number_core": {
+        "samples": 317,
+        "occluded": 317,
+        "fraction": 1.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 208,
+        "fraction": 0.6562
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 25,
+        "fraction": 1.0
+      }
+    },
+    {
+      "asset": "catan_terrain_forest_02",
+      "profile": "low_orbit_limit",
+      "rotation_step": 0,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_forest_02",
+      "profile": "low_orbit_limit",
+      "rotation_step": 1,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_forest_02",
+      "profile": "low_orbit_limit",
+      "rotation_step": 2,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_forest_02",
+      "profile": "low_orbit_limit",
+      "rotation_step": 3,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_forest_02",
+      "profile": "low_orbit_limit",
+      "rotation_step": 4,
+      "number_core": {
+        "samples": 317,
+        "occluded": 268,
+        "fraction": 0.8454
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 122,
+        "fraction": 0.3849
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 25,
+        "fraction": 1.0
+      }
+    },
+    {
+      "asset": "catan_terrain_forest_02",
+      "profile": "low_orbit_limit",
+      "rotation_step": 5,
+      "number_core": {
+        "samples": 317,
+        "occluded": 61,
+        "fraction": 0.1924
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 62,
+        "fraction": 0.1956
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_forest_03",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 0,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_forest_03",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 1,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_forest_03",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 2,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_forest_03",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 3,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_forest_03",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 4,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 2,
+        "fraction": 0.0063
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_forest_03",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 5,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_forest_03",
+      "profile": "approved_board",
+      "rotation_step": 0,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_forest_03",
+      "profile": "approved_board",
+      "rotation_step": 1,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_forest_03",
+      "profile": "approved_board",
+      "rotation_step": 2,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 6,
+        "fraction": 0.0189
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_forest_03",
+      "profile": "approved_board",
+      "rotation_step": 3,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_forest_03",
+      "profile": "approved_board",
+      "rotation_step": 4,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 13,
+        "fraction": 0.041
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_forest_03",
+      "profile": "approved_board",
+      "rotation_step": 5,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_forest_03",
+      "profile": "low_orbit_limit",
+      "rotation_step": 0,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_forest_03",
+      "profile": "low_orbit_limit",
+      "rotation_step": 1,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_forest_03",
+      "profile": "low_orbit_limit",
+      "rotation_step": 2,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 102,
+        "fraction": 0.3218
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 3,
+        "fraction": 0.12
+      }
+    },
+    {
+      "asset": "catan_terrain_forest_03",
+      "profile": "low_orbit_limit",
+      "rotation_step": 3,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 1,
+        "fraction": 0.0032
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_forest_03",
+      "profile": "low_orbit_limit",
+      "rotation_step": 4,
+      "number_core": {
+        "samples": 317,
+        "occluded": 265,
+        "fraction": 0.836
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 120,
+        "fraction": 0.3785
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 10,
+        "fraction": 0.4
+      }
+    },
+    {
+      "asset": "catan_terrain_forest_03",
+      "profile": "low_orbit_limit",
+      "rotation_step": 5,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_wheat_01",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 0,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_wheat_01",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 1,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_wheat_01",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 2,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_wheat_01",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 3,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_wheat_01",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 4,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_wheat_01",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 5,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_wheat_01",
+      "profile": "approved_board",
+      "rotation_step": 0,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_wheat_01",
+      "profile": "approved_board",
+      "rotation_step": 1,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_wheat_01",
+      "profile": "approved_board",
+      "rotation_step": 2,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_wheat_01",
+      "profile": "approved_board",
+      "rotation_step": 3,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_wheat_01",
+      "profile": "approved_board",
+      "rotation_step": 4,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_wheat_01",
+      "profile": "approved_board",
+      "rotation_step": 5,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_wheat_01",
+      "profile": "low_orbit_limit",
+      "rotation_step": 0,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_wheat_01",
+      "profile": "low_orbit_limit",
+      "rotation_step": 1,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_wheat_01",
+      "profile": "low_orbit_limit",
+      "rotation_step": 2,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 16,
+        "fraction": 0.0505
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_wheat_01",
+      "profile": "low_orbit_limit",
+      "rotation_step": 3,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_wheat_01",
+      "profile": "low_orbit_limit",
+      "rotation_step": 4,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 1,
+        "fraction": 0.0032
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_wheat_01",
+      "profile": "low_orbit_limit",
+      "rotation_step": 5,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_wheat_02",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 0,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_wheat_02",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 1,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_wheat_02",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 2,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_wheat_02",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 3,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_wheat_02",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 4,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_wheat_02",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 5,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_wheat_02",
+      "profile": "approved_board",
+      "rotation_step": 0,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_wheat_02",
+      "profile": "approved_board",
+      "rotation_step": 1,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_wheat_02",
+      "profile": "approved_board",
+      "rotation_step": 2,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_wheat_02",
+      "profile": "approved_board",
+      "rotation_step": 3,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_wheat_02",
+      "profile": "approved_board",
+      "rotation_step": 4,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_wheat_02",
+      "profile": "approved_board",
+      "rotation_step": 5,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_wheat_02",
+      "profile": "low_orbit_limit",
+      "rotation_step": 0,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_wheat_02",
+      "profile": "low_orbit_limit",
+      "rotation_step": 1,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_wheat_02",
+      "profile": "low_orbit_limit",
+      "rotation_step": 2,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 12,
+        "fraction": 0.0379
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_wheat_02",
+      "profile": "low_orbit_limit",
+      "rotation_step": 3,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 1,
+        "fraction": 0.0032
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_wheat_02",
+      "profile": "low_orbit_limit",
+      "rotation_step": 4,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 1,
+        "fraction": 0.0032
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_wheat_02",
+      "profile": "low_orbit_limit",
+      "rotation_step": 5,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_wheat_03",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 0,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_wheat_03",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 1,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_wheat_03",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 2,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_wheat_03",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 3,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_wheat_03",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 4,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_wheat_03",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 5,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_wheat_03",
+      "profile": "approved_board",
+      "rotation_step": 0,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_wheat_03",
+      "profile": "approved_board",
+      "rotation_step": 1,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_wheat_03",
+      "profile": "approved_board",
+      "rotation_step": 2,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_wheat_03",
+      "profile": "approved_board",
+      "rotation_step": 3,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_wheat_03",
+      "profile": "approved_board",
+      "rotation_step": 4,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_wheat_03",
+      "profile": "approved_board",
+      "rotation_step": 5,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_wheat_03",
+      "profile": "low_orbit_limit",
+      "rotation_step": 0,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_wheat_03",
+      "profile": "low_orbit_limit",
+      "rotation_step": 1,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_wheat_03",
+      "profile": "low_orbit_limit",
+      "rotation_step": 2,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 16,
+        "fraction": 0.0505
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_wheat_03",
+      "profile": "low_orbit_limit",
+      "rotation_step": 3,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_wheat_03",
+      "profile": "low_orbit_limit",
+      "rotation_step": 4,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_wheat_03",
+      "profile": "low_orbit_limit",
+      "rotation_step": 5,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_sheep_01",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 0,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_sheep_01",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 1,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_sheep_01",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 2,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_sheep_01",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 3,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_sheep_01",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 4,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_sheep_01",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 5,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_sheep_01",
+      "profile": "approved_board",
+      "rotation_step": 0,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_sheep_01",
+      "profile": "approved_board",
+      "rotation_step": 1,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_sheep_01",
+      "profile": "approved_board",
+      "rotation_step": 2,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_sheep_01",
+      "profile": "approved_board",
+      "rotation_step": 3,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_sheep_01",
+      "profile": "approved_board",
+      "rotation_step": 4,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_sheep_01",
+      "profile": "approved_board",
+      "rotation_step": 5,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_sheep_01",
+      "profile": "low_orbit_limit",
+      "rotation_step": 0,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_sheep_01",
+      "profile": "low_orbit_limit",
+      "rotation_step": 1,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_sheep_01",
+      "profile": "low_orbit_limit",
+      "rotation_step": 2,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_sheep_01",
+      "profile": "low_orbit_limit",
+      "rotation_step": 3,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_sheep_01",
+      "profile": "low_orbit_limit",
+      "rotation_step": 4,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_sheep_01",
+      "profile": "low_orbit_limit",
+      "rotation_step": 5,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_sheep_02",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 0,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_sheep_02",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 1,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_sheep_02",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 2,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_sheep_02",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 3,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_sheep_02",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 4,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_sheep_02",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 5,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_sheep_02",
+      "profile": "approved_board",
+      "rotation_step": 0,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_sheep_02",
+      "profile": "approved_board",
+      "rotation_step": 1,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_sheep_02",
+      "profile": "approved_board",
+      "rotation_step": 2,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_sheep_02",
+      "profile": "approved_board",
+      "rotation_step": 3,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_sheep_02",
+      "profile": "approved_board",
+      "rotation_step": 4,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_sheep_02",
+      "profile": "approved_board",
+      "rotation_step": 5,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_sheep_02",
+      "profile": "low_orbit_limit",
+      "rotation_step": 0,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_sheep_02",
+      "profile": "low_orbit_limit",
+      "rotation_step": 1,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_sheep_02",
+      "profile": "low_orbit_limit",
+      "rotation_step": 2,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_sheep_02",
+      "profile": "low_orbit_limit",
+      "rotation_step": 3,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_sheep_02",
+      "profile": "low_orbit_limit",
+      "rotation_step": 4,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_sheep_02",
+      "profile": "low_orbit_limit",
+      "rotation_step": 5,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_sheep_03",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 0,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_sheep_03",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 1,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_sheep_03",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 2,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_sheep_03",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 3,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_sheep_03",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 4,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_sheep_03",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 5,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_sheep_03",
+      "profile": "approved_board",
+      "rotation_step": 0,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_sheep_03",
+      "profile": "approved_board",
+      "rotation_step": 1,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_sheep_03",
+      "profile": "approved_board",
+      "rotation_step": 2,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_sheep_03",
+      "profile": "approved_board",
+      "rotation_step": 3,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_sheep_03",
+      "profile": "approved_board",
+      "rotation_step": 4,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_sheep_03",
+      "profile": "approved_board",
+      "rotation_step": 5,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_sheep_03",
+      "profile": "low_orbit_limit",
+      "rotation_step": 0,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_sheep_03",
+      "profile": "low_orbit_limit",
+      "rotation_step": 1,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_sheep_03",
+      "profile": "low_orbit_limit",
+      "rotation_step": 2,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 14,
+        "fraction": 0.0442
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_sheep_03",
+      "profile": "low_orbit_limit",
+      "rotation_step": 3,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_sheep_03",
+      "profile": "low_orbit_limit",
+      "rotation_step": 4,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_sheep_03",
+      "profile": "low_orbit_limit",
+      "rotation_step": 5,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_ore_01",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 0,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_ore_01",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 1,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_ore_01",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 2,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 15,
+        "fraction": 0.0473
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_ore_01",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 3,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 2,
+        "fraction": 0.0063
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_ore_01",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 4,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_ore_01",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 5,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_ore_01",
+      "profile": "approved_board",
+      "rotation_step": 0,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_ore_01",
+      "profile": "approved_board",
+      "rotation_step": 1,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_ore_01",
+      "profile": "approved_board",
+      "rotation_step": 2,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 42,
+        "fraction": 0.1325
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_ore_01",
+      "profile": "approved_board",
+      "rotation_step": 3,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 18,
+        "fraction": 0.0568
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_ore_01",
+      "profile": "approved_board",
+      "rotation_step": 4,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_ore_01",
+      "profile": "approved_board",
+      "rotation_step": 5,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_ore_01",
+      "profile": "low_orbit_limit",
+      "rotation_step": 0,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_ore_01",
+      "profile": "low_orbit_limit",
+      "rotation_step": 1,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_ore_01",
+      "profile": "low_orbit_limit",
+      "rotation_step": 2,
+      "number_core": {
+        "samples": 317,
+        "occluded": 220,
+        "fraction": 0.694
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 175,
+        "fraction": 0.5521
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_ore_01",
+      "profile": "low_orbit_limit",
+      "rotation_step": 3,
+      "number_core": {
+        "samples": 317,
+        "occluded": 78,
+        "fraction": 0.2461
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 163,
+        "fraction": 0.5142
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 13,
+        "fraction": 0.52
+      }
+    },
+    {
+      "asset": "catan_terrain_ore_01",
+      "profile": "low_orbit_limit",
+      "rotation_step": 4,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_ore_01",
+      "profile": "low_orbit_limit",
+      "rotation_step": 5,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_ore_02",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 0,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_ore_02",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 1,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_ore_02",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 2,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_ore_02",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 3,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_ore_02",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 4,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_ore_02",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 5,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 47,
+        "fraction": 0.1483
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_ore_02",
+      "profile": "approved_board",
+      "rotation_step": 0,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_ore_02",
+      "profile": "approved_board",
+      "rotation_step": 1,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_ore_02",
+      "profile": "approved_board",
+      "rotation_step": 2,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_ore_02",
+      "profile": "approved_board",
+      "rotation_step": 3,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_ore_02",
+      "profile": "approved_board",
+      "rotation_step": 4,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_ore_02",
+      "profile": "approved_board",
+      "rotation_step": 5,
+      "number_core": {
+        "samples": 317,
+        "occluded": 89,
+        "fraction": 0.2808
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 99,
+        "fraction": 0.3123
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_ore_02",
+      "profile": "low_orbit_limit",
+      "rotation_step": 0,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_ore_02",
+      "profile": "low_orbit_limit",
+      "rotation_step": 1,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_ore_02",
+      "profile": "low_orbit_limit",
+      "rotation_step": 2,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_ore_02",
+      "profile": "low_orbit_limit",
+      "rotation_step": 3,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_ore_02",
+      "profile": "low_orbit_limit",
+      "rotation_step": 4,
+      "number_core": {
+        "samples": 317,
+        "occluded": 59,
+        "fraction": 0.1861
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 92,
+        "fraction": 0.2902
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_ore_02",
+      "profile": "low_orbit_limit",
+      "rotation_step": 5,
+      "number_core": {
+        "samples": 317,
+        "occluded": 317,
+        "fraction": 1.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 299,
+        "fraction": 0.9432
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 25,
+        "fraction": 1.0
+      }
+    },
+    {
+      "asset": "catan_terrain_ore_03",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 0,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_ore_03",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 1,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_ore_03",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 2,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 26,
+        "fraction": 0.082
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_ore_03",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 3,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_ore_03",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 4,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_ore_03",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 5,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_ore_03",
+      "profile": "approved_board",
+      "rotation_step": 0,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_ore_03",
+      "profile": "approved_board",
+      "rotation_step": 1,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 4,
+        "fraction": 0.0126
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_ore_03",
+      "profile": "approved_board",
+      "rotation_step": 2,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 69,
+        "fraction": 0.2177
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 6,
+        "fraction": 0.24
+      }
+    },
+    {
+      "asset": "catan_terrain_ore_03",
+      "profile": "approved_board",
+      "rotation_step": 3,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_ore_03",
+      "profile": "approved_board",
+      "rotation_step": 4,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_ore_03",
+      "profile": "approved_board",
+      "rotation_step": 5,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_ore_03",
+      "profile": "low_orbit_limit",
+      "rotation_step": 0,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_ore_03",
+      "profile": "low_orbit_limit",
+      "rotation_step": 1,
+      "number_core": {
+        "samples": 317,
+        "occluded": 6,
+        "fraction": 0.0189
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 87,
+        "fraction": 0.2744
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_ore_03",
+      "profile": "low_orbit_limit",
+      "rotation_step": 2,
+      "number_core": {
+        "samples": 317,
+        "occluded": 317,
+        "fraction": 1.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 276,
+        "fraction": 0.8707
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 25,
+        "fraction": 1.0
+      }
+    },
+    {
+      "asset": "catan_terrain_ore_03",
+      "profile": "low_orbit_limit",
+      "rotation_step": 3,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_ore_03",
+      "profile": "low_orbit_limit",
+      "rotation_step": 4,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_ore_03",
+      "profile": "low_orbit_limit",
+      "rotation_step": 5,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_clay_01",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 0,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_clay_01",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 1,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_clay_01",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 2,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_clay_01",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 3,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_clay_01",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 4,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_clay_01",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 5,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_clay_01",
+      "profile": "approved_board",
+      "rotation_step": 0,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_clay_01",
+      "profile": "approved_board",
+      "rotation_step": 1,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_clay_01",
+      "profile": "approved_board",
+      "rotation_step": 2,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_clay_01",
+      "profile": "approved_board",
+      "rotation_step": 3,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_clay_01",
+      "profile": "approved_board",
+      "rotation_step": 4,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_clay_01",
+      "profile": "approved_board",
+      "rotation_step": 5,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_clay_01",
+      "profile": "low_orbit_limit",
+      "rotation_step": 0,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_clay_01",
+      "profile": "low_orbit_limit",
+      "rotation_step": 1,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_clay_01",
+      "profile": "low_orbit_limit",
+      "rotation_step": 2,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 46,
+        "fraction": 0.1451
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_clay_01",
+      "profile": "low_orbit_limit",
+      "rotation_step": 3,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_clay_01",
+      "profile": "low_orbit_limit",
+      "rotation_step": 4,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_clay_01",
+      "profile": "low_orbit_limit",
+      "rotation_step": 5,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_clay_02",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 0,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_clay_02",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 1,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_clay_02",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 2,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_clay_02",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 3,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_clay_02",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 4,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_clay_02",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 5,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_clay_02",
+      "profile": "approved_board",
+      "rotation_step": 0,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_clay_02",
+      "profile": "approved_board",
+      "rotation_step": 1,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_clay_02",
+      "profile": "approved_board",
+      "rotation_step": 2,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_clay_02",
+      "profile": "approved_board",
+      "rotation_step": 3,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_clay_02",
+      "profile": "approved_board",
+      "rotation_step": 4,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_clay_02",
+      "profile": "approved_board",
+      "rotation_step": 5,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_clay_02",
+      "profile": "low_orbit_limit",
+      "rotation_step": 0,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 7,
+        "fraction": 0.0221
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_clay_02",
+      "profile": "low_orbit_limit",
+      "rotation_step": 1,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_clay_02",
+      "profile": "low_orbit_limit",
+      "rotation_step": 2,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_clay_02",
+      "profile": "low_orbit_limit",
+      "rotation_step": 3,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_clay_02",
+      "profile": "low_orbit_limit",
+      "rotation_step": 4,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_clay_02",
+      "profile": "low_orbit_limit",
+      "rotation_step": 5,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 70,
+        "fraction": 0.2208
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_clay_03",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 0,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_clay_03",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 1,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_clay_03",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 2,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_clay_03",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 3,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_clay_03",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 4,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_clay_03",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 5,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_clay_03",
+      "profile": "approved_board",
+      "rotation_step": 0,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_clay_03",
+      "profile": "approved_board",
+      "rotation_step": 1,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_clay_03",
+      "profile": "approved_board",
+      "rotation_step": 2,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_clay_03",
+      "profile": "approved_board",
+      "rotation_step": 3,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_clay_03",
+      "profile": "approved_board",
+      "rotation_step": 4,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_clay_03",
+      "profile": "approved_board",
+      "rotation_step": 5,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_clay_03",
+      "profile": "low_orbit_limit",
+      "rotation_step": 0,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_clay_03",
+      "profile": "low_orbit_limit",
+      "rotation_step": 1,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_clay_03",
+      "profile": "low_orbit_limit",
+      "rotation_step": 2,
+      "number_core": {
+        "samples": 317,
+        "occluded": 6,
+        "fraction": 0.0189
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 85,
+        "fraction": 0.2681
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 11,
+        "fraction": 0.44
+      }
+    },
+    {
+      "asset": "catan_terrain_clay_03",
+      "profile": "low_orbit_limit",
+      "rotation_step": 3,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_clay_03",
+      "profile": "low_orbit_limit",
+      "rotation_step": 4,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_clay_03",
+      "profile": "low_orbit_limit",
+      "rotation_step": 5,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_desert_01",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 0,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_desert_01",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 1,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_desert_01",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 2,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_desert_01",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 3,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_desert_01",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 4,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_desert_01",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 5,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_desert_01",
+      "profile": "approved_board",
+      "rotation_step": 0,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_desert_01",
+      "profile": "approved_board",
+      "rotation_step": 1,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_desert_01",
+      "profile": "approved_board",
+      "rotation_step": 2,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_desert_01",
+      "profile": "approved_board",
+      "rotation_step": 3,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_desert_01",
+      "profile": "approved_board",
+      "rotation_step": 4,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_desert_01",
+      "profile": "approved_board",
+      "rotation_step": 5,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_desert_01",
+      "profile": "low_orbit_limit",
+      "rotation_step": 0,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_desert_01",
+      "profile": "low_orbit_limit",
+      "rotation_step": 1,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_desert_01",
+      "profile": "low_orbit_limit",
+      "rotation_step": 2,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_desert_01",
+      "profile": "low_orbit_limit",
+      "rotation_step": 3,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_desert_01",
+      "profile": "low_orbit_limit",
+      "rotation_step": 4,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_desert_01",
+      "profile": "low_orbit_limit",
+      "rotation_step": 5,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_desert_02",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 0,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_desert_02",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 1,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_desert_02",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 2,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_desert_02",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 3,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_desert_02",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 4,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_desert_02",
+      "profile": "runtime_home_polar_0_78",
+      "rotation_step": 5,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_desert_02",
+      "profile": "approved_board",
+      "rotation_step": 0,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_desert_02",
+      "profile": "approved_board",
+      "rotation_step": 1,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_desert_02",
+      "profile": "approved_board",
+      "rotation_step": 2,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_desert_02",
+      "profile": "approved_board",
+      "rotation_step": 3,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_desert_02",
+      "profile": "approved_board",
+      "rotation_step": 4,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_desert_02",
+      "profile": "approved_board",
+      "rotation_step": 5,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_desert_02",
+      "profile": "low_orbit_limit",
+      "rotation_step": 0,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_desert_02",
+      "profile": "low_orbit_limit",
+      "rotation_step": 1,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_desert_02",
+      "profile": "low_orbit_limit",
+      "rotation_step": 2,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 11,
+        "fraction": 0.0347
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_desert_02",
+      "profile": "low_orbit_limit",
+      "rotation_step": 3,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_desert_02",
+      "profile": "low_orbit_limit",
+      "rotation_step": 4,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    },
+    {
+      "asset": "catan_terrain_desert_02",
+      "profile": "low_orbit_limit",
+      "rotation_step": 5,
+      "number_core": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "disc": {
+        "samples": 317,
+        "occluded": 0,
+        "fraction": 0.0
+      },
+      "probability_dots": {
+        "samples": 25,
+        "occluded": 0,
+        "fraction": 0.0
+      }
+    }
+  ]
+}

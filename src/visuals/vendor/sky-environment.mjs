@@ -58,6 +58,9 @@ uniform float uStarMode;
 uniform float uStarIntensity;
 uniform vec3 uStarRadiusMin;
 uniform vec3 uStarRadiusMax;
+uniform float uOrbit;
+uniform vec3 uOrbitSun;
+uniform vec3 uOrbitMoon;
 const float PI = 3.141592653589793;
 // Rayleigh/Henyey-Greenstein phase and optical lengths follow Three Sky's
 // atmospheric model; reduced single scattering, not a complete Preetham clone.
@@ -108,7 +111,7 @@ void main() {
   // Evaluate derivatives before nonuniform branches. Real small angular discs
   // remain angular discs; no minimum pixel radius or visibility inflation.
   float aa=max(fwidth(chord),.00001);
-  float disc=1.-smoothstep(radius-aa,radius+aa,chord);
+  float disc=(1.-smoothstep(radius-aa,radius+aa,chord))*(1.-uOrbit);
   float aboveHorizon=smoothstep(-.004,.006,ray.y);
   vec3 sky,viewTransmittance=vec3(1.);
   if (uNight < .999) {
@@ -206,6 +209,19 @@ void main() {
       sky=mix(sky,lunar,disc*aboveHorizon*moonMix);
     }
   }
+  // Intentional scenic celestial orbit, like the diorama stars. It remains
+  // behind geometry and never follows/obscures interactive board markers.
+  if (uOrbit > .5) {
+    vec2 solarUV=vec2((vSkyNdc.x-uOrbitSun.x)*uAspect,vSkyNdc.y-uOrbitSun.y);
+    vec2 lunarUV=vec2((vSkyNdc.x-uOrbitMoon.x)*uAspect,vSkyNdc.y-uOrbitMoon.y);
+    float sd=length(solarUV),md=length(lunarUV);
+    float sa=max(fwidth(sd),.0002),ma=max(fwidth(md),.0002);
+    float solarDisc=(1.-smoothstep(.035-sa,.035+sa,sd))*uOrbitSun.z;
+    float lunarDisc=(1.-smoothstep(.040-ma,.040+ma,md))*uOrbitMoon.z;
+    sky+=vec3(1.,.77,.46)*solarDisc*5.;
+    float maria=noise21(lunarUV*135.+11.)*.18+noise21(lunarUV*270.+27.)*.08;
+    sky=mix(sky,vec3(.74,.84,1.)*(.9-maria),lunarDisc);
+  }
   gl_FragColor=vec4(max(sky,vec3(0.)),uOpacity);
   #include <tonemapping_fragment>
   #include <colorspace_fragment>
@@ -257,6 +273,7 @@ export function createSkyEnvironment({
   for (const mode of Object.keys(PALETTE)) directionMap[mode] = asDirection(resolvedDirections[mode]);
   const baseDirections=Object.fromEntries(Object.entries(directionMap).map(([key,value])=>[key,value.clone()]));
   const uniforms = {
+    uOrbit:{value:0},uOrbitSun:{value:new THREE.Vector3()},uOrbitMoon:{value:new THREE.Vector3()},
     uInverseProjection:{value:new THREE.Matrix4()}, uCameraWorld:{value:new THREE.Matrix4()},
     uRight:{value:new THREE.Vector3()}, uUp:{value:new THREE.Vector3()}, uForward:{value:new THREE.Vector3()},
     uSourceDirection:{value:new THREE.Vector3()},
