@@ -60,6 +60,7 @@ test('building owner tint is per instance and never mutates cached source materi
   const layer=new THREE.Group(),vertices=[{id:0,x:0,z:0,owner:'a',level:1},{id:2,x:1,z:0,owner:'b',level:1}];
   // Force both instances into the same selected model to verify instance colours.
   while(buildingAsset(vertices[1])!==buildingAsset(vertices[0]))vertices[1].id++;
+  await models.load(ARCHITECTURE_URL+buildingAsset(vertices[0])+'.glb');
   const source=models.ready.get(ARCHITECTURE_URL+buildingAsset(vertices[0])+'.glb'),owner=[];source.traverse(m=>{if(m.material?.name==='OwnerTint')owner.push([m.material,m.material.color.clone()]);});
   models.buildings(vertices,id=>id==='a'?'#ff0000':'#0000ff',layer);
   const tinted=layer.children.find(m=>m.material.name==='OwnerTint');assert.ok(tinted);assert.equal(tinted.count,2);
@@ -98,6 +99,7 @@ test('one explicit day/dusk/night state drives lighting, sky and sea with finite
 
 test('all four real building GLBs expose warm windows without recolouring owners',async()=>{
   const models=new BoardModels({Loader:LocalLoader}),board=createBoard(randomFor(7));await models.prepare(board);
+  await Promise.all(['village_timber','village_dormer','city_citadel','city_clockhall'].map(name=>models.load(ARCHITECTURE_URL+name+'.glb')));
   models.setNight(.75);
   for(const name of ['village_timber','village_dormer','city_citadel','city_clockhall']){
     const source=models.ready.get(ARCHITECTURE_URL+name+'.glb');let windows=0,patched=0;

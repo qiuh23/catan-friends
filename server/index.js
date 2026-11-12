@@ -1,5 +1,6 @@
 import { siteEdition as resolveSiteEdition, rejectCommunication } from '../shared/site-policy.js';
 import http from 'node:http';
+import {staticAssets} from './static-assets.js';
 import { readFile, writeFile, mkdir, readdir } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -13,12 +14,12 @@ import { ModerationStore } from './moderation-store.js';
 import { renameWithRetry } from './file-store.js';
 
 const root=fileURLToPath(new URL('../',import.meta.url));
-const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.svg':'image/svg+xml','.png':'image/png','.woff2':'font/woff2'};
 export async function createServer({port=Number(process.env.PORT)||3005,host=process.env.HOST||'0.0.0.0',dataDir=process.env.DATA_DIR||path.join(root,'.data'),staticDir=process.env.STATIC_DIR||path.join(root,'dist'),backendId=process.env.BACKEND_ID||'local',publicOrigin=process.env.PUBLIC_ORIGIN||'',trustProxy=process.env.TRUST_PROXY||'',siteEdition=process.env.SITE_EDITION,development=false,botDelay=900,now=Date.now,security=process.env}={}) {
   if(process.env.NODE_ENV==='production'&&(!siteEdition||backendId==='local'))throw new Error('Production requires SITE_EDITION.');
   const edition=resolveSiteEdition(siteEdition,backendId);
   const config=deploymentConfig({backendId,publicOrigin,trustProxy});
   if(!development && backendId!=='local'){const assets=JSON.parse(await readFile(path.join(staticDir,'build-info.json'),'utf8'));if(assets.siteEdition!==edition)throw new Error('Frontend SITE_EDITION does not match server.');}
+  const serveStatic=development?null:await staticAssets(staticDir);
   let revision=process.env.BUILD_SHA||null;
   try {revision ||= JSON.parse(await readFile(path.join(staticDir,'build-info.json'),'utf8')).revision;}catch{}
   if(revision&&!/^[a-f0-9]{40}$/.test(revision))throw new Error('Invalid build revision.');
@@ -105,11 +106,7 @@ export async function createServer({port=Number(process.env.PORT)||3005,host=pro
         return json(res,404,{error:'接口不存在。'});
       }
       if(vite) return vite.middlewares(req,res,()=>{res.writeHead(404);res.end();});
-      const dist=path.resolve(staticDir), relative=decodeURIComponent(url.pathname);
-      let file=path.resolve(dist,`.${relative}`);
-      if(!file.startsWith(dist+path.sep) && file!==dist) {res.writeHead(403);return res.end();}
-      if(relative==='/' || !path.extname(relative)) file=path.join(dist,'index.html');
-      try {const data=await readFile(file);res.writeHead(200,{'Content-Type':mime[path.extname(file)]||'application/octet-stream','X-Content-Type-Options':'nosniff'});res.end(data);} catch {res.writeHead(404);res.end('Not found');}
+      await serveStatic(req,res,url);
     } catch(error) { json(res,error instanceof UserError?400:503,{error:publicError(error).message}); }
   });
   const wss=new WebSocketServer({noServer:true,maxPayload:8192});

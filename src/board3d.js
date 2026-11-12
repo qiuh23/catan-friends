@@ -3,7 +3,8 @@ import {createNightLights} from './visuals/night-lights.js';
 import {createRoadLights} from './visuals/road-lights.js';
 import {portGeometry} from './ports.js';
 import {createRobberHighlight} from './visuals/robber.js';
-import {BoardModels} from './visuals/board-models.js';
+import {BoardModels, TERRAIN_URL} from './visuals/board-models.js';
+import {ProgressiveTerrain} from './visuals/progressive-terrain.js';
 import {createBoardEnvironment} from './visuals/board-environment.js';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
@@ -55,6 +56,11 @@ export class Board {
     this.roadLights=createRoadLights(this.scene);
     this.land=new THREE.Group();this.pieces=new THREE.Group();this.markers=new THREE.Group();this.selectionLayer=new THREE.Group();this.feedbackLayer=new THREE.Group();
     this.scene.add(this.land,this.pieces,this.markers,this.selectionLayer,this.feedbackLayer);
+    this.terrainPresentation=new ProgressiveTerrain(this.models,this.assets,this.land);
+    this.modelStatus=document.createElement('div');this.modelStatus.className='board-model-status';this.modelStatus.setAttribute('role','status');this.modelStatus.setAttribute('aria-live','polite');
+    this.modelStatusText=document.createElement('span');this.modelRetry=document.createElement('button');this.modelRetry.type='button';this.modelRetry.textContent='重试';
+    this.modelStatus.append(this.modelStatusText,this.modelRetry);container.append(this.modelStatus);
+    this.modelRetry.addEventListener('click',()=>{this.models.retryFailed();this.requestedModelsKey=null;this.set(this.latestState,this.mode);});
     // These are small ground inlays. Depth remains enabled so a nearby roof,
     // tree or rock naturally hides an inlay instead of being crossed by it.
     for(const [key,color,opacity] of [['marker',0xd4bb79,.88],['outline',0x49695e,.7],['selected',0xf0db9e,1],['feedback',0xe3bd69,1],['robber-feedback',0x685074,1]])
@@ -181,6 +187,10 @@ export class Board {
     if(this.disposed||this.frame||document.hidden||!this.visible)return;
     this.frame=requestAnimationFrame(now=>{
       this.frame=0;
+      this.flushModels();
+      const hadReveal=this.terrainPresentation.fades.length>0;
+      const terrainAnimating=this.terrainPresentation.tick(now,{reducedMotion:this.reducedMotion||this.environmentPaused});
+      if(hadReveal)this.environment.lighting.markDirty();
       const dt=this.environmentLast?Math.min(.1,(now-this.environmentLast)/1000):0;
       const environmentActive=this.environment.update(dt,this.reducedMotion||this.environmentPaused);
       this.roadLights.setNight(this.environment.getState().night,{lowPower:this.lowPower});
@@ -204,7 +214,7 @@ export class Board {
       this.renderer.domElement.dataset.cameraEvent=this.focusEvent||'';
       this.renderer.domElement.dataset.cameraView=JSON.stringify(this.camera.view);
       this.onProjectionChange?.();
-      if(environmentActive||this.focusAnimation||(this.feedback&&!this.reducedMotion&&!this.lowPower&&feedbackAge<1250))this.invalidate();
+      if(terrainAnimating||environmentActive||this.focusAnimation||(this.feedback&&!this.reducedMotion&&!this.lowPower&&feedbackAge<1250))this.invalidate();
     });
   }
   resize() {
@@ -476,6 +486,45 @@ export class Board {
       }
     },256,128);sprite.scale.set(.92,.46,1);sprite.userData={port:resource};return sprite;
   }
+  updateModelStatus() {
+    const stats=this.terrainPresentation.stats();
+    this.renderer.domElement.dataset.models=JSON.stringify(stats);
+    const failures=(this.requiredModelUrls||[]).filter(url=>this.models.failed.has(url)).length;
+    this.modelStatus.hidden=!stats.pending&&!failures;
+    this.modelStatusText.textContent=stats.pending?`正在铺设岛屿 ${stats.tiles}/${stats.total}`:'部分场景使用简化显示';
+    this.modelRetry.hidden=Boolean(stats.pending)||!failures;
+  }
+  requestModels(state,key) {
+    const options={robber:state.robber!==null&&state.robber!==undefined,homeDemo:state.homeDemo};
+    this.requiredModelUrls=this.models.required(state.board,options);
+    const requestKey=JSON.stringify([key,this.requiredModelUrls]);
+    if(requestKey===this.requestedModelsKey)return;
+    this.requestedModelsKey=requestKey;const generation=this.loadGeneration=(this.loadGeneration||0)+1;
+    delete this.renderer.domElement.dataset.modelLoad;this.modelsDirty=true;this.invalidate();
+    const current=()=>!this.disposed&&generation===this.loadGeneration;
+    this.models.prepare(state.board,{...options,onAsset:(url,ok)=>{
+      if(!current())return;
+      this.modelsDirty=true;
+      if(ok&&!url.startsWith(TERRAIN_URL))this.modelPiecesDirty=true;
+      // A loaded terrain changes the robber's measured support plane, too.
+      if(ok&&url.startsWith(TERRAIN_URL)&&this.models.choices(this.board).some(group=>group.url===url&&group.instances.some(instance=>instance.tileId===this.latestState.robber)))this.modelPiecesDirty=true;
+      this.invalidate();
+    }}).then(result=>{
+      if(!current())return;
+      this.renderer.domElement.dataset.modelLoad=JSON.stringify(result);this.modelsDirty=true;this.invalidate();
+    });
+  }
+  flushModels() {
+    if(!this.modelsDirty||!this.latestState)return;
+    this.modelsDirty=false;
+    this.terrainPresentation.update({reducedMotion:this.reducedMotion||this.environmentPaused});
+    this.updateModelStatus();
+    if(this.modelPiecesDirty){
+      this.modelPiecesDirty=false;this.pieceKey=null;this.set(this.latestState,this.mode);
+      if(this.homeShowcase)this.buildDemo(this.latestState);
+    }
+    this.environment.lighting.markDirty();
+  }
   set(state,mode) {
     const b=state.board;if(!b||this.disposed)return;this.board=b;this.mode=mode;this.latestState=state;
     this.environmentPaused=Boolean(state.room?.paused);
@@ -493,25 +542,14 @@ export class Board {
     if(mapChanged||this.refreshModels) {
       this.refreshModels=false;
       if(mapChanged){this.stopAmbient();this.ambientEnabled=false;this.ambientInterrupted=false;this.ambientOffset=null;this.followBaseline=null;}
-      this.landKey=key;this.pieceKey=this.markerKey=null;this.models.releaseLayer(this.land);clearLayer(this.land);this.metrics.landBuilds++;changed=true;
+      this.landKey=key;this.pieceKey=this.markerKey=null;this.terrainPresentation.dispose();this.models.releaseLayer(this.land);clearLayer(this.land);this.metrics.landBuilds++;changed=true;
       this.boardScale=b.tiles.length>19?Math.max(...b.tiles.map(t=>Math.hypot(t.x,t.z)+1.5))/5.8:1;
       this.seaBase.scale.set(5.8*this.boardScale,.14,5.8*this.boardScale);
       this.environment.setRadius(this.boardScale);this.nightLights.setBoard(b);
-      const loadedTiles=this.models.terrain(b,this.land),loadedPorts=this.models.ports(b,this.land);
-      buildTerrain(b,this.assets,this.land,{loadedTiles,loadedPorts});
-      this.renderer.domElement.dataset.models=JSON.stringify({version:9,tiles:loadedTiles.size,total:b.tiles.length,ports:loadedPorts});
-      // Only a new map schedules requests. A stale completion cannot repaint a
-      // newer room. The cache remains owned by this Board until dispose.
-      if(this.requestedLandKey!==key){
-        this.requestedLandKey=key;const generation=this.loadGeneration=(this.loadGeneration||0)+1;
-        this.models.prepare(b).then(result=>{
-          if(this.disposed||generation!==this.loadGeneration||this.requestedLandKey!==key)return;
-          this.renderer.domElement.dataset.modelLoad=JSON.stringify(result);
-          this.refreshModels=true;this.set(this.latestState,this.mode);
-          if(this.homeShowcase)this.buildDemo(this.latestState);
-          this.environment.lighting.markDirty();this.invalidate();
-        });
-      }
+      // Permanent coast, labels and interaction anchors are built once. Pending
+      // terrain shows only a flat resource base, not a second complete art style.
+      buildTerrain(b,this.assets,this.land,{loadedTiles:new Set(b.tiles.map(t=>t.id)),loadedPorts:true});
+      this.terrainPresentation.reset(b);this.updateModelStatus();
       this.tiles=b.tiles.map(t=>{
         // Invisible raycast surfaces share geometry/material and cost no draw calls.
         const hex=new THREE.Mesh(this.assets.geometries.hex,this.assets.material());hex.position.set(t.x,.235,t.z);hex.scale.set(.942,.075,.942);hex.userData={tile:t.id};hex.visible=false;this.land.add(hex);return hex;
@@ -565,13 +603,14 @@ export class Board {
       for(const {mesh,order} of layers){mesh.renderOrder=order;mesh.instanceMatrix.needsUpdate=true;mesh.computeBoundingSphere();if(sites.length)this.markers.add(mesh);else mesh.dispose();}
       this.renderer.domElement.dataset.siteShape=mode||'';
     }
+    this.requestModels(state,key);
     this.targets=[...this.tiles,...this.portTargets];
     this.syncScene();
     if(changed){this.renderer.shadowMap.needsUpdate=true;this.invalidate();}
   }
   dispose() {
     if(this.disposed)return;this.disposed=true;this.onProjectionChange=null;this.stopFrame();this.stopAmbient();this.stopScene();this.clearDemo();this.events.abort();this.observer.disconnect();this.intersection.disconnect();this.controls.dispose();
-    this.loadGeneration=(this.loadGeneration||0)+1;this.models.dispose();
+    this.loadGeneration=(this.loadGeneration||0)+1;this.terrainPresentation.dispose();this.models.dispose();this.modelStatus.remove();
     for(const group of [this.land,this.pieces,this.markers,this.selectionLayer,this.feedbackLayer])clearLayer(group);
     this.roadLights.dispose();this.nightLights.dispose();this.environment.dispose();this.scene.clear();this.assets.dispose();this.renderer.dispose();this.renderer.forceContextLoss();this.renderer.domElement.remove();
   }
