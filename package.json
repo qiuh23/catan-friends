@@ -34,7 +34,9 @@
     "test:site": "node --test tests/site-policy.test.js tests/worker-lifecycle.test.js tests/integration-policy.test.js tests/deploy-release.test.js",
     "typecheck": "tsc --noEmit",
     "check": "node --check src/main.js && npm run typecheck",
-    "test:migration": "node scripts/react-migration-browser.mjs"
+    "test:migration": "node scripts/react-migration-browser.mjs",
+    "test:visuals": "node --test tests/visual-assets.test.js",
+    "test:visuals:browser": "node scripts/visual-assets-browser.mjs"
   },
   "dependencies": {
     "react": "^19.3.1",

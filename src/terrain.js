@@ -124,9 +124,10 @@ function scenery(tile,batch) {
   }
 }
 
-export function buildTerrain(board,assets,group) {
+export function buildTerrain(board,assets,group,{loadedTiles=new Set(),loadedPorts=false}={}) {
   const batch=new Batches(assets);
   for(const tile of board.tiles) {
+    if(loadedTiles.has(tile.id))continue;
     batch.tile=tile.id;
     batch.add('hex',0xb29b70,tile.x,.075,tile.z,.99,.18,.99);
     batch.add('hex',0xe7d7a6,tile.x,.18,tile.z,.985,.05,.985);
@@ -142,7 +143,7 @@ export function buildTerrain(board,assets,group) {
     for(let i=0;i<2;i++)batch.add('box',i?0xcde4d9:0x90c5bb,x+nx*(.22+i*.22),.053,z+nz*(.22+i*.22),i?.42:.77,.012,.045,rotation,'water');
     if(!portEdges.has(edge.id))batch.add('rock',0x829b8c,x+nx*.16,.12,z+nz*.16,.08,.06,.09,rotation);
   }
-  for(const port of board.ports) {
+  if(!loadedPorts)for(const port of board.ports) {
     for(const arm of portGeometry(board,port).arms){
       const a=arm.from,b=arm.to,length=Math.hypot(b.x-a.x,b.z-a.z),rotation=-Math.atan2(b.z-a.z,b.x-a.x);
       batch.add('box',0x957449,(a.x+b.x)/2,.155,(a.z+b.z)/2,length,.06,.16,rotation);

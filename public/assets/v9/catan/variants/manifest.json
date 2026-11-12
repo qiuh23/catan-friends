@@ -1,0 +1,729 @@
+{
+  "schema": 2,
+  "version": "v7",
+  "format": "glTF 2.0 binary",
+  "units": "board world units",
+  "up_axis": "Y",
+  "full_tile_radius": 0.985,
+  "center_surface_y": 0.2675,
+  "center_clear_radius": 0.34,
+  "edge_decoration_margin": 0.09,
+  "static_material": "Catan_V7_Static",
+  "variant_policy": "Seed plus stable tile ID, choose once per board; resource-specific variants and integer 60 degree rotations. Never use a fixed preview layout as game state.",
+  "replace": "Replace old full terrain hex and its scenery, preserve runtime numbers, roads, buildings and invisible pick surfaces.",
+  "assets": [
+    {
+      "id": "catan_terrain_forest_01",
+      "resource": "forest",
+      "variant": 1,
+      "file": "models/catan_terrain_forest_01.glb",
+      "source_collection": "catan_terrain_forest_01",
+      "description": "A mixed grove with two conifers, uneven oak crowns, a sapling and a fallen log; open southeast glade.",
+      "triangles": 2302,
+      "materials": 1,
+      "primitives": 2,
+      "bytes": 177064,
+      "bounds_min_xyz": [
+        -0.8530350227276722,
+        0,
+        -0.985
+      ],
+      "bounds_max_xyz": [
+        0.8530350227276722,
+        0.7917512152063686,
+        0.985
+      ],
+      "dimensions_xyz": [
+        1.7060700454553444,
+        0.7917512152063686,
+        1.97
+      ],
+      "rotation_y_radians": "n * PI / 3, n in 0..5",
+      "rotation_restrictions": "60 degree steps only to preserve hex orientation; no nonuniform scaling",
+      "validation": {
+        "method": "True projected triangle minimum distance to origin; all mesh vertices against six hex half-spaces. Ground excluded deliberately.",
+        "decorative_triangles_tested": 1764,
+        "minimum_center_clearance": 0.407256,
+        "minimum_edge_margin": 0.137397,
+        "required_center_radius": 0.34,
+        "required_edge_margin": 0.09,
+        "pass": true,
+        "violations": []
+      },
+      "safety_fits": [],
+      "sha256": "63d62f82a68d1b64f9eebebec03d27942a7ecae36b6580ac09266ee7f99c9ceb"
+    },
+    {
+      "id": "catan_terrain_forest_02",
+      "resource": "forest",
+      "variant": 2,
+      "file": "models/catan_terrain_forest_02.glb",
+      "source_collection": "catan_terrain_forest_02",
+      "description": "A broadleaf-dominant copse with a tall rear crown, young edge tree and a small low woodland patch.",
+      "triangles": 2478,
+      "materials": 1,
+      "primitives": 2,
+      "bytes": 191080,
+      "bounds_min_xyz": [
+        -0.8530350227276722,
+        0,
+        -0.985
+      ],
+      "bounds_max_xyz": [
+        0.8530350227276722,
+        0.7809292438491012,
+        0.985
+      ],
+      "dimensions_xyz": [
+        1.7060700454553444,
+        0.7809292438491012,
+        1.97
+      ],
+      "rotation_y_radians": "n * PI / 3, n in 0..5",
+      "rotation_restrictions": "60 degree steps only to preserve hex orientation; no nonuniform scaling",
+      "validation": {
+        "method": "True projected triangle minimum distance to origin; all mesh vertices against six hex half-spaces. Ground excluded deliberately.",
+        "decorative_triangles_tested": 1940,
+        "minimum_center_clearance": 0.366164,
+        "minimum_edge_margin": 0.121916,
+        "required_center_radius": 0.34,
+        "required_edge_margin": 0.09,
+        "pass": true,
+        "violations": []
+      },
+      "safety_fits": [],
+      "sha256": "c692648f55a620ee4d09321109c7463b1482630a6d2647d2acac166ed2f00aad"
+    },
+    {
+      "id": "catan_terrain_forest_03",
+      "resource": "forest",
+      "variant": 3,
+      "file": "models/catan_terrain_forest_03.glb",
+      "source_collection": "catan_terrain_forest_03",
+      "description": "An elongated conifer stand with a broadleaf foreground, young trees and scattered low scrub.",
+      "triangles": 2126,
+      "materials": 1,
+      "primitives": 2,
+      "bytes": 163044,
+      "bounds_min_xyz": [
+        -0.8530350227276722,
+        0,
+        -0.985
+      ],
+      "bounds_max_xyz": [
+        0.8530350227276722,
+        0.8067659062526822,
+        0.985
+      ],
+      "dimensions_xyz": [
+        1.7060700454553444,
+        0.8067659062526822,
+        1.97
+      ],
+      "rotation_y_radians": "n * PI / 3, n in 0..5",
+      "rotation_restrictions": "60 degree steps only to preserve hex orientation; no nonuniform scaling",
+      "validation": {
+        "method": "True projected triangle minimum distance to origin; all mesh vertices against six hex half-spaces. Ground excluded deliberately.",
+        "decorative_triangles_tested": 1588,
+        "minimum_center_clearance": 0.494793,
+        "minimum_edge_margin": 0.100014,
+        "required_center_radius": 0.34,
+        "required_edge_margin": 0.09,
+        "pass": true,
+        "violations": []
+      },
+      "safety_fits": [],
+      "sha256": "8558333f2b4713035d6b349c730ee7cfaf6f50289ac7ef2856844531f0df2075"
+    },
+    {
+      "id": "catan_terrain_wheat_01",
+      "resource": "wheat",
+      "variant": 1,
+      "file": "models/catan_terrain_wheat_01.glb",
+      "source_collection": "catan_terrain_wheat_01",
+      "description": "Two unequal angled fields, a harvested strip and a haystack, connected by visible bare soil.",
+      "triangles": 8622,
+      "materials": 1,
+      "primitives": 2,
+      "bytes": 827956,
+      "bounds_min_xyz": [
+        -0.8530350227276722,
+        0,
+        -0.985
+      ],
+      "bounds_max_xyz": [
+        0.8530350227276722,
+        0.4661611318588257,
+        0.985
+      ],
+      "dimensions_xyz": [
+        1.7060700454553444,
+        0.4661611318588257,
+        1.97
+      ],
+      "rotation_y_radians": "n * PI / 3, n in 0..5",
+      "rotation_restrictions": "60 degree steps only to preserve hex orientation; no nonuniform scaling",
+      "validation": {
+        "method": "True projected triangle minimum distance to origin; all mesh vertices against six hex half-spaces. Ground excluded deliberately.",
+        "decorative_triangles_tested": 8084,
+        "minimum_center_clearance": 0.394787,
+        "minimum_edge_margin": 0.13476,
+        "required_center_radius": 0.34,
+        "required_edge_margin": 0.09,
+        "pass": true,
+        "violations": []
+      },
+      "safety_fits": [],
+      "sha256": "97ae09ae2df4826ca9805a45abec8cb8a7ba7aefbd1b608e236c3dc5b3991f1d"
+    },
+    {
+      "id": "catan_terrain_wheat_02",
+      "resource": "wheat",
+      "variant": 2,
+      "file": "models/catan_terrain_wheat_02.glb",
+      "source_collection": "catan_terrain_wheat_02",
+      "description": "A long upper field and two small counter-angled plots, with one harvested patch.",
+      "triangles": 8939,
+      "materials": 1,
+      "primitives": 2,
+      "bytes": 860136,
+      "bounds_min_xyz": [
+        -0.8530350227276722,
+        0,
+        -0.985
+      ],
+      "bounds_max_xyz": [
+        0.8530350227276722,
+        0.4661587178707123,
+        0.985
+      ],
+      "dimensions_xyz": [
+        1.7060700454553444,
+        0.4661587178707123,
+        1.97
+      ],
+      "rotation_y_radians": "n * PI / 3, n in 0..5",
+      "rotation_restrictions": "60 degree steps only to preserve hex orientation; no nonuniform scaling",
+      "validation": {
+        "method": "True projected triangle minimum distance to origin; all mesh vertices against six hex half-spaces. Ground excluded deliberately.",
+        "decorative_triangles_tested": 8401,
+        "minimum_center_clearance": 0.416588,
+        "minimum_edge_margin": 0.121817,
+        "required_center_radius": 0.34,
+        "required_edge_margin": 0.09,
+        "pass": true,
+        "violations": []
+      },
+      "safety_fits": [],
+      "sha256": "9f9bc041278aafd31551df6beb24267bb0d5d6ed50cf89a76393f154bbaff79f"
+    },
+    {
+      "id": "catan_terrain_wheat_03",
+      "resource": "wheat",
+      "variant": 3,
+      "file": "models/catan_terrain_wheat_03.glb",
+      "source_collection": "catan_terrain_wheat_03",
+      "description": "A narrow tall field beside a short diagonal field, cut stubble and two hay bundles.",
+      "triangles": 8927,
+      "materials": 1,
+      "primitives": 2,
+      "bytes": 856392,
+      "bounds_min_xyz": [
+        -0.8530350227276722,
+        0,
+        -0.985
+      ],
+      "bounds_max_xyz": [
+        0.8530350227276722,
+        0.4661611318588257,
+        0.985
+      ],
+      "dimensions_xyz": [
+        1.7060700454553444,
+        0.4661611318588257,
+        1.97
+      ],
+      "rotation_y_radians": "n * PI / 3, n in 0..5",
+      "rotation_restrictions": "60 degree steps only to preserve hex orientation; no nonuniform scaling",
+      "validation": {
+        "method": "True projected triangle minimum distance to origin; all mesh vertices against six hex half-spaces. Ground excluded deliberately.",
+        "decorative_triangles_tested": 8389,
+        "minimum_center_clearance": 0.422392,
+        "minimum_edge_margin": 0.12342,
+        "required_center_radius": 0.34,
+        "required_edge_margin": 0.09,
+        "pass": true,
+        "violations": []
+      },
+      "safety_fits": [],
+      "sha256": "a35bb6a8ba476fd566ad639d222b4b9383e1304a99b882a13188ef70491ff063"
+    },
+    {
+      "id": "catan_terrain_sheep_01",
+      "resource": "sheep",
+      "variant": 1,
+      "file": "models/catan_terrain_sheep_01.glb",
+      "source_collection": "catan_terrain_sheep_01",
+      "description": "A ewe with a lamb and a grazing companion beside an irregular watering pool.",
+      "triangles": 1798,
+      "materials": 1,
+      "primitives": 2,
+      "bytes": 148004,
+      "bounds_min_xyz": [
+        -0.8530350227276722,
+        0,
+        -0.985
+      ],
+      "bounds_max_xyz": [
+        0.8530350227276722,
+        0.43933017862365376,
+        0.985
+      ],
+      "dimensions_xyz": [
+        1.7060700454553444,
+        0.43933017862365376,
+        1.97
+      ],
+      "rotation_y_radians": "n * PI / 3, n in 0..5",
+      "rotation_restrictions": "60 degree steps only to preserve hex orientation; no nonuniform scaling",
+      "validation": {
+        "method": "True projected triangle minimum distance to origin; all mesh vertices against six hex half-spaces. Ground excluded deliberately.",
+        "decorative_triangles_tested": 1260,
+        "minimum_center_clearance": 0.47432,
+        "minimum_edge_margin": 0.193435,
+        "required_center_radius": 0.34,
+        "required_edge_margin": 0.09,
+        "pass": true,
+        "violations": []
+      },
+      "safety_fits": [],
+      "sha256": "8cd364f9349a951a2a58e96611d65e2271e8fd2557f844e6c9a661180ed6651c"
+    },
+    {
+      "id": "catan_terrain_sheep_02",
+      "resource": "sheep",
+      "variant": 2,
+      "file": "models/catan_terrain_sheep_02.glb",
+      "source_collection": "catan_terrain_sheep_02",
+      "description": "A resting pair and one walking sheep; a short fence frames the quiet pasture.",
+      "triangles": 1668,
+      "materials": 1,
+      "primitives": 2,
+      "bytes": 138512,
+      "bounds_min_xyz": [
+        -0.8530350227276722,
+        0,
+        -0.985
+      ],
+      "bounds_max_xyz": [
+        0.8530350227276722,
+        0.4331382089684188,
+        0.985
+      ],
+      "dimensions_xyz": [
+        1.7060700454553444,
+        0.4331382089684188,
+        1.97
+      ],
+      "rotation_y_radians": "n * PI / 3, n in 0..5",
+      "rotation_restrictions": "60 degree steps only to preserve hex orientation; no nonuniform scaling",
+      "validation": {
+        "method": "True projected triangle minimum distance to origin; all mesh vertices against six hex half-spaces. Ground excluded deliberately.",
+        "decorative_triangles_tested": 1130,
+        "minimum_center_clearance": 0.471103,
+        "minimum_edge_margin": 0.116848,
+        "required_center_radius": 0.34,
+        "required_edge_margin": 0.09,
+        "pass": true,
+        "violations": []
+      },
+      "safety_fits": [],
+      "sha256": "5e139c4532b04fc939d72ed7b863800462ccac167bf541904e4c6d21ec23b97d"
+    },
+    {
+      "id": "catan_terrain_sheep_03",
+      "resource": "sheep",
+      "variant": 3,
+      "file": "models/catan_terrain_sheep_03.glb",
+      "source_collection": "catan_terrain_sheep_03",
+      "description": "A small scattered grazing flock with unequal sizes and orientations, a pool and a low fence.",
+      "triangles": 2190,
+      "materials": 1,
+      "primitives": 2,
+      "bytes": 178292,
+      "bounds_min_xyz": [
+        -0.8530350227276722,
+        0,
+        -0.985
+      ],
+      "bounds_max_xyz": [
+        0.8530350227276722,
+        0.4387742679460256,
+        0.985
+      ],
+      "dimensions_xyz": [
+        1.7060700454553444,
+        0.4387742679460256,
+        1.97
+      ],
+      "rotation_y_radians": "n * PI / 3, n in 0..5",
+      "rotation_restrictions": "60 degree steps only to preserve hex orientation; no nonuniform scaling",
+      "validation": {
+        "method": "True projected triangle minimum distance to origin; all mesh vertices against six hex half-spaces. Ground excluded deliberately.",
+        "decorative_triangles_tested": 1652,
+        "minimum_center_clearance": 0.47432,
+        "minimum_edge_margin": 0.18083,
+        "required_center_radius": 0.34,
+        "required_edge_margin": 0.09,
+        "pass": true,
+        "violations": []
+      },
+      "safety_fits": [],
+      "sha256": "c11bb8d8464e7b164b1cf415792e319c727aea2cc28b18306ef000378fc5b754"
+    },
+    {
+      "id": "catan_terrain_ore_01",
+      "resource": "ore",
+      "variant": 1,
+      "file": "models/catan_terrain_ore_01.glb",
+      "source_collection": "catan_terrain_ore_01",
+      "description": "One connected left-side rocky ridge with a main peak, overlapping shoulders and a low talus apron; opposite side stays open.",
+      "triangles": 982,
+      "materials": 1,
+      "primitives": 2,
+      "bytes": 83660,
+      "bounds_min_xyz": [
+        -0.8530350227276722,
+        0,
+        -0.985
+      ],
+      "bounds_max_xyz": [
+        0.8530350227276722,
+        0.7899757429033046,
+        0.985
+      ],
+      "dimensions_xyz": [
+        1.7060700454553444,
+        0.7899757429033046,
+        1.97
+      ],
+      "rotation_y_radians": "n * PI / 3, n in 0..5",
+      "rotation_restrictions": "60 degree steps only to preserve hex orientation; no nonuniform scaling",
+      "validation": {
+        "method": "True projected triangle minimum distance to origin; all mesh vertices against six hex half-spaces. Ground excluded deliberately.",
+        "decorative_triangles_tested": 444,
+        "minimum_center_clearance": 0.373492,
+        "minimum_edge_margin": 0.123035,
+        "required_center_radius": 0.34,
+        "required_edge_margin": 0.09,
+        "pass": true,
+        "violations": []
+      },
+      "safety_fits": [],
+      "sha256": "ba6a20e444801380b6b981121f2344bd4b1dff4d679e0a1cb0077b5cc0073c96"
+    },
+    {
+      "id": "catan_terrain_ore_02",
+      "resource": "ore",
+      "variant": 2,
+      "file": "models/catan_terrain_ore_02.glb",
+      "source_collection": "catan_terrain_ore_02",
+      "description": "A continuous right-hand mountain group with one high peak and two low shoulders; only small rubble lies opposite.",
+      "triangles": 982,
+      "materials": 1,
+      "primitives": 2,
+      "bytes": 83664,
+      "bounds_min_xyz": [
+        -0.8530350227276722,
+        0,
+        -0.985
+      ],
+      "bounds_max_xyz": [
+        0.8530350227276722,
+        0.8155251256293662,
+        0.985
+      ],
+      "dimensions_xyz": [
+        1.7060700454553444,
+        0.8155251256293662,
+        1.97
+      ],
+      "rotation_y_radians": "n * PI / 3, n in 0..5",
+      "rotation_restrictions": "60 degree steps only to preserve hex orientation; no nonuniform scaling",
+      "validation": {
+        "method": "True projected triangle minimum distance to origin; all mesh vertices against six hex half-spaces. Ground excluded deliberately.",
+        "decorative_triangles_tested": 444,
+        "minimum_center_clearance": 0.384831,
+        "minimum_edge_margin": 0.121502,
+        "required_center_radius": 0.34,
+        "required_edge_margin": 0.09,
+        "pass": true,
+        "violations": []
+      },
+      "safety_fits": [],
+      "sha256": "f140b8f045837fc40c4c97d7eaf6ff37256695938be808983511da76859b9165"
+    },
+    {
+      "id": "catan_terrain_ore_03",
+      "resource": "ore",
+      "variant": 3,
+      "file": "models/catan_terrain_ore_03.glb",
+      "source_collection": "catan_terrain_ore_03",
+      "description": "An elongated connected northwest ridge with a narrow end peak and a small low foreground scree patch.",
+      "triangles": 982,
+      "materials": 1,
+      "primitives": 2,
+      "bytes": 83660,
+      "bounds_min_xyz": [
+        -0.8530350227276722,
+        0,
+        -0.985
+      ],
+      "bounds_max_xyz": [
+        0.8530350227276722,
+        0.6997053341500399,
+        0.985
+      ],
+      "dimensions_xyz": [
+        1.7060700454553444,
+        0.6997053341500399,
+        1.97
+      ],
+      "rotation_y_radians": "n * PI / 3, n in 0..5",
+      "rotation_restrictions": "60 degree steps only to preserve hex orientation; no nonuniform scaling",
+      "validation": {
+        "method": "True projected triangle minimum distance to origin; all mesh vertices against six hex half-spaces. Ground excluded deliberately.",
+        "decorative_triangles_tested": 444,
+        "minimum_center_clearance": 0.352258,
+        "minimum_edge_margin": 0.123035,
+        "required_center_radius": 0.34,
+        "required_edge_margin": 0.09,
+        "pass": true,
+        "violations": []
+      },
+      "safety_fits": [],
+      "sha256": "0f2054f339c84ff343b3df3f2140a91490c9466295363d38b0c27c2a9544d3c4"
+    },
+    {
+      "id": "catan_terrain_clay_01",
+      "resource": "clay",
+      "variant": 1,
+      "file": "models/catan_terrain_clay_01.glb",
+      "source_collection": "catan_terrain_clay_01",
+      "description": "A large continuous terraced clay cut on the left and a lower excavated shelf; broken material and worked clay.",
+      "triangles": 877,
+      "materials": 1,
+      "primitives": 2,
+      "bytes": 75508,
+      "bounds_min_xyz": [
+        -0.8530350227276722,
+        0,
+        -0.985
+      ],
+      "bounds_max_xyz": [
+        0.8530350227276722,
+        0.4409493648408513,
+        0.985
+      ],
+      "dimensions_xyz": [
+        1.7060700454553444,
+        0.4409493648408513,
+        1.97
+      ],
+      "rotation_y_radians": "n * PI / 3, n in 0..5",
+      "rotation_restrictions": "60 degree steps only to preserve hex orientation; no nonuniform scaling",
+      "validation": {
+        "method": "True projected triangle minimum distance to origin; all mesh vertices against six hex half-spaces. Ground excluded deliberately.",
+        "decorative_triangles_tested": 339,
+        "minimum_center_clearance": 0.407099,
+        "minimum_edge_margin": 0.10976,
+        "required_center_radius": 0.34,
+        "required_edge_margin": 0.09,
+        "pass": true,
+        "violations": []
+      },
+      "safety_fits": [],
+      "sha256": "e87e3386ba4f128d9bcf3fe701ca2621bed3fbd837cbbf04cb89380791e0a331"
+    },
+    {
+      "id": "catan_terrain_clay_02",
+      "resource": "clay",
+      "variant": 2,
+      "file": "models/catan_terrain_clay_02.glb",
+      "source_collection": "catan_terrain_clay_02",
+      "description": "A rear angular quarry wall with a small side bank and an asymmetric rubble apron.",
+      "triangles": 897,
+      "materials": 1,
+      "primitives": 2,
+      "bytes": 77860,
+      "bounds_min_xyz": [
+        -0.8530350227276722,
+        0,
+        -0.985
+      ],
+      "bounds_max_xyz": [
+        0.8530350227276722,
+        0.4910446990208936,
+        0.985
+      ],
+      "dimensions_xyz": [
+        1.7060700454553444,
+        0.4910446990208936,
+        1.97
+      ],
+      "rotation_y_radians": "n * PI / 3, n in 0..5",
+      "rotation_restrictions": "60 degree steps only to preserve hex orientation; no nonuniform scaling",
+      "validation": {
+        "method": "True projected triangle minimum distance to origin; all mesh vertices against six hex half-spaces. Ground excluded deliberately.",
+        "decorative_triangles_tested": 359,
+        "minimum_center_clearance": 0.425793,
+        "minimum_edge_margin": 0.146817,
+        "required_center_radius": 0.34,
+        "required_edge_margin": 0.09,
+        "pass": true,
+        "violations": []
+      },
+      "safety_fits": [],
+      "sha256": "4598517472d3172d5e58ebeacecb65b01c5a7f93886b93f37959c5e7737ff435"
+    },
+    {
+      "id": "catan_terrain_clay_03",
+      "resource": "clay",
+      "variant": 3,
+      "file": "models/catan_terrain_clay_03.glb",
+      "source_collection": "catan_terrain_clay_03",
+      "description": "A broad diagonal excavation, a low earth berm and two unequal piles of loose clay.",
+      "triangles": 877,
+      "materials": 1,
+      "primitives": 2,
+      "bytes": 75580,
+      "bounds_min_xyz": [
+        -0.8530350227276722,
+        0,
+        -0.985
+      ],
+      "bounds_max_xyz": [
+        0.8530350227276722,
+        0.4409493648408513,
+        0.985
+      ],
+      "dimensions_xyz": [
+        1.7060700454553444,
+        0.4409493648408513,
+        1.97
+      ],
+      "rotation_y_radians": "n * PI / 3, n in 0..5",
+      "rotation_restrictions": "60 degree steps only to preserve hex orientation; no nonuniform scaling",
+      "validation": {
+        "method": "True projected triangle minimum distance to origin; all mesh vertices against six hex half-spaces. Ground excluded deliberately.",
+        "decorative_triangles_tested": 339,
+        "minimum_center_clearance": 0.395047,
+        "minimum_edge_margin": 0.145381,
+        "required_center_radius": 0.34,
+        "required_edge_margin": 0.09,
+        "pass": true,
+        "violations": []
+      },
+      "safety_fits": [],
+      "sha256": "05dcf6f147821ed1fd1ec4f9e9ddc7044c4117595c8ce7ccc306aa55a32baf9a"
+    },
+    {
+      "id": "catan_terrain_desert_01",
+      "resource": "desert",
+      "variant": 1,
+      "file": "models/catan_terrain_desert_01.glb",
+      "source_collection": "catan_terrain_desert_01",
+      "description": "A long off-center dune, a smaller crossing dune and two wind-eroded rocks.",
+      "triangles": 1462,
+      "materials": 1,
+      "primitives": 2,
+      "bytes": 151824,
+      "bounds_min_xyz": [
+        -0.8530350227276722,
+        0,
+        -0.985
+      ],
+      "bounds_max_xyz": [
+        0.8530350227276722,
+        0.42964712386338183,
+        0.985
+      ],
+      "dimensions_xyz": [
+        1.7060700454553444,
+        0.42964712386338183,
+        1.97
+      ],
+      "rotation_y_radians": "n * PI / 3, n in 0..5",
+      "rotation_restrictions": "60 degree steps only to preserve hex orientation; no nonuniform scaling",
+      "validation": {
+        "method": "True projected triangle minimum distance to origin; all mesh vertices against six hex half-spaces. Ground excluded deliberately.",
+        "decorative_triangles_tested": 924,
+        "minimum_center_clearance": 0.349299,
+        "minimum_edge_margin": 0.09163,
+        "required_center_radius": 0.34,
+        "required_edge_margin": 0.09,
+        "pass": true,
+        "violations": []
+      },
+      "safety_fits": [
+        {
+          "part": "Soft irregular wind dune",
+          "xy_safety_fit_scale": 0.9604
+        }
+      ],
+      "sha256": "63223a7f887f849df683dfd38cd21227d545030ecc018010c62ce31889e46591"
+    },
+    {
+      "id": "catan_terrain_desert_02",
+      "resource": "desert",
+      "variant": 2,
+      "file": "models/catan_terrain_desert_02.glb",
+      "source_collection": "catan_terrain_desert_02",
+      "description": "Two unequal asymmetrical dunes form a broken wind corridor, with one sandstone outcrop.",
+      "triangles": 1396,
+      "materials": 1,
+      "primitives": 2,
+      "bytes": 146748,
+      "bounds_min_xyz": [
+        -0.8530350227276722,
+        0,
+        -0.985
+      ],
+      "bounds_max_xyz": [
+        0.8530350227276722,
+        0.41489732908193677,
+        0.985
+      ],
+      "dimensions_xyz": [
+        1.7060700454553444,
+        0.41489732908193677,
+        1.97
+      ],
+      "rotation_y_radians": "n * PI / 3, n in 0..5",
+      "rotation_restrictions": "60 degree steps only to preserve hex orientation; no nonuniform scaling",
+      "validation": {
+        "method": "True projected triangle minimum distance to origin; all mesh vertices against six hex half-spaces. Ground excluded deliberately.",
+        "decorative_triangles_tested": 858,
+        "minimum_center_clearance": 0.391762,
+        "minimum_edge_margin": 0.093249,
+        "required_center_radius": 0.34,
+        "required_edge_margin": 0.09,
+        "pass": true,
+        "violations": []
+      },
+      "safety_fits": [
+        {
+          "part": "Soft irregular wind dune",
+          "xy_safety_fit_scale": 0.922368
+        }
+      ],
+      "sha256": "3cccc5653624bd6e8df58a5a626552eb64eb0554a3b3b5ad707f982d9d624129"
+    }
+  ],
+  "frozen_revision": "authored-compositions-r2",
+  "source_blend": "source/catan_terrain_variants.blend",
+  "source_generator": "source/build_variants.py",
+  "preview": "previews/catan_terrain_variants_catalog.png",
+  "geometry_validation": "manifest/geometry_validation.json",
+  "label_visibility_diagnostic": "manifest/label_visibility_diagnostic.json"
+}
