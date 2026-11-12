@@ -36,7 +36,7 @@ test('all 17 relief variants at all six rotations have finite grounded robber pl
   console.log('Robber support diagnostics',JSON.stringify({variants:files.length,rotations:6,maxSpread,maxObstruction}));
 });
 test('robber follows authoritative tile, modest rim stays on its own material, highlight is depth-tested and resources dispose',async()=>{
-  const models=new BoardModels({Loader}),board=createBoard(()=>.43),layer=new THREE.Group(),assets=new BoardAssets();await models.prepare(board);
+  const models=new BoardModels({Loader}),board=createBoard(()=>.43),layer=new THREE.Group(),assets=new BoardAssets();await models.prepare(board,{robber:true});
   for(const id of [0,board.tiles.length-1]){
     models.releaseLayer(layer);layer.clear();const tile=board.tiles[id],pose=models.robber(board,tile,layer);
     assert.equal(pose.loaded,true);assert.equal(layer.children.length,1);
@@ -50,6 +50,6 @@ test('robber follows authoritative tile, modest rim stays on its own material, h
 });
 test('missing robber or terrain keeps a finite procedural fallback without retries',async()=>{
   class Missing{async loadAsync(){throw Error('fixture missing');}}
-  const models=new BoardModels({Loader:Missing}),board=createBoard(()=>.43);await models.prepare(board);
+  const models=new BoardModels({Loader:Missing}),board=createBoard(()=>.43);await models.prepare(board,{robber:true});
   const layer=new THREE.Group(),pose=models.robber(board,board.tiles[0],layer);assert.equal(pose.loaded,false);assert.equal(pose.y,.33);assert.equal(layer.children.length,0);await models.dispose();
 });

@@ -41,3 +41,9 @@
 .domestic-site .player-circle .circle-face { font-size:12px; white-space:nowrap; }
 .circle-bot { position:absolute; top:-10px; right:-9px; border-radius:4px; padding:1px 3px; background:#315b54; color:#fff; font-size:9px; }
 .domestic-site .player-info strong { white-space:normal; overflow:visible; }
+
+/* Nonblocking scene loading status, scoped to the existing board viewport. */
+.board-model-status{position:absolute;top:76px;left:50%;transform:translateX(-50%);z-index:3;display:flex;align-items:center;gap:.5rem;max-width:calc(100% - 24px);padding:.4rem .7rem;border-radius:18px;background:#fff7e8e8;color:#36544b;font-size:12px;box-shadow:0 2px 9px #173e3320;pointer-events:none;white-space:nowrap}
+.board-model-status[hidden]{display:none}
+.board-model-status button{pointer-events:auto;font-size:12px;padding:.25rem .5rem;min-height:32px}
+.board-model-status button[hidden]{display:none}

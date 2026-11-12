@@ -56,7 +56,13 @@ export default {
     const match=/^\/api\/rooms\/([A-HJ-NP-Z2-9]{6})\/ws$/.exec(url.pathname);
     if(match)return env.ROOMS.get(env.ROOMS.idFromName(match[1])).fetch(request);
     if(url.pathname.startsWith('/api/'))return json({error:'接口不存在。'},404);
-    return env.ASSETS.fetch(request);
+    const asset=await env.ASSETS.fetch(request);
+    if(asset.status!==404)return asset;
+    // A missing hash must be a real non-cacheable 404, never index.html saved
+    // under an immutable model URL. Keep clean application links working.
+    if(!url.pathname.startsWith('/assets/')&&!url.pathname.split('/').at(-1).includes('.'))return env.ASSETS.fetch(new Request(new URL('/',url),request));
+    const headers=new Headers(asset.headers);headers.set('Cache-Control','no-store');
+    return new Response(asset.body,{status:404,headers});
   }
 };
 export class CatanRoom {

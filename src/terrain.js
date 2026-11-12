@@ -126,19 +126,24 @@ function scenery(tile,batch) {
   }
 }
 
-export function buildTerrain(board,assets,group,{loadedTiles=new Set(),loadedPorts=false}={}) {
+export function buildTileTerrain(tiles,assets,group,{placeholder=false}={}) {
   const batch=new Batches(assets);
-  for(const tile of board.tiles) {
-    if(loadedTiles.has(tile.id))continue;
+  for(const tile of tiles) {
     batch.tile=tile.id;
     batch.add('hex',0xb29b70,tile.x,.075,tile.z,.99,.18,.99);
     batch.add('hex',0xe7d7a6,tile.x,.18,tile.z,.985,.05,.985);
-    batch.add('hex',terrain[tile.resource],tile.x,.235,tile.z,.942,.075,.942);
-    scenery(tile,batch);
+    batch.add('hex',terrain[tile.resource],tile.x,placeholder?.215:.235,tile.z,.942,placeholder?.05:.075,.942);
+    if(!placeholder)scenery(tile,batch);
   }
+  batch.finish(group);
+}
+
+export function buildTerrain(board,assets,group,{loadedTiles=new Set(),loadedPorts=false,coast=true}={}) {
+  buildTileTerrain(board.tiles.filter(tile=>!loadedTiles.has(tile.id)),assets,group);
+  const batch=new Batches(assets);
   batch.tile=undefined;
   const portEdges=new Set(board.ports.map(p=>p.edge));
-  for(const edge of board.edges.filter(e=>e.tiles.length===1)) {
+  for(const edge of coast?board.edges.filter(e=>e.tiles.length===1):[]) {
     const a=board.vertices[edge.a],b=board.vertices[edge.b],x=(a.x+b.x)/2,z=(a.z+b.z)/2;
     const tile=board.tiles[edge.tiles[0]],nx=(x-tile.x)/Math.sqrt(.75),nz=(z-tile.z)/Math.sqrt(.75),rotation=-Math.atan2(b.z-a.z,b.x-a.x);
     batch.add('box',0xe6d6a3,x+nx*.035,.12,z+nz*.035,.96,.055,.15,rotation);
