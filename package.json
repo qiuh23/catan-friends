@@ -36,7 +36,9 @@
     "check": "node --check src/main.js && npm run typecheck",
     "test:migration": "node scripts/react-migration-browser.mjs",
     "test:visuals": "node --test tests/visual-assets.test.js",
-    "test:visuals:browser": "node scripts/visual-assets-browser.mjs"
+    "test:visuals:browser": "node scripts/visual-assets-browser.mjs",
+    "test:day-night": "node --test tests/day-night*.test.js",
+    "test:day-night:browser": "node scripts/day-night-browser.mjs"
   },
   "dependencies": {
     "react": "^19.3.1",

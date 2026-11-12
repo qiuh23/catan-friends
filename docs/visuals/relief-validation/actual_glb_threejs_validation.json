@@ -1,0 +1,304 @@
+{
+  "all_pass": true,
+  "method": "Actual binary GLB parsed by Three.js GLTFLoader. Per-vertex/triangle footprint tests, six rotations, material and attribute tests, full GLTF center raycasts; real current game createBoard over 40 deterministic 19/30-tile layouts.",
+  "total_assets": 17,
+  "total_triangles": 248870,
+  "total_bytes": 13034352,
+  "stable_selector": {
+    "tested_boards": 40,
+    "variants_reached": 17,
+    "board_mutations": 0
+  },
+  "gpu_or_browser_render_tested": false,
+  "assets": [
+    {
+      "id": "catan_terrain_forest_01",
+      "pass": true,
+      "triangles": 12400,
+      "bytes": 540176,
+      "vertex_count": {
+        "ground": 9457,
+        "decoration": 3414
+      },
+      "minimum_decoration_center": 0.4072559700356999,
+      "minimum_edge_margin_all_six_rotations": 0.13739686202210555,
+      "center_surface_violations": 0,
+      "edge_surface_violations": 0,
+      "threejs_center_ray_samples": 48,
+      "primitives": 2,
+      "materials": 1
+    },
+    {
+      "id": "catan_terrain_forest_02",
+      "pass": true,
+      "triangles": 12576,
+      "bytes": 554476,
+      "vertex_count": {
+        "ground": 9465,
+        "decoration": 3774
+      },
+      "minimum_decoration_center": 0.3661641116581027,
+      "minimum_edge_margin_all_six_rotations": 0.1219163436810411,
+      "center_surface_violations": 0,
+      "edge_surface_violations": 0,
+      "threejs_center_ray_samples": 48,
+      "primitives": 2,
+      "materials": 1
+    },
+    {
+      "id": "catan_terrain_forest_03",
+      "pass": true,
+      "triangles": 12224,
+      "bytes": 527596,
+      "vertex_count": {
+        "ground": 9497,
+        "decoration": 3054
+      },
+      "minimum_decoration_center": 0.5024191449292629,
+      "minimum_edge_margin_all_six_rotations": 0.10373515317610338,
+      "center_surface_violations": 0,
+      "edge_surface_violations": 0,
+      "threejs_center_ray_samples": 48,
+      "primitives": 2,
+      "materials": 1
+    },
+    {
+      "id": "catan_terrain_wheat_01",
+      "pass": true,
+      "triangles": 25626,
+      "bytes": 1616988,
+      "vertex_count": {
+        "ground": 20304,
+        "decoration": 20274
+      },
+      "minimum_decoration_center": 0.40686302404033736,
+      "minimum_edge_margin_all_six_rotations": 0.14833514880341647,
+      "center_surface_violations": 0,
+      "edge_surface_violations": 0,
+      "threejs_center_ray_samples": 48,
+      "primitives": 2,
+      "materials": 1
+    },
+    {
+      "id": "catan_terrain_wheat_02",
+      "pass": true,
+      "triangles": 25942,
+      "bytes": 1649124,
+      "vertex_count": {
+        "ground": 20304,
+        "decoration": 21114
+      },
+      "minimum_decoration_center": 0.4350749653180856,
+      "minimum_edge_margin_all_six_rotations": 0.13632940472295985,
+      "center_surface_violations": 0,
+      "edge_surface_violations": 0,
+      "threejs_center_ray_samples": 48,
+      "primitives": 2,
+      "materials": 1
+    },
+    {
+      "id": "catan_terrain_wheat_03",
+      "pass": true,
+      "triangles": 25930,
+      "bytes": 1645380,
+      "vertex_count": {
+        "ground": 20304,
+        "decoration": 21012
+      },
+      "minimum_decoration_center": 0.4230167146362695,
+      "minimum_edge_margin_all_six_rotations": 0.1416842241207994,
+      "center_surface_violations": 0,
+      "edge_surface_violations": 0,
+      "threejs_center_ray_samples": 48,
+      "primitives": 2,
+      "materials": 1
+    },
+    {
+      "id": "catan_terrain_sheep_01",
+      "pass": true,
+      "triangles": 11896,
+      "bytes": 574580,
+      "vertex_count": {
+        "ground": 11403,
+        "decoration": 2508
+      },
+      "minimum_decoration_center": 0.4743200432492428,
+      "minimum_edge_margin_all_six_rotations": 0.193435003272716,
+      "center_surface_violations": 0,
+      "edge_surface_violations": 0,
+      "threejs_center_ray_samples": 48,
+      "primitives": 2,
+      "materials": 1
+    },
+    {
+      "id": "catan_terrain_sheep_02",
+      "pass": true,
+      "triangles": 11766,
+      "bytes": 566456,
+      "vertex_count": {
+        "ground": 11441,
+        "decoration": 2266
+      },
+      "minimum_decoration_center": 0.4711031662396015,
+      "minimum_edge_margin_all_six_rotations": 0.11684749586352339,
+      "center_surface_violations": 0,
+      "edge_surface_violations": 0,
+      "threejs_center_ray_samples": 48,
+      "primitives": 2,
+      "materials": 1
+    },
+    {
+      "id": "catan_terrain_sheep_03",
+      "pass": true,
+      "triangles": 12288,
+      "bytes": 612680,
+      "vertex_count": {
+        "ground": 11620,
+        "decoration": 3284
+      },
+      "minimum_decoration_center": 0.4743200432492428,
+      "minimum_edge_margin_all_six_rotations": 0.18083032272983135,
+      "center_surface_violations": 0,
+      "edge_surface_violations": 0,
+      "threejs_center_ray_samples": 48,
+      "primitives": 2,
+      "materials": 1
+    },
+    {
+      "id": "catan_terrain_ore_01",
+      "pass": true,
+      "triangles": 3156,
+      "bytes": 272916,
+      "vertex_count": {
+        "ground": 6589,
+        "decoration": 400
+      },
+      "minimum_decoration_center": 0.47205703897075313,
+      "minimum_edge_margin_all_six_rotations": 0.2673370278495415,
+      "center_surface_violations": 0,
+      "edge_surface_violations": 0,
+      "threejs_center_ray_samples": 48,
+      "primitives": 2,
+      "materials": 1
+    },
+    {
+      "id": "catan_terrain_ore_02",
+      "pass": true,
+      "triangles": 3156,
+      "bytes": 273388,
+      "vertex_count": {
+        "ground": 6602,
+        "decoration": 400
+      },
+      "minimum_decoration_center": 0.48004207673397964,
+      "minimum_edge_margin_all_six_rotations": 0.2794240960475335,
+      "center_surface_violations": 0,
+      "edge_surface_violations": 0,
+      "threejs_center_ray_samples": 48,
+      "primitives": 2,
+      "materials": 1
+    },
+    {
+      "id": "catan_terrain_ore_03",
+      "pass": true,
+      "triangles": 3156,
+      "bytes": 273816,
+      "vertex_count": {
+        "ground": 6614,
+        "decoration": 400
+      },
+      "minimum_decoration_center": 0.4627761264647412,
+      "minimum_edge_margin_all_six_rotations": 0.2612901933379509,
+      "center_surface_violations": 0,
+      "edge_surface_violations": 0,
+      "threejs_center_ray_samples": 48,
+      "primitives": 2,
+      "materials": 1
+    },
+    {
+      "id": "catan_terrain_clay_01",
+      "pass": true,
+      "triangles": 17820,
+      "bytes": 795764,
+      "vertex_count": {
+        "ground": 18524,
+        "decoration": 544
+      },
+      "minimum_decoration_center": 0.4705983776372753,
+      "minimum_edge_margin_all_six_rotations": 0.2055024319194253,
+      "center_surface_violations": 0,
+      "edge_surface_violations": 0,
+      "threejs_center_ray_samples": 48,
+      "primitives": 2,
+      "materials": 1
+    },
+    {
+      "id": "catan_terrain_clay_02",
+      "pass": true,
+      "triangles": 17820,
+      "bytes": 797528,
+      "vertex_count": {
+        "ground": 18573,
+        "decoration": 544
+      },
+      "minimum_decoration_center": 0.42635412530004935,
+      "minimum_edge_margin_all_six_rotations": 0.23800703787270328,
+      "center_surface_violations": 0,
+      "edge_surface_violations": 0,
+      "threejs_center_ray_samples": 48,
+      "primitives": 2,
+      "materials": 1
+    },
+    {
+      "id": "catan_terrain_clay_03",
+      "pass": true,
+      "triangles": 17820,
+      "bytes": 805844,
+      "vertex_count": {
+        "ground": 18804,
+        "decoration": 544
+      },
+      "minimum_decoration_center": 0.4928366892749191,
+      "minimum_edge_margin_all_six_rotations": 0.21189580005096265,
+      "center_surface_violations": 0,
+      "edge_surface_violations": 0,
+      "threejs_center_ray_samples": 48,
+      "primitives": 2,
+      "materials": 1
+    },
+    {
+      "id": "catan_terrain_desert_01",
+      "pass": true,
+      "triangles": 17680,
+      "bytes": 766392,
+      "vertex_count": {
+        "ground": 18011,
+        "decoration": 264
+      },
+      "minimum_decoration_center": 0.5254513916890801,
+      "minimum_edge_margin_all_six_rotations": 0.24881041485489452,
+      "center_surface_violations": 0,
+      "edge_surface_violations": 0,
+      "threejs_center_ray_samples": 48,
+      "primitives": 2,
+      "materials": 1
+    },
+    {
+      "id": "catan_terrain_desert_02",
+      "pass": true,
+      "triangles": 17614,
+      "bytes": 761248,
+      "vertex_count": {
+        "ground": 18011,
+        "decoration": 132
+      },
+      "minimum_decoration_center": 0.49036272457303653,
+      "minimum_edge_margin_all_six_rotations": 0.21542625617188582,
+      "center_surface_violations": 0,
+      "edge_surface_violations": 0,
+      "threejs_center_ray_samples": 48,
+      "primitives": 2,
+      "materials": 1
+    }
+  ]
+}

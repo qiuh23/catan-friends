@@ -1,3 +1,4 @@
+import {updateSceneClock, projectSceneClock} from './scene-clock.js';
 import { siteEdition, assignNickname, NICKNAMES, rejectCommunication, validateNicknameInput } from './site-policy.js';
 import { createGame, addPlayer, act, viewFor, botAction, afford, total, ruleProfile, optionsForPlayers } from './game.js';
 import { createRandomStream, validRandomStream } from './random.js';
@@ -38,6 +39,7 @@ export class Room {
     r.hostConnected=!!r.hostConnected;r.hostOfflineAt ??= r.hostConnected ? null : (r.updatedAt ?? now);
     r.pauseOfflineAt ??= null;r.revoked ||= [];
     r.siteEdition=this.siteEdition;this.enforceSitePolicy();
+    if(!r.sceneClock)updateSceneClock(r,now);
   }
   enforceSitePolicy() {
     const r=this.record;if(this.siteEdition!=='cn'||r.closed)return;
@@ -76,6 +78,7 @@ export class Room {
       r.hostConnected=false;
       if(r.paused && !r.practice && r.pauseOfflineAt===null)r.pauseOfflineAt=r.hostOfflineAt;
     }
+    updateSceneClock(r,recover&&!online.length?Math.min(now,r.hostSeenAt??now):now,online);
     this.expire(now);
   }
   expire(now=Date.now()) {
@@ -169,6 +172,7 @@ export class Room {
       if(g.phase!=='finished')throw new UserError('本局结束后才能重新开局。');
       const next=createGame(g.options);for(const p of g.players){addPlayer(next,p.id,p.name,p.bot);if(p.nicknameId)Object.assign(next.players.at(-1),{nicknameId:p.nicknameId,...(p.nicknameBadge?{nicknameBadge:p.nicknameBadge}:{})});}next.hostId=r.hostId;r.random=next.random;delete next.random;r.game=next;
     } else r.game=this.gameAction(g,id,a);
+    updateSceneClock(r,now,this.online);
     r.revision++;r.updatedAt=now;r.receipts.push({actor:id,id:message.id});r.receipts=r.receipts.slice(-256);
     return {type:'ack',id:message.id,ok:true};
   }
@@ -188,11 +192,11 @@ export class Room {
   }
   tick(now=Date.now()) {
     this.assertOpen(now);const next=this.nextBot();if(!next)return false;
-    this.record.game=this.gameAction(this.record.game,next.actor,next.action);this.record.revision++;this.record.updatedAt=now;return true;
+    this.record.game=this.gameAction(this.record.game,next.actor,next.action);this.record.revision++;this.record.updatedAt=now;updateSceneClock(this.record,now,this.online);return true;
   }
   metadata(now=Date.now()) {
     const r=this.record;if(r.closed)return {closed:true,closeReason:r.closeReason,serverNow:now};
-    return {siteEdition:this.siteEdition,hostId:r.hostId,visibility:r.visibility,practice:r.practice,paused:r.paused,closed:false,minPlayers:r.game.phase==='lobby'?3:ruleProfile(r.game).minPlayers,maxPlayers:r.game.phase==='lobby'?6:ruleProfile(r.game).maxPlayers,expiresAt:this.deadline(),retentionReason:r.practice?'practice':r.paused?'paused':'host-offline',serverNow:now};
+    return {siteEdition:this.siteEdition,hostId:r.hostId,visibility:r.visibility,practice:r.practice,paused:r.paused,sceneClock:projectSceneClock(r,now),closed:false,minPlayers:r.game.phase==='lobby'?3:ruleProfile(r.game).minPlayers,maxPlayers:r.game.phase==='lobby'?6:ruleProfile(r.game).maxPlayers,expiresAt:this.deadline(),retentionReason:r.practice?'practice':r.paused?'paused':'host-offline',serverNow:now};
   }
   summary(code,now=Date.now()) {
     const r=this.record;if(r.closed || r.practice || r.visibility!=='public')return null;

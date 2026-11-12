@@ -20,16 +20,39 @@ export function instanceMatrix({x=0,y=0,z=0,rotationY=0,scaleX=1}) {
 export class BoardModels {
   constructor({Loader=GLTFLoader}={}) {
     this.library=createAssetLibrary({GLTFLoader:Loader});
+    this.nightUniform={value:0};this.windowMaterials=new Map();
     this.ready=new Map();this.requests=new Map();this.layers=new Map();this.disposed=false;
   }
   load(url) {
     if(this.disposed)return Promise.reject(new Error('Board models disposed'));
     if(!this.requests.has(url))this.requests.set(url,this.library.load(url).then(gltf=>{
-      if(!this.disposed)this.ready.set(url,gltf.scene);
+      if(!this.disposed){
+        if(url.startsWith(ARCHITECTURE_URL)&&!url.endsWith('pier_detailed.glb'))gltf.scene.traverse(object=>{
+          const original=object.material;
+          if(!object.isMesh||Array.isArray(original)||!original.vertexColors||original.name==='OwnerTint')return;
+          if(!this.windowMaterials.has(original)){
+            const material=original.clone();
+            material.onBeforeCompile=shader=>{
+              shader.uniforms.uWindowNight=this.nightUniform;
+              shader.fragmentShader='uniform float uWindowNight;\n'+shader.fragmentShader;
+              shader.fragmentShader=shader.fragmentShader.replace('#include <emissivemap_fragment>',`#include <emissivemap_fragment>
+                #ifdef USE_COLOR
+                  float windowMask=1.-step(.004,max(max(abs(vColor.r-.019),abs(vColor.g-.058)),abs(vColor.b-.068)));
+                  totalEmissiveRadiance+=vec3(1.,.36,.065)*7.*uWindowNight*windowMask;
+                #endif`);
+            };
+            material.customProgramCacheKey=()=> 'catan-warm-windows-v1';
+            this.windowMaterials.set(original,material);
+          }
+          object.material=this.windowMaterials.get(original);
+        });
+        this.ready.set(url,gltf.scene);
+      }
       return gltf;
     }));
     return this.requests.get(url);
   }
+  setNight(value){this.nightUniform.value=value;}
   choices(board) {return groupTerrainVariants(board.tiles,{seed:deriveTerrainAppearanceSeed(board),baseURL:TERRAIN_URL});}
   async prepare(board) {
     const urls=[...this.choices(board).map(g=>g.url),...architecture.map(name=>`${ARCHITECTURE_URL}${name}.glb`)];
@@ -66,5 +89,6 @@ export class BoardModels {
     if(this.disposed)return;this.disposed=true;
     for(const layer of [...this.layers.keys()])this.releaseLayer(layer);
     this.ready.clear();await this.library.dispose();this.requests.clear();
+    for(const material of this.windowMaterials.values())material.dispose();this.windowMaterials.clear();
   }
 }
