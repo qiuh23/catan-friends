@@ -46,5 +46,5 @@ export function mergeFeedbackEvents(events) {
   const shown=[...groups.values()].slice(0,2),remaining=ordered.length-shown.reduce((count,group)=>count+group.count,0);
   const text=shown.map(group=>`${group.text}${group.count>1?`（${group.count} 次）`:''}`).join(' · ')+(remaining?` 另有 ${remaining} 项公开行动。`:'');
   const targetKinds=Object.fromEntries(ordered.flatMap(event=>(event.targets||[]).map(t=>[`${t.kind}:${t.id}`,event.kind])));
-  return {...ordered.at(-1),kind:ordered.length===1?ordered[0].kind:'summary',text,targets,targetKinds,eventIds:ordered.map(event=>event.id),actorIds,count:ordered.length};
+  return {...ordered.at(-1),bubbleTarget:ordered.at(-1).targets?.at(-1)||null,latestText:ordered.at(-1).text,kind:ordered.length===1?ordered[0].kind:'summary',text,targets,targetKinds,eventIds:ordered.map(event=>event.id),actorIds,count:ordered.length};
 }

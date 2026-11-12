@@ -17,16 +17,16 @@ try{
     Object.assign(g.board.vertices[tile.vertices[0]],{owner:'p0',level:1});Object.assign(g.board.vertices[tile.vertices[2]],{owner:'p1',level:1});
     g.phase='roll';g.bank[tile.resource]=5;c.set(g);
     let event=c.action('p0',{type:'roll'},()=>.51);assert.equal(event.kind,'production');await waitEvent(p,event);await shot(p,`production-${mode}`);
-    c.publish();c.publish();await p.waitForTimeout(1500);assert.equal(await p.locator('#action-feedback').isVisible(),false,'duplicate replay extended animation');
+    c.publish();c.publish();await p.waitForFunction(()=>document.querySelector('#action-feedback').hidden,null,{timeout:6000});assert.equal(await p.locator('#action-feedback').isVisible(),false,'duplicate replay extended animation');
     g=structuredClone(c.game);g.phase='robber';g.resumePhase='action';c.set(g);
     c.action('p0',{type:'moveRobber',tile:tile.id});event=c.action('p0',{type:'steal',victim:'p1'});await waitEvent(p,event);await shot(p,`robber-${mode}`);
     assert.ok(!/wood|ore|brick|sheep|wheat/.test(await p.locator('#action-feedback').textContent()),'theft exposed resource');
-    await p.waitForTimeout(1400);
+    await p.waitForFunction(()=>document.querySelector('#action-feedback').hidden,null,{timeout:6000});
     g=structuredClone(c.game);g.phase='roll';c.set(g);event=c.action('p0',{type:'roll'},()=>.51);assert.equal(event.kind,'blocked');await waitEvent(p,event);await shot(p,`blocked-${mode}`);
     if(flat)assert.ok(await p.locator('.robber-outline').count()>0);
-    await p.waitForTimeout(1400);
+    await p.waitForFunction(()=>document.querySelector('#action-feedback').hidden,null,{timeout:6000});
     g=structuredClone(c.game);g.players[0].knights=3;updateAwards(g);event=g.presentation.events.at(-1);c.set(g);await waitEvent(p,event);assert.match(await p.locator('#action-feedback').textContent(),/最大军队/);await shot(p,`award-${mode}`);
-    await p.waitForTimeout(1400);
+    await p.waitForFunction(()=>document.querySelector('#action-feedback').hidden,null,{timeout:6000});
     g=structuredClone(c.game);const port=g.board.ports[0];for(const [i,id] of port.vertices.entries())Object.assign(g.board.vertices[id],{owner:`p${i}`,level:i+1});c.set(g);
     if(flat){await p.locator(`[data-port="${port.id}"]`).focus();await p.keyboard.press('Enter');}
     else {

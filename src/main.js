@@ -21,10 +21,12 @@ import { createBoard, RESOURCES } from '../shared/board.js';
 import { DEV_NAMES } from '../shared/game.js';
 import { variantOptions, remainingTime, gameLobbyURL, leaveDescription, mergeRoomPages, expansionForCount } from './room-ui.js';
 import { requiredTask } from './table-layout.js';
+import { NoticeQueue } from './notice-queue.js';
 import { ActionFeedbackCursor, mergeFeedbackEvents } from './action-feedback.js';
 import { installDialogDismissal } from './dialogs.js';
-import { placeMapBubble } from './map-bubble.js';
+import { placeMapBubble, BubbleVisibility } from './map-bubble.js';
 import { createHomeExample, homePadding } from './home-showcase.js';
+import './notices.css';
 
 const $=s=>document.querySelector(s);
 const storage={get(key){try{return JSON.parse(localStorage.getItem(`catan:${key}`));}catch{return null;}},set(key,value){try{localStorage.setItem(`catan:${key}`,JSON.stringify(value));}catch{}}};
@@ -42,7 +44,10 @@ let inspectedBuild='',selectedPort=null,tradeView='players',tradePage='compose';
 const savedBoardViews=new Map();
 const feedbackCursor=new ActionFeedbackCursor(), motionQuery=matchMedia('(prefers-reduced-motion:reduce)');
 let autoFollow=storage.get('auto-follow')!==false, followPaused=false, motionPreference=storage.get('reduce-motion');
-let actionFeedback=null, feedbackBurst=[], feedbackTimer=0, highlightTimer=0, lastCameraAt=0, feedbackEpoch='', feedbackCanFollow=false;
+let feedbackVisibility=new BubbleVisibility(),feedbackRevealTimer=0;
+let actionFeedback=null, feedbackPlacement=null, lastCameraAt=0, feedbackEpoch='', feedbackCanFollow=false;
+const feedbackQueue=new NoticeQueue({show:showActionFeedback,delay:180,key:event=>event.id,pendingLimit:80,merge:(events,omitted)=>{const event=mergeFeedbackEvents(events);event.count+=omitted;return event;},duration:event=>Math.min(5200,Math.max(2800,event.text.length*65))});
+const toastQueue=new NoticeQueue({show:paintToast,duration:text=>Math.min(6500,Math.max(3200,text.length*80))});
 const reducedMotion=()=>typeof motionPreference==='boolean'?motionPreference:motionQuery.matches;
 const inputDrafts=new Map(), panelScroll=new Map();
 let draftScope='home';
@@ -64,7 +69,12 @@ const displayCode=value=>backendId==='aliyun'?`A-${value}`:backendId==='cloudfla
 const mine=()=>state?.players.find(p=>p.id===state.me);
 const myTurn=()=>state && state.players[state.turn]?.id===state.me;
 
-function toast(text){if($('#stage-dialog').open){$('#stage-feedback').textContent=text;return;}const el=$('#toast');el.textContent=text;el.classList.add('show');clearTimeout(toast.timer);toast.timer=setTimeout(()=>el.classList.remove('show'),4500);}
+function paintToast(text){
+  const el=$('#toast');if(!el)return;
+  if(text===null){el.classList.remove('show');el.hidePopover?.();return;}
+  el.textContent=text;el.showPopover?.();el.classList.add('show');
+}
+function toast(text){if(typeof text==='string'&&text.trim())toastQueue.push(text.trim());}
 async function sendChat(event){
   event.preventDefault();
   if(DOMESTIC)return;
@@ -99,7 +109,7 @@ function restoreBoardView(){if(!state?.board)return;try{const preference=JSON.pa
 function paintCameraControls(){render();}
 function pauseFollowing(){followPaused=true;feedbackCanFollow=false;board?.cancelFocus?.();paintCameraControls();saveBoardView();}
 function cameraBlocked(){return !state?.board||status!=='connected'||busy||Boolean(mode())||Boolean(state.room?.paused)||Boolean(document.querySelector('dialog[open]'))||Boolean(document.activeElement?.matches('input,textarea,select,[contenteditable="true"]'))||document.hidden;}
-function clearActionFeedback(){clearTimeout(feedbackTimer);clearTimeout(highlightTimer);feedbackTimer=0;highlightTimer=0;feedbackBurst=[];feedbackCanFollow=false;actionFeedback=null;board?.setFeedback?.(null);paintActionFeedback();}
+function clearActionFeedback(){feedbackCanFollow=false;feedbackQueue.clear();}
 function positionActionFeedback(){
   const el=$('#action-feedback'),leader=$('#action-feedback-leader');leader?.setAttribute('hidden','');
   if(!actionFeedback||el.hidden)return;
@@ -108,7 +118,7 @@ function positionActionFeedback(){
   let x,y;
   if(target){
     el.dataset.target=`${target.kind}:${target.id}`;
-    if(!point?.visible){el.style.visibility='hidden';return;}x=point.x;y=point.y;
+    if(!point?.visible){feedbackVisibility.update(false,performance.now());el.style.visibility='hidden';return;}x=point.x;y=point.y;
   }else{
     const actor=document.querySelector(`[data-player="${CSS.escape(actionFeedback.actorId)}"]`),anchor=actor||$('#play-dock'),r=anchor?.getBoundingClientRect();if(!r){el.style.visibility='hidden';return;}
     x=r.left+r.width/2-bounds.left;y=r.bottom-bounds.top+12;el.dataset.target=actor?`actor:${actionFeedback.actorId}`:'controls';
@@ -116,9 +126,12 @@ function positionActionFeedback(){
   const obstacles=[...document.querySelectorAll('.stage-primary,.stage-utilities,#player-orbit,#play-dock,.hand-tray,#turn-banner>div')].filter(node=>node.getClientRects().length).map(node=>{const r=node.getBoundingClientRect();return{x:r.left-bounds.left-4,y:r.top-bounds.top-4,width:r.width+8,height:r.height+8};});
   // Number tokens remain legible even for an action on an adjacent edge.
   obstacles.push(...(board?.projectNumberObstacles?.()||[]));
-  const placement=placeMapBubble({x,y},{width:el.offsetWidth,height:el.offsetHeight},{width:bounds.width,height:bounds.height},obstacles);
-  el.style.visibility=placement.blocked?'hidden':'visible';el.style.left=`${placement.x}px`;el.style.top=`${placement.y}px`;el.dataset.anchor=JSON.stringify({x,y});
-  if(target&&leader&&!placement.blocked){leader.removeAttribute('hidden');$('#feedback-line-cutouts').innerHTML=obstacles.map(r=>`<rect x="${r.x}" y="${r.y}" width="${r.width}" height="${r.height}" rx="2" fill="black"/>`).join('');leader.setAttribute('viewBox',`0 0 ${bounds.width} ${bounds.height}`);leader.querySelector('path').setAttribute('d',`M${x},${y} L${placement.edge.x},${placement.edge.y}`);}
+  const placement=placeMapBubble({x,y},{width:el.offsetWidth,height:el.offsetHeight},{width:bounds.width,height:bounds.height},obstacles,feedbackPlacement);
+  feedbackPlacement=placement;
+  const visible=feedbackVisibility.update(!placement.blocked,performance.now());
+  if(!visible&&!placement.blocked&&!feedbackRevealTimer)feedbackRevealTimer=setTimeout(()=>{feedbackRevealTimer=0;positionActionFeedback();},120);
+  el.style.visibility=visible?'visible':'hidden';el.style.left=`${placement.x}px`;el.style.top=`${placement.y}px`;el.dataset.anchor=JSON.stringify({x,y});
+  if(target&&leader&&visible){leader.removeAttribute('hidden');$('#feedback-line-cutouts').innerHTML=obstacles.map(r=>`<rect x="${r.x}" y="${r.y}" width="${r.width}" height="${r.height}" rx="2" fill="black"/>`).join('');leader.setAttribute('viewBox',`0 0 ${bounds.width} ${bounds.height}`);leader.querySelector('path').setAttribute('d',`M${x},${y} L${placement.edge.x},${placement.edge.y}`);}
 }
 function paintActionFeedback(){
   const el=$('#action-feedback'),shown=Boolean(actionFeedback&&state?.board);el.hidden=!shown;
@@ -128,27 +141,24 @@ function paintActionFeedback(){
   el.dataset.eventId=String(actionFeedback.id);el.dataset.eventIds=(actionFeedback.eventIds||[actionFeedback.id]).join(',');el.dataset.kind=actionFeedback.kind;
   positionActionFeedback();
 }
-function showActionFeedback(){
-  const events=feedbackBurst,canFollow=feedbackCanFollow;feedbackBurst=[];feedbackTimer=0;feedbackCanFollow=false;if(!events.length||!state?.board)return;
-  actionFeedback=mergeFeedbackEvents(events);
-  const latest=events.at(-1);actionFeedback.bubbleTarget=latest.targets.at(-1)||null;
-  if(events.some(event=>event.actorId!==latest.actorId||JSON.stringify(event.targets)!==JSON.stringify(latest.targets)))actionFeedback.text=`${latest.text} · +${events.length-1} 项（记录）`;
+function showActionFeedback(event){
+  clearTimeout(feedbackRevealTimer);feedbackRevealTimer=0;feedbackVisibility=new BubbleVisibility();
+  actionFeedback=event;feedbackPlacement=null;
+  if(event?.count>1)event.text=`${event.latestText} · +${event.count-1} 项（记录）`;
   paintActionFeedback();
   board?.setFeedback?.(actionFeedback,{reducedMotion:reducedMotion()});
-  clearTimeout(highlightTimer);const displayed=actionFeedback;
-  highlightTimer=setTimeout(()=>{if(actionFeedback!==displayed)return;actionFeedback=null;board?.setFeedback?.(null);paintActionFeedback();},1250);
-  // Busy bursts get one summary and a static highlight, never a camera backlog.
-  if(canFollow&&autoFollow&&!followPaused&&!reducedMotion()&&!cameraBlocked()&&Date.now()-lastCameraAt>3500&&actionFeedback.targets.length){
-    if(board?.focusFeedback?.(actionFeedback,{reducedMotion:false}))lastCameraAt=Date.now();
+  // Queued bursts are context, not a backlog of camera moves.
+  if(event&&feedbackCanFollow&&autoFollow&&!followPaused&&!reducedMotion()&&!cameraBlocked()&&Date.now()-lastCameraAt>3500&&event.targets.length){
+    if(board?.focusFeedback?.(event,{reducedMotion:false}))lastCameraAt=Date.now();
   }
+  feedbackCanFollow=false;
 }
 function receiveActionFeedback(next){
   const epoch=next.presentation?.epoch||'';if(feedbackEpoch!==epoch){clearActionFeedback();feedbackEpoch=epoch;}
   const events=feedbackCursor.consume(next,{connected:status==='connected',roomKey:code});
-  if(!events.length)return;
-  const eligible=!cameraBlocked()&&autoFollow&&!followPaused&&!reducedMotion();
-  feedbackCanFollow=feedbackBurst.length?feedbackCanFollow&&eligible:eligible;feedbackBurst.push(...events);feedbackBurst=feedbackBurst.slice(-80);
-  if(!feedbackTimer)feedbackTimer=setTimeout(showActionFeedback,180);
+  if(!events.length||document.hidden)return;
+  feedbackCanFollow=!feedbackQueue.current&&!feedbackQueue.pending.length&&!cameraBlocked()&&autoFollow&&!followPaused&&!reducedMotion();
+  for(const event of events)feedbackQueue.push(event);
 }
 function hover(text){$('#tile-hint').textContent=text|| (flat?'拖动平移 · 双指或加减键缩放':'拖动旋转 · 双指或滚轮缩放');if(text?.startsWith('相邻落点较近'))toast(text);}
 async function select(target){
@@ -166,7 +176,7 @@ async function send(action){
 function connect(room,token,name){
   if(entryError)return toast(entryError);
   try {room=readRoom(room,backendId);}catch(error){return toast(error.message);}
-  showcaseInterrupted=false;savedBoardViews.clear();
+  showcaseInterrupted=false;savedBoardViews.clear();toastQueue.clear();
   connection?.close();clearActionFeedback();feedbackEpoch='';followPaused=false;code=room;state=null;seenChatIds=new Set();chatBusy=false;stagePanel='';lastTaskKey='';status='connecting';
   $('#entry-dialog').close();$('#rooms-dialog').close();
   terminalMessage='';if(!DOMESTIC)storage.set('name',name);replaceViewURL(invitationURL(location.origin,code,backendId));
@@ -256,7 +266,7 @@ function syncStage(previousPanel,previousScroll){
   scroller.scrollTop=previousPanel===stagePanel?previousScroll:panelScroll.get(stagePanel)||0;
   if(!state||!stagePanel){dialog.close();return;}
   if(stagePanel==='chat')for(const chat of state.chat)seenChatIds.add(chat.id);
-  if(!dialog.open&&!$('#room-dialog').open&&!$('#rules-dialog').open){$('#toast').classList.remove('show');dialog.showModal();}
+  if(!dialog.open&&!$('#room-dialog').open&&!$('#rules-dialog').open){dialog.showModal();}
 }
 function render(){
   const oldChat=$('#chat-messages'),chatScroll=oldChat?.scrollTop||0,followChat=!oldChat||oldChat.scrollHeight-oldChat.clientHeight-chatScroll<32;
@@ -284,7 +294,7 @@ function render(){
   // sessions whose later notice padding must preserve their settled camera.
   syncViewport();board?.set(sceneState(),mode());
   if(cameraBlocked()){feedbackCanFollow=false;board?.cancelFocus?.();}
-  updateAmbient();paintActionFeedback();
+  feedbackQueue.pause(Boolean(document.querySelector('dialog[open]')));updateAmbient();paintActionFeedback();
   for(const el of document.querySelectorAll('.activity-log'))el.scrollTop=el.scrollHeight;
   if($('#chat-messages'))$('#chat-messages').scrollTop=followChat?$('#chat-messages').scrollHeight:chatScroll;
   bindForms();
@@ -392,8 +402,8 @@ document.addEventListener('click',async e=>{
   if(b.id==='flat-toggle'||action==='toggleFlat'){saveBoardView();flat=!flat;makeBoard();render();saveBoardView();}
 });
 function forgetIdentity(room){storage.set(`token:${room}`,null);if(storage.get('last')?.code===room)storage.set('last',null);}
-function terminal(message){const current=code;forgetIdentity(current);terminalMessage=message.message||(message.type==='removed'?'你已被移出房间，原身份已失效。':'房间已关闭，旧链接不能恢复。');connection?.close();clearActionFeedback();connection=null;state=null;code='';status='idle';invite='';replaceViewURL('/');$('#room-dialog').close();confirmation=null;render();refreshRooms();}
-function exitView(destination){saveBoardView();connection?.close();clearActionFeedback();connection=null;state=null;code='';status='idle';selectedBuild='';panel='';invite='';replaceViewURL('/');if(destination==='lobby'){const target=gameLobbyURL(backendId);if(target){location.assign(target);return;}}render();refreshRooms();}
+function terminal(message){const current=code;forgetIdentity(current);terminalMessage=message.message||(message.type==='removed'?'你已被移出房间，原身份已失效。':'房间已关闭，旧链接不能恢复。');connection?.close();clearActionFeedback();toastQueue.clear();connection=null;state=null;code='';status='idle';invite='';replaceViewURL('/');$('#room-dialog').close();confirmation=null;render();refreshRooms();}
+function exitView(destination){saveBoardView();connection?.close();clearActionFeedback();toastQueue.clear();connection=null;state=null;code='';status='idle';selectedBuild='';panel='';invite='';replaceViewURL('/');if(destination==='lobby'){const target=gameLobbyURL(backendId);if(target){location.assign(target);return;}}render();refreshRooms();}
 function openConfirmation(task,title,description,confirmText='确认'){confirmation=task;confirmationCopy={title,description,confirmText,chooseTransfer:task.type==='chooseTransfer'};render();$('#room-dialog').showModal();}
 function openLeave(destination){if(!code)return exitView(destination);const description=state?leaveDescription({lobby:state.phase==='lobby',host:isHost(),practice:state.room?.practice,paused:state.room?.paused,target:destination==='lobby'?'游戏大厅':'首页'}):`取消连接并返回${destination==='lobby'?'当前服务器游戏大厅':'首页'}。`;openConfirmation({type:'navigate',destination},state?.phase==='lobby'&&!isHost()?'退出座位':'暂离房间',description,state?.phase==='lobby'&&!isHost()?'退出并返回':'暂离并返回');}
 async function confirmRoomDialog(){let task=confirmation;if(task?.type==='chooseTransfer')task={type:'transferHost',playerId:$('#transfer-choice')?.value};if(!task||busy)return;$('#room-dialog').close();confirmation=null;if(task.type==='navigate'){const release=state?.phase==='lobby'&&!isHost(),current=code;if(state&&!(state.phase==='lobby'&&isHost())&&!(await send({type:'leave'})))return;if(release)forgetIdentity(current);return exitView(task.destination);}await send(task);}
@@ -427,17 +437,17 @@ document.addEventListener('change',e=>{
   if(e.target.id==='reduce-motion'){motionPreference=e.target.checked;storage.set('reduce-motion',motionPreference);document.body.classList.toggle('reduced-action-motion',reducedMotion());board?.cancelFocus?.();board?.setFeedback?.(actionFeedback,{reducedMotion:reducedMotion()});updateAmbient();}
 });
 motionQuery.addEventListener('change',()=>{document.body.classList.toggle('reduced-action-motion',reducedMotion());board?.cancelFocus?.();board?.setFeedback?.(actionFeedback,{reducedMotion:reducedMotion()});updateAmbient();});
-document.addEventListener('visibilitychange',()=>{if(document.hidden){clearActionFeedback();board?.cancelFocus?.();}updateAmbient();});
+document.addEventListener('visibilitychange',()=>{toastQueue.pause(document.hidden);if(document.hidden){clearActionFeedback();board?.cancelFocus?.();}updateAmbient();});
 $('#rules-dialog').addEventListener('close',()=>{if(stagePanel)render();else paintActionFeedback();});
 $('#room-dialog').addEventListener('close',()=>{if(stagePanel)render();else paintActionFeedback();});
 $('#stage-dialog').addEventListener('cancel',e=>{e.preventDefault();closeStagePanel();});
-replaceViewURL=installDialogDismissal({beforeClose:saveDrafts,onStageClose:closeStagePanel,onChange:updateAmbient,canDismiss:dialog=>dialog.id!=='stage-dialog'||stagePanel!=='decision'||!requiredTask(state)||state.room?.paused}).replaceURL;
+replaceViewURL=installDialogDismissal({beforeClose:saveDrafts,onStageClose:closeStagePanel,onChange:()=>{updateAmbient();feedbackQueue.pause(Boolean(document.querySelector('dialog[open]')));paintActionFeedback();},canDismiss:dialog=>dialog.id!=='stage-dialog'||stagePanel!=='decision'||!requiredTask(state)||state.room?.paused}).replaceURL;
 restoreDrafts();makeBoard();render();syncViewport();
 document.addEventListener('input',event=>{if(event.target.matches('[data-persist]'))saveDrafts();});
 document.addEventListener('change',event=>{if(event.target.matches('[data-persist]'))saveDrafts();});
 const hudObserver=new ResizeObserver(syncViewport);for(const selector of ['#stage-tools','#turn-banner','#player-orbit','#home-dock','#hand','#play-dock','#home-welcome','.topbar','.entry-server','.board-controls'])hudObserver.observe($(selector));
 document.fonts.ready.then(syncViewport);
-window.addEventListener('pagehide',()=>{pageAway=true;saveDrafts();saveBoardView();clearActionFeedback();clearTimeout(viewSaveTimer);viewSaveTimer=0;updateAmbient();board?.dispose();});
+window.addEventListener('pagehide',()=>{pageAway=true;saveDrafts();saveBoardView();clearActionFeedback();toastQueue.clear();clearTimeout(viewSaveTimer);viewSaveTimer=0;updateAmbient();board?.dispose();});
 window.addEventListener('pageshow',event=>{pageAway=false;if(event.persisted){makeBoard();render();syncViewport();}});
 if(!entryError)refreshRooms();
 const last=storage.get('last');if(!entryError&&invite&&last?.code===invite)connect(last.code,last.token,DOMESTIC?(last.nicknameId||selectedNickname.id):last.name);

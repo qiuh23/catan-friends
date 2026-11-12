@@ -1,6 +1,7 @@
 import {SceneClock, HOME_DAY_MS} from './visuals/day-night.js';
 import {createNightLights} from './visuals/night-lights.js';
 import {portGeometry} from './ports.js';
+import {createRobberHighlight} from './visuals/robber.js';
 import {BoardModels} from './visuals/board-models.js';
 import {createBoardEnvironment} from './visuals/board-environment.js';
 import * as THREE from 'three';
@@ -528,8 +529,12 @@ export class Board {
       const add=(shape,c,x,y,z,sx,sy,sz,r=0)=>batch.add(shape,c,x,y,z,sx,sy,sz,r,'pieces');
       if(!this.homeShowcase)for(const edge of b.edges.filter(e=>e.owner))addRoad(batch,b.vertices[edge.a],b.vertices[edge.b],color(edge.owner));
       if(!this.homeShowcase){const vertices=b.vertices.filter(v=>v.owner),loaded=this.models.buildings(vertices,color,this.pieces);for(const v of vertices)if(!loaded.has(v.id))addBuilding(batch,v,color(v.owner));}
+      delete this.renderer.domElement.dataset.robber;
       if(state.robber!==null&&state.robber!==undefined) {
-        const t=b.tiles[state.robber];add('cone',0x283e38,t.x,.53,t.z+.4,.14,.4,.14);add('wool',0x283e38,t.x,.8,t.z+.4,.09,.10,.09);
+        const t=b.tiles[state.robber],pose=this.models.robber(b,t,this.pieces);
+        if(!pose.loaded){add('cone',0x283e38,t.x+pose.x,pose.y+.2,t.z+pose.z,.14,.4,.14);add('wool',0x283e38,t.x+pose.x,pose.y+.47,t.z+pose.z,.09,.10,.09);}
+        this.pieces.add(createRobberHighlight(this.assets,pose,t));
+        this.renderer.domElement.dataset.robber=JSON.stringify({tile:t.id,model:pose.loaded?'hooded':'fallback',x:t.x+pose.x,y:pose.y,z:t.z+pose.z});
       }
       for(const port of b.ports)for(const arm of portGeometry(b,port).arms)if(arm.owner){const a=arm.from,c=arm.to;add('box',color(arm.owner),(a.x+c.x)/2,.225,(a.z+c.z)/2,Math.hypot(c.x-a.x,c.z-a.z),.025,.07,-Math.atan2(c.z-a.z,c.x-a.x));}
       batch.finish(this.pieces);

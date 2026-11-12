@@ -2,6 +2,8 @@ import * as THREE from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {createAssetLibrary, createInstancedParts} from './vendor/asset-library.mjs';
 import {deriveTerrainAppearanceSeed, groupTerrainVariants, hashAppearance} from './vendor/terrain-variants.mjs';
+import {ROBBER_SUPPORT} from './robber-support-data.js';
+import {ROBBER_URL, robberSupport} from './robber.js';
 import {portGeometry} from '../ports.js';
 
 export const TERRAIN_URL='/assets/v9/catan/variants/models/';
@@ -20,7 +22,7 @@ export function instanceMatrix({x=0,y=0,z=0,rotationY=0,scaleX=1}) {
 export class BoardModels {
   constructor({Loader=GLTFLoader}={}) {
     this.library=createAssetLibrary({GLTFLoader:Loader});
-    this.nightUniform={value:0};this.windowMaterials=new Map();
+    this.nightUniform={value:0};this.windowMaterials=new Map();this.robberMaterials=new Set();this.robberPlacements=new Map();
     this.ready=new Map();this.requests=new Map();this.layers=new Map();this.disposed=false;
   }
   load(url) {
@@ -46,6 +48,20 @@ export class BoardModels {
           }
           object.material=this.windowMaterials.get(original);
         });
+        if(url===ROBBER_URL)gltf.scene.traverse(object=>{
+          if(!object.isMesh)return;
+          const material=object.material.clone();
+          material.emissive.set(0x253d31);material.emissiveIntensity=.25;
+          material.onBeforeCompile=shader=>{
+            shader.uniforms.uRobberNight=this.nightUniform;
+            shader.fragmentShader='uniform float uRobberNight;\n'+shader.fragmentShader;
+            shader.fragmentShader=shader.fragmentShader.replace('#include <emissivemap_fragment>',`#include <emissivemap_fragment>
+              float robberRim=pow(1.-abs(dot(normalize(normal),normalize(vViewPosition))),3.);
+              totalEmissiveRadiance+=vec3(1.,.69,.30)*robberRim*(.18+.12*uRobberNight);`);
+          };
+          material.customProgramCacheKey=()=> 'catan-robber-rim-v1';
+          object.material=material;this.robberMaterials.add(material);
+        });
         this.ready.set(url,gltf.scene);
       }
       return gltf;
@@ -55,7 +71,7 @@ export class BoardModels {
   setNight(value){this.nightUniform.value=value;}
   choices(board) {return groupTerrainVariants(board.tiles,{seed:deriveTerrainAppearanceSeed(board),baseURL:TERRAIN_URL});}
   async prepare(board) {
-    const urls=[...this.choices(board).map(g=>g.url),...architecture.map(name=>`${ARCHITECTURE_URL}${name}.glb`)];
+    const urls=[...this.choices(board).map(g=>g.url),...architecture.map(name=>`${ARCHITECTURE_URL}${name}.glb`),ROBBER_URL];
     const results=await Promise.allSettled(urls.map(url=>this.load(url)));
     return {requested:urls.length,loaded:results.filter(r=>r.status==='fulfilled').length,failed:urls.filter((_,i)=>results[i].status==='rejected')};
   }
@@ -85,10 +101,24 @@ export class BoardModels {
     for(const [name,items]of groups)if(this.add(layer,`${ARCHITECTURE_URL}${name}.glb`,items.map(v=>({x:v.x,y:.27,z:v.z})),{ownerColors:items.map(v=>color(v.owner))}))for(const v of items)loaded.add(v.id);
     return loaded;
   }
+  robber(board,tile,layer) {
+    const group=this.choices(board).find(group=>group.instances.some(instance=>instance.tileId===tile.id));
+    const rotation=group?.instances.find(instance=>instance.tileId===tile.id)?.rotationY||0;
+    const source=this.ready.get(group?.url),key=JSON.stringify([group?.url,rotation,Boolean(source)]);
+    if(!this.robberPlacements.has(key)){
+      const asset=group?.url.split('/').at(-1).replace('.glb','');
+      const baked=source&&ROBBER_SUPPORT[asset]?.poses[Math.round(rotation/(Math.PI/3))%6];
+      this.robberPlacements.set(key,baked||robberSupport(null));
+    }
+    const pose=this.robberPlacements.get(key);
+    const loaded=this.add(layer,ROBBER_URL,[{x:tile.x+pose.x,y:pose.y,z:tile.z+pose.z,rotationY:pose.rotationY}]);
+    return {...pose,loaded};
+  }
   async dispose() {
     if(this.disposed)return;this.disposed=true;
     for(const layer of [...this.layers.keys()])this.releaseLayer(layer);
     this.ready.clear();await this.library.dispose();this.requests.clear();
+    for(const material of this.robberMaterials)material.dispose();this.robberMaterials.clear();this.robberPlacements.clear();
     for(const material of this.windowMaterials.values())material.dispose();this.windowMaterials.clear();
   }
 }

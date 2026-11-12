@@ -21,7 +21,7 @@ try{
   await p.locator('[data-action="trade"]:visible').click();
   await p.locator('[data-action="acceptTrade"]').waitFor();
   g=structuredClone(c.game);g.players[1].hand.ore=0;c.set(g,{send:false});
-  await p.locator('[data-action="acceptTrade"]').click();await p.locator('#stage-feedback').filter({hasText:'资源不足'}).waitFor();
+  await p.locator('[data-action="acceptTrade"]').click();await p.locator('#toast.show').filter({hasText:'资源不足'}).waitFor();
   assert.ok(c.game.offer,'failed trade changed offer');
   c.action('p1',{type:'endTurn'});await p.locator('.exchange-empty').waitFor();
   await p.keyboard.press('Escape');await p.locator('[data-build="development"]:visible').click();await p.locator('.build-cost').waitFor();
