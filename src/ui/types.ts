@@ -138,6 +138,8 @@ export interface UIModel {
   tradePage: string;
   draft: Map<string, string | boolean>;
   flat: boolean;
+  graphicsQuality: "high" | "low";
+  qualityHint: boolean;
   autoFollow: boolean;
   followPaused: boolean;
   reducedMotion: boolean;
@@ -192,3 +194,4 @@ export const ownPlayer = (s: GameView) =>
     hand: Bundle;
     dev: Development[];
   };
+

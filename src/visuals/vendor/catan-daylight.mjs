@@ -31,7 +31,7 @@ export function installCatanDaylight(THREE,{scene,renderer,radius=6.6,mobile=fal
  function copyState(s){return {...s,sunColor:s.sunColor.clone(),skyColor:s.skyColor.clone(),groundColor:s.groundColor.clone(),direction:s.direction.clone()};}
  function markDirty(){if(disposed)return;renderer.shadowMap.needsUpdate=true;invalidate();}
  function apply(){
-  const shadows=!(quality.mobile||quality.lowPower);
+  const shadows=!quality.lowPower;
   renderer.shadowMap.enabled=shadows;sun.castShadow=shadows;
   sun.color.copy(current.sunColor);sky.color.copy(current.skyColor);sky.groundColor.copy(current.groundColor);
   sun.intensity=current.sunIntensity*(shadows?1:2.35/2.65);sky.intensity=current.skyIntensity*(shadows?1:1.30/1.22);
@@ -98,3 +98,4 @@ export function installCatanDaylight(THREE,{scene,renderer,radius=6.6,mobile=fal
  setBoardRadius(radius);
  return {group,sky,sun,markDirty,setBoardRadius,setQuality,setEnvironment,setState,update,getState,getLightingState,setSourceDirection,dispose};
 }
+

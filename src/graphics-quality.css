@@ -1,0 +1,11 @@
+.quality-choice { min-width:0; margin:0 0 16px; padding:12px; border:1px solid var(--line,#d6ded3); border-radius:12px; }
+.quality-choice legend { padding:0 5px; font-size:14px; font-weight:600; }
+.quality-choice select { width:100%; min-height:44px; }
+.quality-choice p { margin-top:10px; font-size:12px; line-height:1.6; color:var(--muted); }
+#quality-dialog { width:min(420px,calc(100vw - 24px)); }
+.quality-hint { position:fixed; z-index:8; left:50%; transform:translateX(-50%); width:max-content; max-width:calc(100vw - 16px); display:flex; align-items:center; gap:4px; padding:4px 6px; border-radius:12px; background:#f8f7eff5; box-shadow:0 3px 16px #21483b22; font-size:12px; }
+.quality-hint[hidden] { display:none; }
+.quality-hint span { min-width:0; }
+.quality-hint button { padding:6px 8px; min-height:44px; flex-shrink:0; font-size:12px; }
+.quality-hint .square { width:36px; min-width:36px; }
+@media(max-width:380px) { .quality-hint { gap:2px; font-size:11px; padding:3px; } .quality-hint button { padding:6px; } }

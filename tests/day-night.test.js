@@ -59,7 +59,8 @@ test('absolute cycle drives the same sky/light direction without adding lights o
     assert.equal(sun.castShadow,true);positions.push(sun.position.toArray());
   }
   assert.notDeepEqual(positions[0],positions[120]);
-  environment.setQuality({mobile:true});environment.setCycle(200000);assert.equal(renderer.shadowMap.enabled,false);
+  environment.setQuality({mobile:true});environment.setCycle(200000);assert.equal(renderer.shadowMap.enabled,true);
+  environment.setQuality({lowPower:true});assert.equal(renderer.shadowMap.enabled,false);
   environment.setQuality({});environment.setCycle(210000);assert.equal(renderer.shadowMap.enabled,true);
   assert.equal(scene.children.length,originalChildren);assert.equal(environment.sky.uniforms.uOrbit.value,1);
   environment.dispose();seaMesh.geometry.dispose();seaMesh.material.dispose();
@@ -72,3 +73,4 @@ test('real manual-input handler only yields the camera and preserves scene/demo 
   Board.prototype.manualInput.call(board);
   assert.equal(board.sceneTimer,41);assert.equal(board.ambientTimer,42);assert.equal(board.homeTime,12);assert.equal(board.homeSceneElapsed,44000);assert.equal(board.sceneClock.elapsed(200),123100);assert.equal(board.ambientInterrupted,true);assert.equal(board.viewMode,'manual');assert.equal(follows,2);
 });
+

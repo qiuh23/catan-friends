@@ -27,8 +27,13 @@ import { installDialogDismissal } from './dialogs.js';
 import { placeMapBubble, BubbleVisibility } from './map-bubble.js';
 import { createHomeExample, homePadding } from './home-showcase.js';
 import './notices.css';
+import './graphics-quality.css';
+import {createQualityPreference} from './graphics-quality.js';
 
 const $=s=>document.querySelector(s);
+let qualityStorage;try{qualityStorage=localStorage;}catch{}
+const graphicsQuality=createQualityPreference(qualityStorage);
+let qualityHint=false,qualityHintTimer=0;
 const storage={get(key){try{return JSON.parse(localStorage.getItem(`catan:${key}`));}catch{return null;}},set(key,value){try{localStorage.setItem(`catan:${key}`,JSON.stringify(value));}catch{}}};
 let state=null,connection=null,code='',status='idle',busy=false,selectedBuild='',panel='',cardId='',flat=false,board;
 let seenChatIds=new Set(),chatBusy=false,chatAttempt=null,reportInfo=null,reportContext='';
@@ -102,7 +107,19 @@ async function openReport(message){if(DOMESTIC)return;
   renderReport();
 }
 function mode(){if(!state||!myTurn()||state.room?.paused)return '';if(state.phase==='setup-settlement')return 'settlement';if(['setup-road','road-building'].includes(state.phase))return 'road';if(state.phase==='robber')return 'robber';return state.phase==='action'?selectedBuild:'';}
-function makeBoard(){if(board&&state?.board)savedBoardViews.set(board instanceof FlatBoard,board.exportView?.());board?.dispose();$('#board').innerHTML='';try{board=flat?new FlatBoard($('#board'),select,hover):new Board($('#board'),select,hover);}catch(error){flat=true;board=new FlatBoard($('#board'),select,hover);toast('当前设备无法开启 3D，已切换到二维棋盘。');}board.onManual=()=>{if(!state&&!code){showcaseInterrupted=true;updateAmbient();}else pauseFollowing();};board.onProjectionChange=()=>{chatPreview?.position();positionActionFeedback();if(state?.board&&!viewSaveTimer)viewSaveTimer=setTimeout(saveBoardView,120);};$('#flat-toggle').textContent=flat?'3D':'2D';$('#flat-toggle').setAttribute('aria-label',flat?'切换三维棋盘':'切换二维棋盘');syncViewport();board.set(sceneState(),mode());if(state?.board&&!board.importView?.(storedBoardView()))board.importView?.(savedBoardViews.get(flat));board.setFeedback?.(actionFeedback,{reducedMotion:reducedMotion()});positionActionFeedback();}
+function makeBoard(){if(board&&state?.board)savedBoardViews.set(board instanceof FlatBoard,board.exportView?.());board?.dispose();$('#board').innerHTML='';try{board=flat?new FlatBoard($('#board'),select,hover):new Board($('#board'),select,hover,{quality:graphicsQuality.value});}catch(error){flat=true;board=new FlatBoard($('#board'),select,hover);toast('当前设备无法开启 3D，已切换到二维棋盘。');}board.onQualitySuggestion=showQualitySuggestion;board.onManual=()=>{if(!state&&!code){showcaseInterrupted=true;updateAmbient();}else pauseFollowing();};board.onProjectionChange=()=>{chatPreview?.position();positionActionFeedback();if(state?.board&&!viewSaveTimer)viewSaveTimer=setTimeout(saveBoardView,120);};$('#flat-toggle').textContent=flat?'3D':'2D';$('#flat-toggle').setAttribute('aria-label',flat?'切换三维棋盘':'切换二维棋盘');syncViewport();board.set(sceneState(),mode());if(state?.board&&!board.importView?.(storedBoardView()))board.importView?.(savedBoardViews.get(flat));board.setFeedback?.(actionFeedback,{reducedMotion:reducedMotion()});positionActionFeedback();}
+function dismissQualitySuggestion(){qualityHint=false;clearTimeout(qualityHintTimer);qualityHintTimer=0;render();}
+function chooseGraphicsQuality(value){graphicsQuality.choose(value);board?.setQuality?.({quality:graphicsQuality.value});dismissQualitySuggestion();}
+function showQualitySuggestion(){
+  if(!graphicsQuality.canSuggest||flat||document.hidden||!document.hasFocus()||document.querySelector('dialog[open]')||requiredTask(state)||busy)return;
+  // Reserve a strip above the map, never cover resource counts or board numbers.
+  const top=qualitySuggestionTop();
+  if(qualitySuggestionBottom()-top<300)return;
+  qualityHint=true;render();graphicsQuality.markShown();
+  qualityHintTimer=setTimeout(dismissQualitySuggestion,15000);
+}
+function qualitySuggestionBottom(){return state?Math.min(...['#hand .hand-tray','#play-dock'].map(s=>$(s)?.getBoundingClientRect().top||innerHeight)):$('#home-dock').getBoundingClientRect().top;}
+function qualitySuggestionTop(){return Math.max(0,...(state?['#stage-tools','#turn-banner','#player-orbit']:['.topbar','#home-welcome']).map(s=>{const el=$(s);return el?.getClientRects().length?el.getBoundingClientRect().bottom:0;}))+6;}
 function storedBoardView(){if(!state?.board||!code)return null;try{return JSON.parse(sessionStorage.getItem(`catan:view:${backendId}:${code}:${state.me}:${flat}`)||'null');}catch{return null;}}
 function saveBoardView(){clearTimeout(viewSaveTimer);viewSaveTimer=0;if(!state?.board||!code)return;try{sessionStorage.setItem(`catan:view:${backendId}:${code}:${state.me}:${flat}`,JSON.stringify({...board.exportView?.(),followPaused}));sessionStorage.setItem(`catan:renderer:${backendId}:${code}:${state.me}`,JSON.stringify(flat));}catch{}}
 function restoreBoardView(){if(!state?.board)return;try{const preference=JSON.parse(sessionStorage.getItem(`catan:renderer:${backendId}:${code}:${state.me}`)||'null');if(typeof preference==='boolean'&&preference!==flat){flat=preference;makeBoard();render();}const view=JSON.parse(sessionStorage.getItem(`catan:view:${backendId}:${code}:${state.me}:${flat}`)||'null');if(board.importView?.(view)){followPaused=Boolean(view.followPaused??view.viewMode==='manual');paintCameraControls();}}catch{}}
@@ -257,7 +274,7 @@ function prepareStage(task){
 function stageTitle(){return !state?'':({chat:'围桌聊聊',players:`本桌玩家 · ${state.players.length} 人`,log:'岛屿记事',settings:'对局设置',hand:'你的手牌',port:'海岸港口',result:'本局结算',decision:requiredTask(state)?.title||(panel==='development'?DEV_NAMES[mine().dev.find(c=>c.id===cardId)?.type]||'发展卡':panel==='trade'?'交换资源':'交换与行动')})[stagePanel]||'';}
 function uiModel(){
   const last=storage.get('last');
-  return {state,domestic:DOMESTIC,backendId,code,publicCode:displayCode(code),status,statusText:statusText(),busy,isHost:isHost(),myTurn:Boolean(myTurn()),selectedBuild,inspectedBuild,panel,cardId,stagePanel,stageTitle:stageTitle(),focusedPlayer,selectedPort,tradeView,tradePage,draft:inputDrafts,flat,autoFollow,followPaused,reducedMotion:reducedMotion(),unreadChat:unreadChat(),chatBusy,task:requiredTask(state),entryError,terminalMessage,nickname:selectedNickname,name:storage.get('name')||'',invite,last:last?{code:last.code}:null,returnableRooms:roomList.rooms.filter(r=>storage.get(`token:${r.code}`)).map(r=>r.code),lobbyURL:lobbyOrigins[backendId]||null,roomList,receivedAt,reportInfo,reportContext,confirmation:confirmationCopy,homeMotion:{hidden:Boolean(state||code),disabled:flat||reducedMotion(),label:(flat||reducedMotion()?'静态展示':showcaseInterrupted?'恢复展示':'暂停展示')+'首页岛屿',glyph:flat||reducedMotion()?'island':showcaseInterrupted?'play':'pause',playing:!state&&!code&&!flat&&!reducedMotion()&&!pageAway&&!document.hidden&&!document.querySelector('dialog[open]')&&!showcaseInterrupted},practiceOptions,practiceCount};
+  return {state,domestic:DOMESTIC,backendId,code,publicCode:displayCode(code),status,statusText:statusText(),busy,isHost:isHost(),myTurn:Boolean(myTurn()),selectedBuild,inspectedBuild,panel,cardId,stagePanel,stageTitle:stageTitle(),focusedPlayer,selectedPort,tradeView,tradePage,draft:inputDrafts,flat,graphicsQuality:graphicsQuality.value,qualityHint,autoFollow,followPaused,reducedMotion:reducedMotion(),unreadChat:unreadChat(),chatBusy,task:requiredTask(state),entryError,terminalMessage,nickname:selectedNickname,name:storage.get('name')||'',invite,last:last?{code:last.code}:null,returnableRooms:roomList.rooms.filter(r=>storage.get(`token:${r.code}`)).map(r=>r.code),lobbyURL:lobbyOrigins[backendId]||null,roomList,receivedAt,reportInfo,reportContext,confirmation:confirmationCopy,homeMotion:{hidden:Boolean(state||code),disabled:flat||reducedMotion(),label:(flat||reducedMotion()?'静态展示':showcaseInterrupted?'恢复展示':'暂停展示')+'首页岛屿',glyph:flat||reducedMotion()?'island':showcaseInterrupted?'play':'pause',playing:!state&&!code&&!flat&&!reducedMotion()&&!pageAway&&!document.hidden&&!document.querySelector('dialog[open]')&&!showcaseInterrupted},practiceOptions,practiceCount};
 }
 function syncStage(previousPanel,previousScroll){
   const dialog=$('#stage-dialog'),scroller=$('#stage-dialog-content');
@@ -372,6 +389,11 @@ document.addEventListener('click',async e=>{
   const stageActions={openChat:'chat',openPlayers:'players',openLog:'log',openSettings:'settings',openHand:'hand',openResult:'result'};
   if(stageActions[action]){if(action==='openPlayers')focusedPlayer='';return openStagePanel(stageActions[action]);}
   if(action==='closeStagePanel')return closeStagePanel();
+  if(action==='openQuality')return $('#quality-dialog').showModal();
+  if(action==='closeQuality')return $('#quality-dialog').close();
+  if(action==='lowerQuality')return chooseGraphicsQuality('low');
+  if(action==='keepQuality')return chooseGraphicsQuality('high');
+  if(action==='dismissQualityHint')return dismissQualitySuggestion();
   if(action==='toggleFollow'){if(!autoFollow||followPaused){autoFollow=true;followPaused=false;}else autoFollow=false;storage.set('auto-follow',autoFollow);board?.cancelFocus?.();paintCameraControls();saveBoardView();return;}
   if(action==='overview'){pauseFollowing();return board.reset();}
   if(action==='ready')return send({type:'ready',ready:!mine().ready});
@@ -413,16 +435,20 @@ function syncViewport(){
   document.documentElement.style.setProperty('--visual-height',`${viewport?.height||innerHeight}px`);
   document.documentElement.style.setProperty('--visual-top',`${viewport?.offsetTop||0}px`);
   document.documentElement.style.setProperty('--app-height',`${innerHeight}px`);
+  if(qualityHint&&qualitySuggestionBottom()-qualitySuggestionTop()<300){qualityHint=false;clearTimeout(qualityHintTimer);qualityHintTimer=0;renderUI(uiModel());}
+  const hint=$('#quality-hint');if(hint&&!hint.hidden)hint.style.top=`${qualitySuggestionTop()}px`;
+  const hintBottom=hint&&!hint.hidden?hint.getBoundingClientRect().bottom+8:0;
   if(state){
     const table=$('#table'),css=getComputedStyle(table),usableWidth=innerWidth-(parseFloat(css.paddingLeft)||0)-(parseFloat(css.paddingRight)||0);
     table.classList.toggle('compact-hud',usableWidth<630);table.classList.toggle('stacked-hud',usableWidth<548);
-    const top=Math.max(...['#stage-tools','#turn-banner','#player-orbit'].map(selector=>{const el=$(selector);return el&&!el.hidden&&el.getClientRects().length?el.getBoundingClientRect().bottom+10:0;}));
+    const top=Math.max(hintBottom,...['#stage-tools','#turn-banner','#player-orbit'].map(selector=>{const el=$(selector);return el&&!el.hidden&&el.getClientRects().length?el.getBoundingClientRect().bottom+10:0;}));
     const bottom=Math.max(...['#hand .hand-tray','#play-dock'].map(selector=>{const el=$(selector);return el&&el.getClientRects().length?innerHeight-el.getBoundingClientRect().top+10:0;}));
     board?.setViewportPadding?.({top:Math.max(top,(parseFloat(css.getPropertyValue('--board-pad-top'))||0)+(parseFloat(css.paddingTop)||0)),bottom:Math.max(bottom,(parseFloat(css.getPropertyValue('--board-pad-bottom'))||0)+(parseFloat(css.paddingBottom)||0)),left:12+(parseFloat(css.paddingLeft)||0),right:12+(parseFloat(css.paddingRight)||0)},{preserveView:Boolean(actionFeedback)});
   }else if(!state){
     const rect=selector=>{const el=$(selector);return el?.getClientRects().length&&getComputedStyle(el).display!=='none'?el.getBoundingClientRect():null;};
     const safeCSS=getComputedStyle($('#home-safe-area')),safe=Object.fromEntries(['top','right','bottom','left'].map(side=>[side,parseFloat(safeCSS.getPropertyValue(`padding-${side}`))||0]));
     const padding=homePadding(innerWidth,innerHeight,{header:rect('.topbar'),brand:rect('.topbar .brand'),nav:rect('.topbar nav'),welcome:rect('#home-welcome'),server:rect('.entry-server'),dock:rect('#home-dock'),controls:rect('.board-controls'),safe,sideControls:matchMedia('(orientation:landscape) and (max-height:600px)').matches});
+    if(hintBottom)padding.top=Math.max(padding.top,hintBottom);
     $('#board').dataset.homePadding=JSON.stringify(padding);board?.setViewportPadding?.(padding);
   }
   else board?.setViewportPadding?.({top:0,right:0,bottom:0,left:0});
@@ -432,6 +458,7 @@ window.addEventListener('resize',syncViewport);window.visualViewport?.addEventLi
 document.addEventListener('focusin',()=>{if(cameraBlocked()){feedbackCanFollow=false;board?.cancelFocus?.();}paintActionFeedback();syncViewport();});document.addEventListener('focusout',()=>requestAnimationFrame(()=>{paintActionFeedback();syncViewport();}));
 document.addEventListener('pointerdown',e=>{feedbackCanFollow=false;if(!e.target.closest('#board'))board?.cancelFocus?.();},true);
 document.addEventListener('change',e=>{
+  if(e.target.matches('[data-graphics-quality]'))chooseGraphicsQuality(e.target.value);
   if(e.target.closest('.count-options,.rules-options')){saveDrafts();updateRuleSummaries();}
   if(e.target.id==='auto-follow'){autoFollow=e.target.checked;followPaused=false;storage.set('auto-follow',autoFollow);board?.cancelFocus?.();paintCameraControls();}
   if(e.target.id==='reduce-motion'){motionPreference=e.target.checked;storage.set('reduce-motion',motionPreference);document.body.classList.toggle('reduced-action-motion',reducedMotion());board?.cancelFocus?.();board?.setFeedback?.(actionFeedback,{reducedMotion:reducedMotion()});updateAmbient();}
@@ -452,3 +479,4 @@ window.addEventListener('pageshow',event=>{pageAway=false;if(event.persisted){ma
 if(!entryError)refreshRooms();
 const last=storage.get('last');if(!entryError&&invite&&last?.code===invite)connect(last.code,last.token,DOMESTIC?(last.nicknameId||selectedNickname.id):last.name);
 window.addEventListener('online',()=>{if(connection&&!connection.stopped&&connection.ws.readyState>1){clearTimeout(connection.reconnectTimer);connection.connect();}});
+

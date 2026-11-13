@@ -50,9 +50,10 @@ export function createBoardEnvironment({scene,camera,renderer,seaMesh,invalidate
       apply({from:transition.from,to:transition.to,mix});
       if(t===1){phase=transition.to;transition=null;}return Boolean(transition);
     },
-    setQuality({mobile=false,lowPower=false}={}){if(disposed)return;lighting.setQuality({mobile,lowPower});sky.setQuality(mobile||lowPower);},
+    setQuality({lowPower=false}={}){if(disposed)return;lighting.setQuality({lowPower});sky.setQuality(lowPower);},
     setRadius(scale){if(disposed)return;lighting.setBoardRadius(6.6*scale);sea.setRadius(5.8*scale);},
     getState(){return {phase,weather,cycle,night,transitionActive:Boolean(transition),target:transition?.to??phase};},
     dispose(){if(disposed)return;disposed=true;transition=null;seaMesh.material=previousSea;sea.dispose();sky.dispose();lighting.dispose();},
   };
 }
+

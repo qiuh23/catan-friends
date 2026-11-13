@@ -19,7 +19,8 @@ export function createNightLights(scene) {
         const light=new THREE.PointLight(0xffab55,0,.85,2);light.position.set(x,y+.15,z);light.castShadow=false;group.add(light);lights.push(light);
       }
     },
-    setNight(value,{mobile=false,lowPower=false}={}){glass.emissiveIntensity=value*4;for(const light of lights)light.intensity=mobile||lowPower?0:value*.12;},
+    setNight(value,{lowPower=false}={}){glass.emissiveIntensity=value*4;for(const light of lights)light.intensity=lowPower?0:value*.12;},
     dispose(){group.removeFromParent();group.clear();box.dispose();bronze.dispose();glass.dispose();},
   };
 }
+
