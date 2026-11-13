@@ -12,6 +12,7 @@ import {
   LobbyControls,
 } from "./entry";
 import { StageTools, GameControls, Banner, Hand, StageContent } from "./table";
+import { QualityChoice } from "./quality";
 import type { UIModel, RoomModel, Resource, Build } from "./types";
 import "./theme.css";
 
@@ -88,6 +89,9 @@ function Interface() {
               <Icon name="back" />
             </a>
           )}
+          <Button action="openQuality" className="text-button" aria-label="画质设置" title="画质设置">
+            <Icon name="settings" />
+          </Button>
           <Button action="rules" className="text-button" aria-label="玩法指南">
             <Icon name="book" />
             <span>玩法指南</span>
@@ -209,6 +213,19 @@ function Interface() {
         </nav>
         <div id="home-safe-area" aria-hidden="true" />
       </main>
+      <section id="quality-hint" className="quality-hint" aria-label="画质建议" hidden={!m.qualityHint}>
+        <span role="status">画面卡顿，切换省电？</span>
+        <Button action="lowerQuality">降低</Button>
+        <Button action="keepQuality">保持</Button>
+        <Button action="dismissQualityHint" className="square" aria-label="关闭画质建议"><Icon name="close" /></Button>
+      </section>
+      <dialog id="quality-dialog" aria-labelledby="quality-dialog-title">
+        <div className="dialog-heading">
+          <h2 id="quality-dialog-title">画质设置</h2>
+          <Button action="closeQuality" className="square" aria-label="关闭画质设置"><Icon name="close" /></Button>
+        </div>
+        <QualityChoice model={m} />
+      </dialog>
       <dialog id="stage-dialog" aria-labelledby="stage-dialog-title">
         <div className="dialog-heading">
           <h2 id="stage-dialog-title">{m.stageTitle}</h2>
@@ -518,3 +535,4 @@ export function renderUI(model: UIModel) {
     listeners.forEach((fn) => fn());
   });
 }
+

@@ -1,3 +1,4 @@
+import { QualityChoice } from "./quality";
 import { RESOURCES, LABELS, total } from "../../shared/board.js";
 import { COSTS, DEV_NAMES } from "../../shared/game.js";
 import { buildAvailability } from "../commerce.js";
@@ -806,6 +807,7 @@ export function StageContent({ model: m }: { model: RoomModel }) {
         <p className="rules-summary">
           {rulesLabel(s.options)} · {s.targetPoints || 10} 分获胜
         </p>
+        <QualityChoice model={m} id="table-graphics-quality" />
         <fieldset className="action-preferences">
           <legend>行动与镜头</legend>
           <label>
@@ -880,3 +882,4 @@ export function StageContent({ model: m }: { model: RoomModel }) {
     </section>
   );
 }
+

@@ -23,7 +23,7 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Check deployment provenance, backend isolation and networking
-        run: node --test tests/deploy-release.test.js tests/network.test.js tests/integration-policy.test.js tests/site-policy.test.js tests/asset-cache.test.js tests/model-loading.test.js
+        run: node --test tests/deploy-release.test.js tests/network.test.js tests/integration-policy.test.js tests/site-policy.test.js tests/asset-cache.test.js tests/model-loading.test.js tests/graphics-quality.test.js tests/day-night.test.js
       - run: npm run build
       - run: npm run worker:check
       # Full browser/gameplay acceptance runs locally; no cloud credentials here.

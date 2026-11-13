@@ -1,3 +1,4 @@
+import {AnimationStutterMonitor,normalizeQuality} from './graphics-quality.js';
 import {SceneClock, HOME_DAY_MS} from './visuals/day-night.js';
 import {createNightLights} from './visuals/night-lights.js';
 import {createRoadLights} from './visuals/road-lights.js';
@@ -28,10 +29,10 @@ function gableRoof(){
 }
 
 export class Board {
-  constructor(container,onSelect,onHover) {
+  constructor(container,onSelect,onHover,{quality='high'}={}) {
     this.container=container;this.onSelect=onSelect;this.onHover=onHover;
-    this.frame=0;this.visible=true;this.lowPower=(navigator.deviceMemory||8)<=2;this.metrics={renders:0,landBuilds:0,pieceBuilds:0,markerBuilds:0};
-    this.renderer=new THREE.WebGLRenderer({antialias:true,alpha:false,powerPreference:'low-power'});
+    this.frame=0;this.visible=true;this.quality=normalizeQuality(quality);this.lowPower=this.quality==='low';this.stutter=new AnimationStutterMonitor();this.stutter.suspend(performance.now());this.metrics={renders:0,landBuilds:0,pieceBuilds:0,markerBuilds:0};
+    this.renderer=new THREE.WebGLRenderer({antialias:true,alpha:false,powerPreference:'default'});
     this.assets=new BoardAssets();this.models=new BoardModels();
     this.assets.geometries.roof.dispose();this.assets.geometries.roof=gableRoof();
     this.assets.geometries['site-ring']=new THREE.RingGeometry(.095,.125,24);
@@ -95,14 +96,16 @@ export class Board {
         :tile===undefined?'':`${LABELS[this.board.tiles[tile].resource]}${this.board.tiles[tile].number?` · ${this.board.tiles[tile].number} 点生产`:' · 不生产资源'}`);
     },options);
     canvas.addEventListener('pointerleave',()=>{if(!this.pointers.size)this.selectSite(null);},options);
-    document.addEventListener('visibilitychange',()=>{if(document.hidden){this.environment.update(0,true);this.environmentLast=0;this.stopFrame();this.stopAmbient();this.stopScene();}else {this.scheduleAmbient();this.syncScene();this.invalidate();}},options);
+    window.addEventListener('blur',()=>this.stutter.suspend(performance.now()),options);
+    window.addEventListener('focus',()=>this.stutter.suspend(performance.now()),options);
+    document.addEventListener('visibilitychange',()=>{this.stutter.suspend(performance.now());if(document.hidden){this.environment.update(0,true);this.environmentLast=0;this.stopFrame();this.stopAmbient();this.stopScene();}else {this.scheduleAmbient();this.syncScene();this.invalidate();}},options);
     this.observer=new ResizeObserver(()=>this.resize());this.observer.observe(container);
     this.intersection=new IntersectionObserver(entries=>{
-      this.visible=entries[0].isIntersecting;if(this.visible){this.scheduleAmbient();this.syncScene();this.invalidate();}else {this.stopFrame();this.stopAmbient();this.stopScene();}
+      this.stutter.suspend(performance.now());this.visible=entries[0].isIntersecting;if(this.visible){this.scheduleAmbient();this.syncScene();this.invalidate();}else {this.stopFrame();this.stopAmbient();this.stopScene();}
     });this.intersection.observe(container);
     this.resize();
   }
-  stopFrame() {cancelAnimationFrame(this.frame);this.frame=0;}
+  stopFrame() {cancelAnimationFrame(this.frame);this.frame=0;this.animationFrameMs=0;this.stutter.suspend(performance.now());}
   setAmbient(enabled,{reducedMotion=false,sceneEnabled=enabled}={}) {
     this.reducedMotion=reducedMotion;if(reducedMotion)this.environment.update(0,true);
     this.autoOrbitEnabled=Boolean(enabled);
@@ -121,7 +124,7 @@ export class Board {
     const running=home?this.ambientEnabled:Boolean(this.sceneClock.sample?.running)&&!this.environmentPaused;
     if(home){if(running&&this.homeSceneLast)this.homeSceneElapsed+=Math.max(0,now-this.homeSceneLast);this.homeSceneLast=running?now:0;}
     const appearance=this.environment.setCycle(home?this.homeSceneElapsed:this.sceneClock.elapsed(now),home?HOME_DAY_MS:undefined);
-    this.models.setNight(appearance.night);this.nightLights.setNight(appearance.night,{mobile:this.mobile,lowPower:this.lowPower});
+    this.models.setNight(appearance.night);this.nightLights.setNight(appearance.night,{lowPower:this.lowPower});
     this.roadLights.setNight(appearance.night,{lowPower:this.lowPower});
     this.invalidate();
     // One bounded timer, no hidden/offscreen work. Reduced motion stays still
@@ -150,7 +153,7 @@ export class Board {
       this.controls.target.set(0,0,0);
       this.camera.position.set(Math.sin(this.homeAngle)*Math.sin(polar)*radius,Math.cos(polar)*radius,Math.cos(this.homeAngle)*Math.sin(polar)*radius);
       }
-      this.animateDemo(this.homeTime);this.invalidate();this.scheduleAmbient();
+      this.animateDemo(this.homeTime);this.invalidate(1000/(this.mobile?20:24));this.scheduleAmbient();
     },1000/(this.mobile?20:24));
   }
   resumeShowcase() {
@@ -183,10 +186,11 @@ export class Board {
     this.roadLights.setReveal(new Map(this.latestState.homeDemo.roads.map((road,i)=>[road.edge,pose.roads[i]])));
     this.renderer.domElement.dataset.demo=JSON.stringify({time,pose});this.environment.lighting.markDirty();
   }
-  invalidate() {
+  invalidate(animationFrameMs=0) {
+    if(animationFrameMs)this.animationFrameMs=Math.min(this.animationFrameMs||Infinity,animationFrameMs);
     if(this.disposed||this.frame||document.hidden||!this.visible)return;
     this.frame=requestAnimationFrame(now=>{
-      this.frame=0;
+      this.frame=0;const scheduledAnimationMs=this.animationFrameMs||0;this.animationFrameMs=0;
       this.flushModels();
       const hadReveal=this.terrainPresentation.fades.length>0;
       const terrainAnimating=this.terrainPresentation.tick(now,{reducedMotion:this.reducedMotion||this.environmentPaused});
@@ -214,6 +218,14 @@ export class Board {
       this.renderer.domElement.dataset.cameraEvent=this.focusEvent||'';
       this.renderer.domElement.dataset.cameraView=JSON.stringify(this.camera.view);
       this.onProjectionChange?.();
+      const directAnimation=Boolean(this.pointers.size||this.focusAnimation||environmentActive||(this.feedback&&!this.reducedMotion&&feedbackAge<1250));
+      const slow=this.stutter.sample(now,{
+        active:!this.lowPower&&!this.reducedMotion&&!this.environmentPaused&&(directAnimation||scheduledAnimationMs>0),
+        targetMs:directAnimation?1000/60:scheduledAnimationMs,
+        foreground:!document.hidden&&document.hasFocus()&&this.visible&&!document.querySelector('dialog[open]'),
+        settled:Boolean(this.renderer.domElement.dataset.modelLoad)&&!this.modelsDirty&&!hadReveal&&!terrainAnimating,
+      });
+      if(slow)this.onQualitySuggestion?.();
       if(terrainAnimating||environmentActive||this.focusAnimation||(this.feedback&&!this.reducedMotion&&!this.lowPower&&feedbackAge<1250))this.invalidate();
     });
   }
@@ -223,11 +235,13 @@ export class Board {
     const dpr=Math.min(devicePixelRatio||1,mobile?1.35:1.75,Math.sqrt((mobile?1200000:2000000)/(w*h)));
     const changed=w!==this.width||h!==this.height;
     this.width=w;this.height=h;this.renderer.setPixelRatio(dpr);this.renderer.setSize(w,h,false);
-    this.environment.setQuality({mobile,lowPower:this.lowPower});
-    if(changed){this.cancelFocus();this.updateProjection();if(this.board&&(!this.viewMode||this.viewMode==='overview'))this.fit(true);else this.invalidate();}
+    this.environment.setQuality({lowPower:this.lowPower});
+    this.nightLights.setNight(this.environment.getState().night,{lowPower:this.lowPower});
+    this.renderer.domElement.dataset.quality=this.quality;
+    if(changed){this.stutter.suspend(performance.now());this.cancelFocus();this.updateProjection();if(this.board&&(!this.viewMode||this.viewMode==='overview'))this.fit(true);else this.invalidate();}
     else this.invalidate();
   }
-  setQuality({lowPower=this.lowPower}={}) {this.lowPower=Boolean(lowPower);this.resize();}
+  setQuality({quality,lowPower=this.lowPower}={}) {this.quality=quality===undefined?(lowPower?'low':'high'):normalizeQuality(quality);this.lowPower=this.quality==='low';this.stutter.suspend(performance.now());this.resize();}
   setEnvironment(next={}) {
     this.sceneOverride=true;this.stopScene();
     this.environment.setEnvironment(next,this.reducedMotion||this.environmentPaused||document.hidden);
@@ -615,3 +629,4 @@ export class Board {
     this.roadLights.dispose();this.nightLights.dispose();this.environment.dispose();this.scene.clear();this.assets.dispose();this.renderer.dispose();this.renderer.forceContextLoss();this.renderer.domElement.remove();
   }
 }
+
