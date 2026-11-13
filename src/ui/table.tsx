@@ -118,6 +118,7 @@ export function StageTools({ model: m }: { model: RoomModel }) {
 export function GameControls({ model: m }: { model: RoomModel }) {
   const s = m.state,
     disabled = m.busy || m.status !== "connected" || s.room?.paused;
+  if (m.inspectedBuild) return <CostPanel model={m} kind={m.inspectedBuild} />;
   return (
     <>
       <section className="build-section" aria-label="建造">
@@ -130,8 +131,9 @@ export function GameControls({ model: m }: { model: RoomModel }) {
               key={k}
               type="button"
               className={`build-button ${m.selectedBuild === k ? "selected" : ""}`}
-              data-build={k}
-              aria-label={`建造${buildNames[k]}，${cost}`}
+              data-build={m.selectedBuild === k ? undefined : k}
+              data-action={m.selectedBuild === k ? "closeCost" : undefined}
+              aria-label={m.selectedBuild === k ? `取消${buildNames[k]}建造` : `建造${buildNames[k]}，${cost}`}
               aria-pressed={m.selectedBuild === k}
               title={`${buildNames[k]} · ${cost}`}
               aria-description={
@@ -139,7 +141,7 @@ export function GameControls({ model: m }: { model: RoomModel }) {
               }
             >
               <Icon name={k} />
-              <span>{buildNames[k]}</span>
+              <span>{m.selectedBuild === k ? `取消${buildNames[k]}` : buildNames[k]}</span>
             </button>
           );
         })}
@@ -170,7 +172,6 @@ export function GameControls({ model: m }: { model: RoomModel }) {
           </Button>
         )}
       </div>
-      {m.inspectedBuild && <CostPanel model={m} kind={m.inspectedBuild} />}
     </>
   );
 }

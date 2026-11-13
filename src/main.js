@@ -12,6 +12,7 @@ import './home-showcase.css';
 import './visual-first.css';
 import './commerce.css';
 import {buildAvailability,normalizeTradeDraft} from './commerce.js';
+import {installOutsideCostDismissal} from './cost-dismissal.js';
 import {renderUI} from './ui/root';
 import { Board, FlatBoard } from './board.js';
 import { Connection } from './connection.js';
@@ -107,7 +108,8 @@ async function openReport(message){if(DOMESTIC)return;
   renderReport();
 }
 function mode(){if(!state||!myTurn()||state.room?.paused)return '';if(state.phase==='setup-settlement')return 'settlement';if(['setup-road','road-building'].includes(state.phase))return 'road';if(state.phase==='robber')return 'robber';return state.phase==='action'?selectedBuild:'';}
-function makeBoard(){if(board&&state?.board)savedBoardViews.set(board instanceof FlatBoard,board.exportView?.());board?.dispose();$('#board').innerHTML='';try{board=flat?new FlatBoard($('#board'),select,hover):new Board($('#board'),select,hover,{quality:graphicsQuality.value});}catch(error){flat=true;board=new FlatBoard($('#board'),select,hover);toast('当前设备无法开启 3D，已切换到二维棋盘。');}board.onQualitySuggestion=showQualitySuggestion;board.onManual=()=>{if(!state&&!code){showcaseInterrupted=true;updateAmbient();}else pauseFollowing();};board.onProjectionChange=()=>{chatPreview?.position();positionActionFeedback();if(state?.board&&!viewSaveTimer)viewSaveTimer=setTimeout(saveBoardView,120);};$('#flat-toggle').textContent=flat?'3D':'2D';$('#flat-toggle').setAttribute('aria-label',flat?'切换三维棋盘':'切换二维棋盘');syncViewport();board.set(sceneState(),mode());if(state?.board&&!board.importView?.(storedBoardView()))board.importView?.(savedBoardViews.get(flat));board.setFeedback?.(actionFeedback,{reducedMotion:reducedMotion()});positionActionFeedback();}
+function dismissCost(){if(inspectedBuild){inspectedBuild='';render();}}
+function makeBoard(){if(board&&state?.board)savedBoardViews.set(board instanceof FlatBoard,board.exportView?.());board?.dispose();$('#board').innerHTML='';try{board=flat?new FlatBoard($('#board'),select,hover):new Board($('#board'),select,hover,{quality:graphicsQuality.value});}catch(error){flat=true;board=new FlatBoard($('#board'),select,hover);toast('当前设备无法开启 3D，已切换到二维棋盘。');}board.onBlankTap=dismissCost;board.onQualitySuggestion=showQualitySuggestion;board.onManual=()=>{if(!state&&!code){showcaseInterrupted=true;updateAmbient();}else pauseFollowing();};board.onProjectionChange=()=>{chatPreview?.position();positionActionFeedback();if(state?.board&&!viewSaveTimer)viewSaveTimer=setTimeout(saveBoardView,120);};$('#flat-toggle').textContent=flat?'3D':'2D';$('#flat-toggle').setAttribute('aria-label',flat?'切换三维棋盘':'切换二维棋盘');syncViewport();board.set(sceneState(),mode());if(state?.board&&!board.importView?.(storedBoardView()))board.importView?.(savedBoardViews.get(flat));board.setFeedback?.(actionFeedback,{reducedMotion:reducedMotion()});positionActionFeedback();}
 function dismissQualitySuggestion(){qualityHint=false;clearTimeout(qualityHintTimer);qualityHintTimer=0;render();}
 function chooseGraphicsQuality(value){graphicsQuality.choose(value);board?.setQuality?.({quality:graphicsQuality.value});dismissQualitySuggestion();}
 function showQualitySuggestion(){
@@ -197,7 +199,7 @@ function connect(room,token,name){
   connection?.close();clearActionFeedback();feedbackEpoch='';followPaused=false;code=room;state=null;seenChatIds=new Set();chatBusy=false;stagePanel='';lastTaskKey='';status='connecting';
   $('#entry-dialog').close();$('#rooms-dialog').close();
   terminalMessage='';if(!DOMESTIC)storage.set('name',name);replaceViewURL(invitationURL(location.origin,code,backendId));
-  connection=new Connection(code,token,name,(next)=>{const old=state;receivedAt=Date.now();if(next.room?.closed)return terminal({type:'closed',message:next.room.closeReason||'房间已关闭。'});if(!old)for(const chat of next.chat)seenChatIds.add(chat.id);if(DOMESTIC){next.chat=[];const me=next.players.find(p=>p.id===next.me);selectedNickname=NICKNAMES.find(n=>n.id===me?.nicknameId)||selectedNickname;storage.set('nicknameId',selectedNickname.id);}state=next;storage.set('last',{code,token,...(DOMESTIC?{nicknameId:selectedNickname.id}:{name})});storage.set(`token:${code}`,token);if(old?.turnNo!==next.turnNo||old?.phase!==next.phase){selectedBuild='';inspectedBuild='';if(panel!=='trade')panel='';cardId='';}if(old&&next.offer&&next.offer.from!==next.me&&old.offer?.id!==next.offer.id)toast('收到新报价 · 点交易查看');render();if(!old)restoreBoardView();receiveActionFeedback(next);},s=>{status=s;if(s!=='connected'){feedbackCursor.consume(state,{connected:false,roomKey:code});clearActionFeedback();}render();},toast,terminal);
+  connection=new Connection(code,token,name,(next)=>{const old=state;receivedAt=Date.now();if(next.room?.closed)return terminal({type:'closed',message:next.room.closeReason||'房间已关闭。'});if(!old)for(const chat of next.chat)seenChatIds.add(chat.id);if(DOMESTIC){next.chat=[];const me=next.players.find(p=>p.id===next.me);selectedNickname=NICKNAMES.find(n=>n.id===me?.nicknameId)||selectedNickname;storage.set('nicknameId',selectedNickname.id);}state=next;storage.set('last',{code,token,...(DOMESTIC?{nicknameId:selectedNickname.id}:{name})});storage.set(`token:${code}`,token);if(old?.turnNo!==next.turnNo||old?.turn!==next.turn||old?.phase!==next.phase){selectedBuild='';inspectedBuild='';if(panel!=='trade')panel='';cardId='';}if(old&&next.offer&&next.offer.from!==next.me&&old.offer?.id!==next.offer.id)toast('收到新报价 · 点交易查看');render();if(!old)restoreBoardView();receiveActionFeedback(next);},s=>{status=s;if(s!=='connected'){feedbackCursor.consume(state,{connected:false,roomKey:code});clearActionFeedback();}render();},toast,terminal);
   render();
 }
 async function create(practice=false){
@@ -291,7 +293,7 @@ function render(){
   const nextScope=state?.me&&code?`${backendId}:${code}:${state.me}`:'home';
   if(nextScope!==draftScope){saveDrafts();inputDrafts.clear();draftScope=nextScope;restoreDrafts();$('#stage-dialog-content').dataset.panel='';}else saveDrafts();
   const activeElement=document.activeElement,active=activeElement?.id,start=activeElement?.selectionStart;
-  if(state?.board)normalizeTradeDraft(state,inputDrafts);
+  if(state?.board){normalizeTradeDraft(state,inputDrafts);if(selectedBuild&&!buildAvailability(state,selectedBuild).can)selectedBuild='';}
   const task=requiredTask(state);
   const previousPanel=$('#stage-dialog-content').dataset.panel,previousScroll=$('#stage-dialog-content').scrollTop;
   prepareStage(task);
@@ -346,10 +348,10 @@ function bindForms(){
   if($('#development-form'))$('#development-form').onsubmit=e=>{e.preventDefault();send({type:'playDevelopment',cardId,cards:formBundle('plenty'),resource:$('#monopoly-resource')?.value});};
   bindQuantityForms();
 }
+installOutsideCostDismissal(document,dismissCost);
 document.addEventListener('click',async e=>{
   const nav=e.target.closest('a[data-lobby-link],a[data-home-link]');if(nav&&code){e.preventDefault();openLeave(nav.hasAttribute('data-lobby-link')?'lobby':'home');return;}
   const b=e.target.closest('button');
-  if(inspectedBuild&&!e.target.closest('.build-cost,[data-build]')&&!b){inspectedBuild='';render();}
   if(!b||b.disabled)return;
   if(b.dataset.player){focusedPlayer=b.dataset.player;return openStagePanel('players');}
   if(b.dataset.reportMessage){const message=state?.chat.find(message=>message.id===b.dataset.reportMessage);return openReport(message);}
@@ -424,8 +426,8 @@ document.addEventListener('click',async e=>{
   if(b.id==='flat-toggle'||action==='toggleFlat'){saveBoardView();flat=!flat;makeBoard();render();saveBoardView();}
 });
 function forgetIdentity(room){storage.set(`token:${room}`,null);if(storage.get('last')?.code===room)storage.set('last',null);}
-function terminal(message){const current=code;forgetIdentity(current);terminalMessage=message.message||(message.type==='removed'?'你已被移出房间，原身份已失效。':'房间已关闭，旧链接不能恢复。');connection?.close();clearActionFeedback();toastQueue.clear();connection=null;state=null;code='';status='idle';invite='';replaceViewURL('/');$('#room-dialog').close();confirmation=null;render();refreshRooms();}
-function exitView(destination){saveBoardView();connection?.close();clearActionFeedback();toastQueue.clear();connection=null;state=null;code='';status='idle';selectedBuild='';panel='';invite='';replaceViewURL('/');if(destination==='lobby'){const target=gameLobbyURL(backendId);if(target){location.assign(target);return;}}render();refreshRooms();}
+function terminal(message){const current=code;forgetIdentity(current);terminalMessage=message.message||(message.type==='removed'?'你已被移出房间，原身份已失效。':'房间已关闭，旧链接不能恢复。');connection?.close();clearActionFeedback();toastQueue.clear();connection=null;state=null;code='';status='idle';selectedBuild='';inspectedBuild='';invite='';replaceViewURL('/');$('#room-dialog').close();confirmation=null;render();refreshRooms();}
+function exitView(destination){saveBoardView();connection?.close();clearActionFeedback();toastQueue.clear();connection=null;state=null;code='';status='idle';selectedBuild='';inspectedBuild='';panel='';invite='';replaceViewURL('/');if(destination==='lobby'){const target=gameLobbyURL(backendId);if(target){location.assign(target);return;}}render();refreshRooms();}
 function openConfirmation(task,title,description,confirmText='确认'){confirmation=task;confirmationCopy={title,description,confirmText,chooseTransfer:task.type==='chooseTransfer'};render();$('#room-dialog').showModal();}
 function openLeave(destination){if(!code)return exitView(destination);const description=state?leaveDescription({lobby:state.phase==='lobby',host:isHost(),practice:state.room?.practice,paused:state.room?.paused,target:destination==='lobby'?'游戏大厅':'首页'}):`取消连接并返回${destination==='lobby'?'当前服务器游戏大厅':'首页'}。`;openConfirmation({type:'navigate',destination},state?.phase==='lobby'&&!isHost()?'退出座位':'暂离房间',description,state?.phase==='lobby'&&!isHost()?'退出并返回':'暂离并返回');}
 async function confirmRoomDialog(){let task=confirmation;if(task?.type==='chooseTransfer')task={type:'transferHost',playerId:$('#transfer-choice')?.value};if(!task||busy)return;$('#room-dialog').close();confirmation=null;if(task.type==='navigate'){const release=state?.phase==='lobby'&&!isHost(),current=code;if(state&&!(state.phase==='lobby'&&isHost())&&!(await send({type:'leave'})))return;if(release)forgetIdentity(current);return exitView(task.destination);}await send(task);}

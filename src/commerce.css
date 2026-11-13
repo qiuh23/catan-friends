@@ -32,16 +32,30 @@
 #stage-dialog.commerce-dialog { width:min(480px,calc(100vw - 24px)); }
 #stage-dialog.commerce-dialog #stage-dialog-content { overscroll-behavior:contain; }
 .offer-notice { display:flex; align-items:center; gap:5px; font-size:12px; color:#173b3d; background:#fff9df; padding:5px 10px; border:1px solid #bba365; border-radius:8px; }
-.build-cost { position:absolute; z-index:12; bottom:calc(100% + 8px); left:0; width:min(340px,calc(100vw - 24px)); padding:12px; background:#fffdf4; border:1px solid #b7c4ad; border-radius:12px; box-shadow:0 5px 24px #173b3d22; pointer-events:auto; }
-.cost-heading,.cost-heading strong { display:flex; align-items:center; gap:6px; }
-.cost-heading { justify-content:space-between; }
-.cost-heading button { min-height:44px; min-width:44px; padding:0; background:transparent; color:#173b3d; }
-.cost-resources { display:flex; gap:8px; }
-.cost-resources>span { display:flex; flex:1; flex-direction:column; align-items:center; gap:3px; font-size:11px; }
-.cost-resources svg { width:30px; height:30px; }
-.cost-resources .short small { font-weight:700; color:#a34e31; }
-.build-cost p { font-size:12px; margin:8px 0 0; }
-.build-cost>.primary { margin-top:10px; width:100%; }
+/* Costs replace the dock contents, never float over the board or hand. */
+#play-dock .build-cost { position:static; display:grid; grid-template-columns:minmax(0,1fr) auto; grid-template-rows:24px 20px; column-gap:8px; width:430px; max-width:calc(100vw - 40px); height:48px; padding:0; border:0; border-radius:0; background:transparent; box-shadow:none; pointer-events:auto; }
+.cost-summary,.cost-summary>strong,.cost-resources { display:flex; align-items:center; gap:6px; min-width:0; }
+.cost-summary { grid-column:1; grid-row:1; }
+.cost-summary>strong { flex:none; font-size:13px; }
+.cost-summary>strong .icon { width:18px; height:18px; }
+.cost-resources { flex:1; justify-content:center; gap:8px; }
+.cost-resources>span { position:relative; display:inline-flex; align-items:center; gap:1px; white-space:nowrap; }
+#play-dock .cost-resources svg { width:20px; height:20px; }
+#play-dock .cost-resources b { font-size:12px; }
+.cost-resources .short { color:#a34e31; }
+#play-dock .cost-resources small { font-size:11px; font-weight:700; }
+.cost-free { font-size:12px; color:#397456; }
+#play-dock .build-cost p { grid-column:1; grid-row:2; margin:0; font-size:11px; line-height:20px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+#play-dock .cost-dismiss,#play-dock .cost-buy { grid-column:2; grid-row:1/3; min-width:44px; min-height:44px; margin:0; padding:4px; font-size:12px; }
+#play-dock .cost-dismiss { background:transparent; color:#173b3d; }
+#play-dock .build-cost:has(.cost-buy) { grid-template-columns:minmax(0,1fr) 44px 44px; column-gap:4px; }
+#play-dock .cost-buy + .cost-dismiss { grid-column:3; }
+@media(max-width:700px), (orientation:landscape) and (max-height:600px) {
+  #play-dock .build-cost { width:278px; }
+  .cost-summary,.cost-summary>strong { gap:3px; }
+  .cost-summary>strong .icon { display:none; }
+  .cost-resources { gap:5px; }
+}
 .award-progress section { border-top:1px solid #d7dfd0; padding:12px 0; }
 .award-progress h3 { display:flex; align-items:center; gap:8px; font-size:14px; margin:0; }
 .award-progress h3>b { margin-left:auto; font-size:12px; color:#a28027; }
@@ -81,5 +95,4 @@ body:not(.reduced-action-motion) [data-feedback-layer] .production-outline { ani
   .exchange h3 { margin:2px 0 4px; font-size:12px; line-height:16px; }
   .exchange-footer { display:grid; grid-template-columns:1fr 1fr; align-items:center; }
   .exchange-footer .exchange-preview { grid-row:span 2; }
-  .build-cost { width:290px; max-height:calc(100dvh - 24px); overflow:auto; left:auto; right:calc(100% + 8px); bottom:0; }
 }

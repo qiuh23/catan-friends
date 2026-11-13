@@ -85,7 +85,7 @@ export class Board {
     canvas.addEventListener('pointerup',e=>{
       this.pointers.delete(e.pointerId);const down=this.down;this.down=null;
       if(!down||down.id!==e.pointerId||this.pointers.size||this.pointerManual||Math.hypot(e.clientX-down.x,e.clientY-down.y)>7)return;
-      const target=this.pick(e,e.pointerType==='touch');this.selectSite(target);if(target)this.onSelect(target);
+      const target=this.pick(e,e.pointerType==='touch');this.selectSite(target);if(target)this.onSelect(target);else if(!this.ambiguousPick)this.onBlankTap?.();
     },options);
     canvas.addEventListener('pointermove',e=>{
       if(this.down&&this.pointers.has(e.pointerId)&&!this.pointerManual&&Math.hypot(e.clientX-this.down.x,e.clientY-this.down.y)>3){this.pointerManual=true;this.selectSite(null);this.manualInput();}
@@ -442,6 +442,7 @@ export class Board {
     }
   }
   pick(e,touch,notify=true,nearest) {
+    this.ambiguousPick=false;
     const rect=this.renderer.domElement.getBoundingClientRect();
     this.scene.updateMatrixWorld();this.camera.updateMatrixWorld();
     // Use screen-space hit regions, independent of DPR or zoom. Ambiguous touches
@@ -452,7 +453,7 @@ export class Board {
     }).filter(p=>p.distance<=(touch?22:11)).sort((a,b)=>a.distance-b.distance).filter(({marker})=>this.siteVisible(marker));
     if(candidates.length) {
       if(touch&&candidates[1]&&candidates[1].distance-candidates[0].distance<6) {
-        if(notify)this.onHover('相邻落点较近，请双指放大后再点选。');return null;
+        this.ambiguousPick=true;if(notify)this.onHover('相邻落点较近，请双指放大后再点选。');return null;
       }
       return candidates[0].marker.userData;
     }

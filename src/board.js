@@ -174,7 +174,7 @@ export class FlatBoard {
     this.container.querySelector('svg').onclick=e=>{
       if(e.detail===0||this.suppressClick)return;
       const candidates=this.siteCandidates(e.clientX,e.clientY,e.pointerType==='touch');
-      if(!candidates.length)return;
+      if(!candidates.length){if(!this.pointerManual&&!e.target.closest('[role="button"]'))this.onBlankTap?.();return;}
       if(e.pointerType==='touch'&&candidates[1]&&candidates[1].distance-candidates[0].distance<6){this.onHover('相邻落点较近，请放大棋盘后再点选。');return;}
       this.selectSite(candidates[0].el);this.onSelect({kind:mode==='road'?'edge':'vertex',id:Number(candidates[0].el.dataset.id)});
     };
