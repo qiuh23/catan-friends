@@ -275,10 +275,11 @@ try {
     await fits(p.locator('[data-action="trade"]:visible'),'Primary trade control');
     await screenshot(p,`${name}-table`);
     await p.locator('[data-build=road]').click();await p.locator('.build-cost').waitFor();
-    const selected=await p.locator('[data-build=road]').getAttribute('aria-pressed');
+    const selected=await p.locator('#board canvas').getAttribute('data-site-shape');
     await p.mouse.click(viewport.width-4,Math.floor(viewport.height/2));
     await p.locator('.build-cost').waitFor({state:'hidden'});
-    assert.equal(await p.locator('[data-build=road]').getAttribute('aria-pressed'),selected,'Cost dismissal discarded building selection');
+    assert.equal(await p.locator('#board canvas').getAttribute('data-site-shape'),selected,'Cost dismissal discarded building selection');
+    if(selected==='road'){await p.getByRole('button',{name:'取消道路建造',exact:true}).click();assert.equal(await p.locator('#board canvas').getAttribute('data-site-shape'),'','Cancel did not clear placement');}
     let canvas=await tradeDrafts(client,name);
     const chat=await chatAcknowledgement(client,canvas,name);
     await developmentAndDiscard(client,canvas,name);

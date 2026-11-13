@@ -393,62 +393,35 @@ export function TradePanel({ model }: { model: RoomModel }) {
 export function CostPanel({ model, kind }: { model: RoomModel; kind: Build }) {
   const { state } = model,
     info = buildAvailability(state, kind),
-    me = ownPlayer(state);
+    me = ownPlayer(state),
+    shortNames: Record<Resource, string> = { wood: "木", brick: "砖", sheep: "羊", wheat: "麦", ore: "矿" },
+    missing = Object.entries(info.cost)
+      .filter(([key, value]) => me.hand[key as Resource] < Number(value))
+      .map(([key, value]) => `${shortNames[key as Resource]}${Number(value) - me.hand[key as Resource]}`),
+    reason = info.reason === "资源不足" ? `缺${missing.join("、")}` : info.reason,
+    placing = model.selectedBuild === kind;
   return (
-    <section
-      className="build-cost"
-      role="region"
-      aria-label={`${buildNames[kind]}费用`}
-    >
-      <div className="cost-heading">
-        <strong>
-          <Icon name={kind} />
-          {buildNames[kind]}
-          {info.free && " · 本次免费"}
-        </strong>
-        <Button action="closeCost" aria-label="关闭费用">
-          ×
-        </Button>
-      </div>
-      {!info.free && (
-        <div className="cost-resources">
-          {Object.entries(info.cost).map(([key, value]) => {
-            const resource = key as Resource,
-              count = Number(value),
-              short = me.hand[resource] < count;
-            return (
-              <span
-                key={resource}
-                className={`${resource}${short ? " short" : ""}`}
-                aria-label={`${labels[resource]}需要 ${count}，持有 ${me.hand[resource]}`}
-              >
-                <ResourceArt resource={resource} />
-                <b>
-                  需 {count} / 有 {me.hand[resource]}
-                </b>
-                <small>
-                  {short ? `差 ${count - me.hand[resource]}` : "✓ 足够"}
-                </small>
-              </span>
-            );
+    <section className="build-cost" role="region" aria-label={`${buildNames[kind]}费用`}>
+      <div className="cost-summary">
+        <strong><Icon name={kind} />{buildNames[kind]}</strong>
+        <div className="cost-resources" aria-label="所需资源">
+          {info.free ? <span className="cost-free">本次免费</span> : Object.entries(info.cost).map(([key, value]) => {
+            const resource = key as Resource, count = Number(value), short = me.hand[resource] < count;
+            const label = `${labels[resource]}需要 ${count}，持有 ${me.hand[resource]}${short ? `，差 ${count - me.hand[resource]}` : "，足够"}`;
+            return <span key={resource} className={`${resource}${short ? " short" : ""}`} aria-label={label} title={label}>
+              <ResourceArt resource={resource} /><b>×{count}</b>
+              {short && <small aria-hidden="true">!</small>}
+            </span>;
           })}
         </div>
-      )}
-      <p role="status">
-        {info.reason ||
-          (kind === "development"
-            ? "确认费用后购买"
-            : "点击地图上的亮起位置建造")}
+      </div>
+      <p role="status" title={reason || undefined}>
+        {reason || (kind === "development" ? "确认费用后购买" : "点亮起位置建造 · 点空白收起")}
       </p>
-      {kind === "development" && (
-        <Button
-          className="primary"
-          action="buyDevelopment"
-          disabled={!info.can || model.busy || model.status !== "connected"}
-        >
-          购买发展卡
-        </Button>
-      )}
+      {kind === "development" && <Button className="primary cost-buy" action="buyDevelopment" disabled={!info.can || model.busy || model.status !== "connected"}>购买</Button>}
+      <Button className="cost-dismiss" action="closeCost" aria-label={placing ? "取消建造" : "关闭费用"}>
+        {placing ? "取消" : "关闭"}
+      </Button>
     </section>
   );
 }
