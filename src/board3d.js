@@ -208,7 +208,7 @@ export class Board {
       }
       const feedbackAge=now-(this.feedbackStart||0);
       if(this.feedback&&feedbackAge<1250&&!this.reducedMotion&&!this.lowPower){const opacity=.72+.28*Math.sin(Math.PI*feedbackAge/1250);this.assets.materials.get('feedback').transparent=true;this.assets.materials.get('feedback').opacity=opacity;}
-      this.controls.update();const renderStart=performance.now();this.renderer.render(this.scene,this.camera);this.metrics.renders++;
+      const controlsChanged=this.controls.update();const renderStart=performance.now();this.renderer.render(this.scene,this.camera);this.metrics.renders++;
       this.metrics.renderMs=Number((performance.now()-renderStart).toFixed(2));
       const {calls,triangles}=this.renderer.info.render;
       this.renderer.domElement.dataset.renderStats=JSON.stringify({...this.metrics,calls,triangles,...this.renderer.info.memory,programs:this.renderer.info.programs?.length||0,environment:this.environment.getState(),dpr:this.renderer.getPixelRatio(),shadows:this.renderer.shadowMap.enabled});
@@ -218,10 +218,11 @@ export class Board {
       this.renderer.domElement.dataset.cameraEvent=this.focusEvent||'';
       this.renderer.domElement.dataset.cameraView=JSON.stringify(this.camera.view);
       this.onProjectionChange?.();
-      const directAnimation=Boolean(this.pointers.size||this.focusAnimation||environmentActive||(this.feedback&&!this.reducedMotion&&feedbackAge<1250));
+      const homeAnimating=Boolean(this.homeShowcase&&this.ambientEnabled&&this.demoParts);
+      const directAnimation=Boolean((controlsChanged&&this.pointers.size)||this.focusAnimation||environmentActive||(this.feedback&&!this.reducedMotion&&feedbackAge<1250));
       const slow=this.stutter.sample(now,{
-        active:!this.lowPower&&!this.reducedMotion&&!this.environmentPaused&&(directAnimation||scheduledAnimationMs>0),
-        targetMs:directAnimation?1000/60:scheduledAnimationMs,
+        active:!this.lowPower&&!this.reducedMotion&&!this.environmentPaused&&(directAnimation||homeAnimating||scheduledAnimationMs>0),
+        targetMs:directAnimation?1000/60:(scheduledAnimationMs||1000/(this.mobile?20:24)),
         foreground:!document.hidden&&document.hasFocus()&&this.visible&&!document.querySelector('dialog[open]'),
         settled:Boolean(this.renderer.domElement.dataset.modelLoad)&&!this.modelsDirty&&!hadReveal&&!terrainAnimating,
       });

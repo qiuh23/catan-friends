@@ -52,3 +52,9 @@ test('quality switching reuses the board and does not mutate the player camera',
   Board.prototype.setQuality.call(b,{quality:'low'});assert.equal(b.lowPower,true);assert.equal(b.quality,'low');
   Board.prototype.setQuality.call(b,{quality:'high'});assert.equal(b.lowPower,false);assert.equal(b.camera.view,'manual');assert.equal(b.resized,2);
 });
+
+test('an already open tab respects a choice or shown marker written by another tab',()=>{
+  const s=storage(),first=createQualityPreference(s),second=createQualityPreference(s);
+  first.markShown();assert.equal(second.canSuggest,false);
+  const other=storage(),a=createQualityPreference(other),b=createQualityPreference(other);a.choose('high');assert.equal(b.canSuggest,false);
+});

@@ -3,7 +3,7 @@ export function QualityChoice({model:m,id="graphics-quality"}:{model:UIModel,id?
   return <fieldset className="quality-choice">
     <legend>3D 画质</legend>
     <label htmlFor={id}>画面效果</label>
-    <select id={id} data-graphics-quality="" value={m.graphicsQuality} onChange={()=>{}}>
+    <select id={id} data-graphics-quality="" key={m.graphicsQuality} defaultValue={m.graphicsQuality}>
       <option value="high">高画质（默认）</option>
       <option value="low">省电</option>
     </select>

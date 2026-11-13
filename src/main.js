@@ -114,11 +114,11 @@ function showQualitySuggestion(){
   if(!graphicsQuality.canSuggest||flat||document.hidden||!document.hasFocus()||document.querySelector('dialog[open]')||requiredTask(state)||busy)return;
   // Reserve a strip above the map, never cover resource counts or board numbers.
   const top=qualitySuggestionTop();
-  const bottom=state?Math.min(...['#hand .hand-tray','#play-dock'].map(s=>$(s)?.getBoundingClientRect().top||innerHeight)):$('#home-dock').getBoundingClientRect().top;
-  if(bottom-top<300)return;
+  if(qualitySuggestionBottom()-top<300)return;
   qualityHint=true;render();graphicsQuality.markShown();
   qualityHintTimer=setTimeout(dismissQualitySuggestion,15000);
 }
+function qualitySuggestionBottom(){return state?Math.min(...['#hand .hand-tray','#play-dock'].map(s=>$(s)?.getBoundingClientRect().top||innerHeight)):$('#home-dock').getBoundingClientRect().top;}
 function qualitySuggestionTop(){return Math.max(0,...(state?['#stage-tools','#turn-banner','#player-orbit']:['.topbar','#home-welcome']).map(s=>{const el=$(s);return el?.getClientRects().length?el.getBoundingClientRect().bottom:0;}))+6;}
 function storedBoardView(){if(!state?.board||!code)return null;try{return JSON.parse(sessionStorage.getItem(`catan:view:${backendId}:${code}:${state.me}:${flat}`)||'null');}catch{return null;}}
 function saveBoardView(){clearTimeout(viewSaveTimer);viewSaveTimer=0;if(!state?.board||!code)return;try{sessionStorage.setItem(`catan:view:${backendId}:${code}:${state.me}:${flat}`,JSON.stringify({...board.exportView?.(),followPaused}));sessionStorage.setItem(`catan:renderer:${backendId}:${code}:${state.me}`,JSON.stringify(flat));}catch{}}
@@ -435,6 +435,7 @@ function syncViewport(){
   document.documentElement.style.setProperty('--visual-height',`${viewport?.height||innerHeight}px`);
   document.documentElement.style.setProperty('--visual-top',`${viewport?.offsetTop||0}px`);
   document.documentElement.style.setProperty('--app-height',`${innerHeight}px`);
+  if(qualityHint&&qualitySuggestionBottom()-qualitySuggestionTop()<300){qualityHint=false;clearTimeout(qualityHintTimer);qualityHintTimer=0;renderUI(uiModel());}
   const hint=$('#quality-hint');if(hint&&!hint.hidden)hint.style.top=`${qualitySuggestionTop()}px`;
   const hintBottom=hint&&!hint.hidden?hint.getBoundingClientRect().bottom+8:0;
   if(state){

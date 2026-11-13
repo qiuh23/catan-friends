@@ -7,7 +7,7 @@ export function createQualityPreference(storage){
   try{const value=storage?.getItem(QUALITY_KEY);if(value==='high'||value==='low')chosen=value;shown=storage?.getItem(QUALITY_HINT_KEY)==='1';}catch{}
   return {
     get value(){return normalizeQuality(chosen);},
-    get canSuggest(){return chosen===null&&!shown;},
+    get canSuggest(){try{const saved=storage?.getItem(QUALITY_KEY);if(saved==='high'||saved==='low'||storage?.getItem(QUALITY_HINT_KEY)==='1')return false;}catch{}return chosen===null&&!shown;},
     choose(value){chosen=normalizeQuality(value);try{storage?.setItem(QUALITY_KEY,chosen);}catch{}return chosen;},
     markShown(){shown=true;try{storage?.setItem(QUALITY_HINT_KEY,'1');}catch{}},
   };
