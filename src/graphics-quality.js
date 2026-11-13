@@ -21,7 +21,7 @@ export class AnimationStutterMonitor {
   sample(now,{active=false,targetMs=1000/60,foreground=true,settled=true}={}){
     if(!foreground||!settled){this.suspend(now);return false;}
     if(!active||now<this.readyAt){this.reset();return false;}
-    if(!this.last||this.target!==targetMs){this.last=this.started=now;this.target=targetMs;return false;}
+    if(!this.last||this.target!==targetMs){this.reset();this.last=this.started=now;this.target=targetMs;return false;}
     const elapsed=now-this.last;this.last=now;
     // Long pauses are interruption/suspension, not sustained animation evidence.
     if(elapsed<=0||elapsed>500){this.suspend(now);return false;}

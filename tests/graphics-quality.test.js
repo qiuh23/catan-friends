@@ -58,3 +58,8 @@ test('an already open tab respects a choice or shown marker written by another t
   first.markShown();assert.equal(second.canSuggest,false);
   const other=storage(),a=createQualityPreference(other),b=createQualityPreference(other);a.choose('high');assert.equal(b.canSuggest,false);
 });
+
+test('changing intended cadence starts fresh evidence rather than joining unrelated windows',()=>{
+  const m=new AnimationStutterMonitor();frames(m,{duration:4400});
+  assert.equal(frames(m,{start:7500,duration:4400,targetMs:50}),0);
+});
