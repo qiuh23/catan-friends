@@ -1,0 +1,14 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+import {chromium} from 'playwright';
+import {openFixture} from './map-first-fixture.js';
+const out='../catan-checkpoint/qa';await fs.mkdir(out,{recursive:true});
+const browser=await chromium.launch({executablePath:process.env.BROWSER_PATH||'/usr/bin/chromium',headless:true,args:['--no-sandbox']});const results=[];
+try{for(const [width,height] of [[1280,800],[390,844],[320,568],[844,390],[568,320]]){
+ const errors=[];const client=await openFixture(browser,{viewport:{width,height},touch:width<1000,errors});const {page,context}=client;const follow=page.locator('#camera-follow');
+ const inspect=()=>follow.evaluate(n=>{const r=n.getBoundingClientRect(),s=n.querySelector('span'),t=s.getBoundingClientRect(),hit=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);return{width:r.width,height:r.height,x:r.x,right:r.right,y:r.y,bottom:r.bottom,text:s.textContent,shown:getComputedStyle(s).display!=='none'&&t.width>0,hit:n.contains(hit)};});
+ const bounds=await inspect();assert.ok(bounds.shown&&bounds.hit&&bounds.width>=44&&bounds.height>=44,JSON.stringify(bounds));assert.ok(bounds.x>=0&&bounds.y>=0&&bounds.right<=width&&bounds.bottom<=height);assert.equal(bounds.text,'跟随');assert.equal(await follow.locator('svg.camera-state-icon').count(),1);
+ await follow.click();assert.equal(await follow.innerText(),'关闭');assert.equal(await follow.getAttribute('aria-pressed'),'false');await follow.focus();await page.keyboard.press('Enter');assert.equal(await follow.innerText(),'跟随');assert.equal(await follow.getAttribute('aria-pressed'),'true');
+ const box=await page.locator('#board canvas').boundingBox();await page.mouse.move(box.x+box.width*.45,box.y+box.height*.5);await page.mouse.down();await page.mouse.move(box.x+box.width*.55,box.y+box.height*.5,{steps:5});await page.mouse.up();assert.equal(await follow.innerText(),'手动');await follow.press('Space');assert.equal(await follow.innerText(),'跟随');
+ client.setPaused(true);await page.getByRole('button',{name:'恢复对局',exact:true}).first().waitFor();assert.equal(await follow.innerText(),'跟随');await follow.click();assert.equal(await follow.innerText(),'关闭');assert.equal(await page.getByRole('button',{name:'恢复对局',exact:true}).first().isVisible(),true);client.setPaused(false);await page.getByRole('button',{name:'暂停对局',exact:true}).first().waitFor();assert.equal(await follow.innerText(),'关闭');await page.screenshot({path:`${out}/${width}x${height}.png`});assert.deepEqual(errors,[]);results.push({width,height,bounds,states:['following','off','manual'],keyboard:true,matchPauseIndependent:true});await context.close();
+}await fs.writeFile(`${out}/results.json`,JSON.stringify(results,null,2));console.log('Camera states passed',results.length,'viewports');}finally{await browser.close();}

@@ -569,3 +569,20 @@ button .icon {
     --ui-duration: 0ms;
   }
 }
+
+/* Keep camera state legible on phones; pause/play belongs to match controls. */
+.at-table #camera-toolbar #camera-follow {
+  display:flex;flex-direction:row;align-items:center;justify-content:center;gap:4px;
+  width:auto;min-width:64px;min-height:var(--ui-touch-size);padding:4px;
+}
+.at-table #camera-toolbar #camera-follow > span {
+  display:inline;min-width:2em;font-size:12px;line-height:1;white-space:nowrap;
+}
+.at-table #camera-follow .camera-state-icon { flex:none;width:20px;height:20px; }
+.at-table #camera-toolbar[data-follow-state="following"] #camera-follow { color:#205c4b;background:#e4f2e7; }
+
+@media (orientation:landscape) and (max-height:600px) {
+  .at-table .playing #camera-toolbar {
+    display:flex;position:absolute;top:calc(100% + 8px);right:0;
+  }
+}

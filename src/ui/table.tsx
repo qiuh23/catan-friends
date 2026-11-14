@@ -41,16 +41,16 @@ export function CameraControls({ model: m }: { model: UIModel }) {
         aria-pressed={m.autoFollow && !m.followPaused}
         aria-label={
           !m.autoFollow
-            ? "开启自动跟随"
+            ? "镜头跟随已关闭，开启自动跟随"
             : m.followPaused
-              ? "恢复自动跟随"
-              : "暂停自动跟随"
+              ? "镜头手动控制，恢复自动跟随"
+              : "镜头正在自动跟随，关闭自动跟随"
         }
-        title="拖动、缩放会暂停跟随"
+        title="仅控制镜头，不会暂停对局；拖动或缩放后进入手动视角"
       >
-        <Icon name={m.autoFollow && !m.followPaused ? "follow" : "pause"} />
+        <svg className="icon camera-state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 7h4l2-3h4l2 3h4v14H4Z" /><circle cx="12" cy="13" r="4" /></svg>
         <span>
-          {!m.autoFollow ? "跟随关" : m.followPaused ? "手动" : "跟随中"}
+          {!m.autoFollow ? "关闭" : m.followPaused ? "手动" : "跟随"}
         </span>
       </Button>
     </>
