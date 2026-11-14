@@ -51,13 +51,14 @@ export class Batches {
   add(shape,color,x,y,z,sx=1,sy=sx,sz=sx,rotation=0,kind='land') {
     const key=`${kind}:${shape}`;
     if(!this.entries.has(key))this.entries.set(key,{shape,kind,items:[]});
-    this.entries.get(key).items.push({color,x,y,z,sx,sy,sz,rotation,tile:this.tile});
+    this.entries.get(key).items.push({color,x,y,z,sx,sy,sz,rotation,tile:this.tile,piece:this.piece});
   }
   finish(group) {
     const transform=new THREE.Object3D(),color=new THREE.Color();
     for(const {shape,kind,items} of this.entries.values()) {
       const mesh=new THREE.InstancedMesh(this.assets.geometries[shape],this.assets.material(kind),items.length);
       if(items.some(p=>Number.isInteger(p.tile)))mesh.userData.tileIds=items.map(p=>p.tile);
+      if(items.some(p=>p.piece))mesh.userData.pieces=items.map(p=>p.piece);
       items.forEach((p,i)=>{
         transform.position.set(p.x,p.y,p.z);transform.scale.set(p.sx,p.sy,p.sz);transform.rotation.set(0,p.rotation,0);transform.updateMatrix();
         mesh.setMatrixAt(i,transform.matrix);mesh.setColorAt(i,color.set(p.color));

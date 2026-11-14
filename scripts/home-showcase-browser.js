@@ -10,7 +10,7 @@ await mkdir(output,{recursive:true});await mkdir('test-results/home-showcase',{r
 async function instrument(context) {
   await context.route('**/@vite/client',async route=>{const response=await route.fetch();await route.fulfill({response,body:(await response.text()).replace('async connect(handlers) {','async connect(handlers) { return;')});});
   await context.route('**/src/board3d.js*',async route=>{
-    const response=await route.fetch();const body=(await response.text()).replace('constructor(container,onSelect,onHover) {','constructor(container,onSelect,onHover) { globalThis.qaBoard=this;');
+    const response=await route.fetch();const body=(await response.text()).replace(/constructor\(container,onSelect,onHover[^\n]*\{\n/,match=>match+'globalThis.qaBoard=this;\n');
     await route.fulfill({response,body});
   });
   context.on('page',page=>page.on('pageerror',e=>errors.push(e.message)));
@@ -37,7 +37,7 @@ async function auditOrbit(page) {
       minGap=Math.min(minGap,x-frame.left,w-frame.right-x,y-frame.top,h-frame.bottom-y);
       if((x<frame.left-1||x>w-frame.right+1||y<frame.top-1||y>h-frame.bottom+1)&&failures.length<5)failures.push({angle:b.homeAngle,x,y,point:point.toArray(),label});
     };
-    b.stopAmbient();b.ambientEnabled=false;b.controls.enableDamping=false;const radius=b.camera.position.length();
+    b.stopAmbient();b.ambientEnabled=false;b.controls.enableDamping=false;b.animateDemo(24);const radius=b.camera.position.length();
     for(let degrees=0;degrees<360;degrees+=15) {
       b.homeAngle=degrees*Math.PI/180;b.camera.position.set(Math.sin(b.homeAngle)*Math.sin(.78)*radius,Math.cos(.78)*radius,Math.cos(b.homeAngle)*Math.sin(.78)*radius);b.controls.update();b.camera.updateMatrixWorld();b.scene.updateMatrixWorld(true);
       const right=new V().setFromMatrixColumn(b.camera.matrixWorld,0),up=new V().setFromMatrixColumn(b.camera.matrixWorld,1);
@@ -62,13 +62,13 @@ function checkUI(report,width,height) {
 }
 
 for(const [engine,type] of [['chromium',chromium],['webkit',webkit]]) {
-  const browser=await type.launch({headless:true});
+  const browser=await type.launch({headless:true,...(engine==='chromium'&&process.env.BROWSER_EXECUTABLE?{executablePath:process.env.BROWSER_EXECUTABLE}:{})});
   try {
     const liveContext=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true});await instrument(liveContext);
     const live=await liveContext.newPage();let writes=0,sockets=0;live.on('request',r=>{if(r.method()==='POST'&&r.url().includes('/api/rooms'))writes++;});live.on('websocket',ws=>{if(ws.url().includes('/api/rooms/'))sockets++;});
     await live.goto(base);await live.locator('canvas[data-camera]').waitFor();await live.waitForTimeout(500);
     // Warm every model once before comparing renderer allocations.
-    await live.evaluate(()=>{for(const t of [3,21]){qaBoard.animateDemo(t);qaBoard.renderer.render(qaBoard.scene,qaBoard.camera);}qaBoard.animateDemo(qaBoard.homeTime);});
+    await live.evaluate(()=>{for(const t of [3,14,24]){qaBoard.animateDemo(t);qaBoard.renderer.render(qaBoard.scene,qaBoard.camera);}qaBoard.animateDemo(qaBoard.homeTime);});
     const liveStart=await stats(live),started=Date.now();
     for(const [name,width,height] of [['desktop',1440,1000],['laptop',1366,768],['portrait',390,844],['small',320,568],['landscape',844,390],['short-landscape',667,320]]) {
       const context=await browser.newContext({viewport:{width,height},isMobile:name!=='desktop'&&name!=='laptop',hasTouch:name!=='desktop'&&name!=='laptop'});await instrument(context);
@@ -92,9 +92,9 @@ for(const [engine,type] of [['chromium',chromium],['webkit',webkit]]) {
       // is a browser document override, and is identified as such in the report.
       await page.evaluate(()=>{Object.defineProperty(document,'hidden',{configurable:true,get:()=>true});document.dispatchEvent(new Event('visibilitychange'));});const hidden=await stats(page);await page.waitForTimeout(180);assert.equal((await stats(page)).time,hidden.time);
       await page.evaluate(()=>{delete document.hidden;document.dispatchEvent(new Event('visibilitychange'));});
-      await page.emulateMedia({reducedMotion:'reduce'});await page.waitForTimeout(160);assert.equal(await page.locator('canvas').getAttribute('data-ambient'),'stopped');assert.ok(await page.locator('#home-motion').isDisabled());assert.equal(JSON.parse(await page.locator('canvas').getAttribute('data-demo')).pose.city,1);
+      await page.emulateMedia({reducedMotion:'reduce'});await page.waitForTimeout(160);assert.equal(await page.locator('canvas').getAttribute('data-ambient'),'stopped');assert.ok(await page.locator('#home-motion').isDisabled());assert.equal(JSON.parse(await page.locator('canvas').getAttribute('data-demo')).pose.buildings.filter(b=>b.city===1).length,2);
       if(engine==='chromium'&&name==='portrait')await page.screenshot({path:`${output}/portrait-reduced-motion.png`});
-      await page.emulateMedia({reducedMotion:'no-preference'});await page.locator('#flat-toggle').click();await page.locator('#board>svg').waitFor();assert.equal(await page.locator('[data-building="city"]').count(),1);assert.equal(await page.evaluate(()=>qaBoard.disposed&&qaBoard.demoLayer===null&&qaBoard.ambientTimer===0),true);assert.ok(await page.locator('#home-motion').isDisabled());
+      await page.emulateMedia({reducedMotion:'no-preference'});await page.locator('#flat-toggle').click();await page.locator('#board>svg').waitFor();assert.equal(await page.locator('[data-building="city"]').count(),2);assert.equal(await page.evaluate(()=>qaBoard.disposed&&qaBoard.demoLayer===null&&qaBoard.ambientTimer===0),true);assert.ok(await page.locator('#home-motion').isDisabled());
       if(engine==='chromium'&&name==='portrait')await page.screenshot({path:`${output}/portrait-2d.png`});
       await page.locator('#flat-toggle').click();await page.locator('canvas[data-camera]').waitFor();assert.ok(await page.locator('#home-motion').isEnabled());
       if(engine==='chromium'&&name==='portrait') {
@@ -122,7 +122,7 @@ for(const [engine,type] of [['chromium',chromium],['webkit',webkit]]) {
     while((await stats(live)).time<92){await live.waitForTimeout(1000);if(Date.now()-started>160000)throw Error('live showcase stopped unexpectedly');}
     const liveEnd=await stats(live);assert.ok(liveEnd.angle-liveStart.angle>1.8);assert.equal(writes,0);assert.equal(sockets,0);
     assert.deepEqual(liveEnd.memory,liveStart.memory);assert.equal(liveEnd.landBuilds,liveStart.landBuilds);assert.equal(liveEnd.pieceBuilds,liveStart.pieceBuilds);assert.equal(liveEnd.children,liveStart.children);assert.equal(liveEnd.assets,liveStart.assets);
-    const accelerated=await live.evaluate(()=>{const b=qaBoard;b.stopAmbient();b.ambientEnabled=false;const samples=[];for(let cycle=0;cycle<12;cycle++){for(let step=0;step<120;step++)b.animateDemo(cycle*30+step*.25);b.animateDemo(21);b.renderer.render(b.scene,b.camera);samples.push({...b.renderer.info.memory,children:b.scene.children.length,landBuilds:b.metrics.landBuilds,pieceBuilds:b.metrics.pieceBuilds});}return samples;});
+    const accelerated=await live.evaluate(()=>{const b=qaBoard;b.stopAmbient();b.ambientEnabled=false;const samples=[];for(let cycle=0;cycle<12;cycle++){for(let step=0;step<120;step++)b.animateDemo(cycle*30+step*.25);b.animateDemo(24);b.renderer.render(b.scene,b.camera);samples.push({...b.renderer.info.memory,children:b.scene.children.length,landBuilds:b.metrics.landBuilds,pieceBuilds:b.metrics.pieceBuilds});}return samples;});
     assert.ok(accelerated.every(s=>JSON.stringify(s)===JSON.stringify(accelerated[0])));
     results.push({engine,liveSeconds:liveEnd.time,liveStart,liveEnd,acceleratedCycles:12,accelerated,writes,sockets});
     console.log(`${engine}: 3 real-time loops + 12 accelerated loops, stable pools, zero room traffic`);
@@ -132,7 +132,7 @@ for(const [engine,type] of [['chromium',chromium],['webkit',webkit]]) {
 
 // Real local Node rooms (not a WebSocket fixture). Only explicit entry creates
 // these rooms; no demonstration data is included in their persisted records.
-const browser=await chromium.launch({headless:true});
+const browser=await chromium.launch({headless:true,...(process.env.BROWSER_EXECUTABLE?{executablePath:process.env.BROWSER_EXECUTABLE}:{})});
 try {
   const context=await browser.newContext({viewport:{width:390,height:844},hasTouch:true,isMobile:true});await instrument(context);
   const page=await context.newPage();await page.goto(base);await page.locator('canvas[data-camera]').waitFor();

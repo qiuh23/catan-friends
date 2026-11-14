@@ -2,11 +2,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { PerspectiveCamera, Vector3 } from 'three';
 import { Board } from '../src/board3d.js';
-import { createHomeExample, homePadding, showcasePose, showcaseEnvelope } from '../src/home-showcase.js';
+import { createHomeExample, homePadding, showcasePose, showcaseEnvelope, SHOWCASE_SETTLED_SECONDS } from '../src/home-showcase.js';
 
 test('home illustration owns independent deterministic data and connected demonstration pieces',()=>{
   const a=createHomeExample(),b=createHomeExample();assert.deepEqual(a,b);
-  const {vertex,roads}=a.homeDemo;assert.equal(a.board.vertices[vertex].level,2);assert.equal(roads.length,4);
+  const {buildings,roads}=a.homeDemo,vertex=buildings[0].vertex;assert.equal(a.board.vertices[vertex].level,2);assert.equal(roads.length,6);assert.equal(buildings.length,4);
+  assert.equal(a.board.vertices.filter(v=>v.owner&&v.level===2).length,2);
+  for(const {vertex:id}of buildings)assert.ok(a.board.vertices[id].edges.every(edge=>!buildings.some(other=>other.vertex!==id&&[a.board.edges[edge].a,a.board.edges[edge].b].includes(other.vertex))));
   let at=vertex;
   for(const road of roads){const edge=a.board.edges[road.edge];assert.equal(road.from,at);assert.ok([edge.a,edge.b].includes(road.from)&&[edge.a,edge.b].includes(road.to));at=road.to;}
   a.board.vertices[vertex].owner=null;a.board.edges[roads[0].edge].owner=null;
@@ -14,13 +16,13 @@ test('home illustration owns independent deterministic data and connected demons
   assert.deepEqual(a.legal,{});assert.equal(a.robber,null);
 });
 
-test('gentle loop builds village then consecutive roads then city, rests and resets continuously',()=>{
-  assert.equal(showcasePose(3).village,1);assert.deepEqual(showcasePose(3).roads,[0,0,0,0]);
-  assert.equal(showcasePose(5.5).roads[0],1);assert.equal(showcasePose(5.5).roads[1],0);
-  assert.equal(showcasePose(13).village,1);assert.deepEqual(showcasePose(13).roads,[1,1,1,1]);
-  for(const t of [18,21,25])assert.deepEqual(showcasePose(t),{village:0,city:1,roads:[1,1,1,1]});
+test('gentle loop builds four villages along six roads, upgrades two, rests and resets continuously',()=>{
+  assert.equal(showcasePose(3).buildings[0].village,1);assert.deepEqual(showcasePose(3).roads,[0,0,0,0,0,0]);
+  assert.equal(showcasePose(5).roads[0],1);assert.equal(showcasePose(5).roads[1],0);
+  assert.equal(showcasePose(14).buildings.filter(p=>p.village===1).length,3);assert.deepEqual(showcasePose(14).roads,[1,1,1,1,1,1]);
+  for(const t of [SHOWCASE_SETTLED_SECONDS,25,26])assert.deepEqual(showcasePose(t),{buildings:[{village:0,city:1},{village:1,city:0},{village:0,city:1},{village:1,city:0}],roads:[1,1,1,1,1,1]});
   assert.deepEqual(showcasePose(29.99),showcasePose(30));
-  for(let t=0;t<30;t+=.1){const p=showcasePose(t);assert.ok([p.village,p.city,...p.roads].every(n=>n>=0&&n<=1));}
+  for(let t=0;t<30;t+=.1){const p=showcasePose(t);assert.ok([...p.buildings.flatMap(b=>[b.village,b.city]),...p.roads].every(n=>n>=0&&n<=1));}
 });
 
 test('home frame reserves measured title, subtitle, server, controls, dock and safe area',()=>{

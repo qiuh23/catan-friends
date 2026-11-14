@@ -17,7 +17,7 @@ test('only board terrain, actual buildings, ports and a present robber are requi
   b.vertices[0].owner='a';b.vertices[0].level=1;
   const occupied=models.required(b,{robber:true});assert.ok(occupied.includes(ARCHITECTURE_URL+buildingAsset(b.vertices[0])+'.glb'));assert.ok(occupied.includes(ROBBER_URL));
   assert.equal(occupied.length,empty.length+2);
-  const home=models.required(b,{homeDemo:{vertex:0}});assert.equal(home.filter(u=>u.startsWith(ARCHITECTURE_URL)).length,3);assert.ok(!home.includes(ROBBER_URL));
+  const home=models.required(b,{homeDemo:{buildings:[{vertex:0,buildAt:1,upgradeAt:10}]}});assert.equal(home.filter(u=>u.startsWith(ARCHITECTURE_URL)).length,3);assert.ok(!home.includes(ROBBER_URL));
 });
 test('four load slots, early progress, request deduplication and explicit retry',async()=>{
   const pending=[],calls=[];class Loader{loadAsync(url){calls.push(url);return new Promise((resolve,reject)=>pending.push({url,resolve,reject}));}}

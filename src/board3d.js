@@ -1,4 +1,4 @@
-import {roadConnections,roadSiteHeight} from './visuals/road-geometry.js';
+import {roadSiteHeight} from './visuals/road-geometry.js';
 import {AnimationStutterMonitor,normalizeQuality,boardPixelRatio} from './graphics-quality.js';
 import {SceneClock, HOME_DAY_MS} from './visuals/day-night.js';
 import {createNightLights} from './visuals/night-lights.js';
@@ -17,8 +17,9 @@ import { BoardAssets, Batches, buildTerrain, clearLayer } from './terrain.js';
 import { boardFrame } from './board-frame.js';
 import { feedbackPoints, planActionCamera } from './action-camera.js';
 import { feedbackAnchor, mapViewKey } from './map-feedback.js';
-import { addRoad, addRoadJunction, addBuilding } from './pieces.js';
-import { ORBIT_SECONDS, showcasePose, showcaseEnvelope } from './home-showcase.js';
+import { addRoadNetwork, addBoardBuildings } from './pieces.js';
+import {createHomePieces} from './visuals/home-pieces.js';
+import { ORBIT_SECONDS, SHOWCASE_SETTLED_SECONDS, showcasePose, showcaseEnvelope } from './home-showcase.js';
 
 function gableRoof(){
   const geometry=new THREE.BufferGeometry();
@@ -114,7 +115,7 @@ export class Board {
     this.ambientEnabled=Boolean(sceneEnabled)&&this.homeShowcase&&!reducedMotion;
     this.controls.enableDamping=!reducedMotion&&!(this.ambientEnabled&&this.autoOrbitEnabled&&!this.ambientInterrupted);
     this.syncScene();
-    if(reducedMotion&&this.demoParts){this.homeTime=21;this.animateDemo(21);this.invalidate();}
+    if(reducedMotion&&this.demoParts){this.homeTime=SHOWCASE_SETTLED_SECONDS;this.animateDemo(this.homeTime);this.invalidate();}
     if(!this.ambientEnabled){this.stopAmbient();return;}
     this.scheduleAmbient();
   }
@@ -163,28 +164,19 @@ export class Board {
     this.ambientInterrupted=false;this.reset({defaultOrientation:true});this.scheduleAmbient();
   }
   clearDemo() {
-    if(this.demoLayer){this.demoLayer.traverse(group=>{if(group.isGroup)this.models.releaseLayer(group);});clearLayer(this.demoLayer);this.scene.remove(this.demoLayer);}
+    this.demoParts?.dispose();
+    if(this.demoLayer)this.scene.remove(this.demoLayer);
     this.demoLayer=null;this.demoParts=null;
     if(this.renderer)this.renderer.domElement.dataset.demo='none';
   }
   buildDemo(state) {
-    this.clearDemo();const layer=this.demoLayer=new THREE.Group(),color=state.players[0].color,b=state.board;
-    this.roadLights.setBoard(b);
-    this.scene.add(layer);const vertex=b.vertices[state.homeDemo.vertex];
-    const building=level=>{const group=new THREE.Group(),batch=new Batches(this.assets),v={id:vertex.id,x:0,z:0,level,owner:state.players[0].id};if(!this.models.buildings([v],()=>color,group).size)addBuilding(batch,v,color);batch.finish(group);group.position.set(vertex.x,0,vertex.z);layer.add(group);return group;};
-    const village=building(1),city=building(2);
-    const roads=state.homeDemo.roads.map(({from,to})=>{
-      const a=b.vertices[from],v=b.vertices[to],group=new THREE.Group(),batch=new Batches(this.assets);
-      addRoad(batch,{x:0,z:0},{x:1,z:0},color);batch.finish(group);group.position.set(a.x,0,a.z);group.rotation.y=-Math.atan2(v.z-a.z,v.x-a.x);layer.add(group);return group;
-    });
-    this.demoParts={village,city,roads};this.animateDemo(this.homeTime||0);
+    this.clearDemo();const layer=this.demoLayer=new THREE.Group();
+    this.roadLights.setBoard(state.board);this.scene.add(layer);
+    this.demoParts=createHomePieces(state,{assets:this.assets,models:this.models,layer});
+    this.animateDemo(this.reducedMotion?SHOWCASE_SETTLED_SECONDS:this.homeTime||0);
   }
   animateDemo(time) {
-    if(!this.demoParts)return;const pose=showcasePose(time),{village,city,roads}=this.demoParts;
-    for(const [group,amount] of [[village,pose.village],[city,pose.city]]) {
-      group.visible=amount>.001;group.scale.set(1,Math.max(.001,amount),1);group.position.y=.27*(1-amount);
-    }
-    roads.forEach((group,i)=>{group.visible=pose.roads[i]>.001;group.scale.x=Math.max(.001,pose.roads[i]);});
+    if(!this.demoParts)return;const pose=showcasePose(time,this.latestState.homeDemo);this.demoParts.animate(pose);
     this.roadLights.setReveal(new Map(this.latestState.homeDemo.roads.map((road,i)=>[road.edge,pose.roads[i]])));
     this.renderer.domElement.dataset.demo=JSON.stringify({time,pose});this.environment.lighting.markDirty();
   }
@@ -595,13 +587,12 @@ export class Board {
     const colors=state.players.map(p=>[p.id,p.color]);
     const pieceKey=JSON.stringify([b.edges.map(e=>e.owner),b.vertices.map(v=>[v.owner,v.level]),colors,state.robber]);
     if(pieceKey!==this.pieceKey) {
-      this.roadLights.setBoard(b);
+      if(!this.homeShowcase)this.roadLights.setBoard(b);
       this.pieceKey=pieceKey;this.models.releaseLayer(this.pieces);clearLayer(this.pieces);this.metrics.pieceBuilds++;changed=true;
       const batch=new Batches(this.assets),color=id=>state.players.find(p=>p.id===id)?.color||'#e57c54';
       const add=(shape,c,x,y,z,sx,sy,sz,r=0)=>batch.add(shape,c,x,y,z,sx,sy,sz,r,'pieces');
-      this.connectedRoads=roadConnections(b);
-      if(!this.homeShowcase){const connections=this.connectedRoads;for(const edge of b.edges.filter(e=>e.owner))addRoad(batch,b.vertices[edge.a],b.vertices[edge.b],color(edge.owner),{ends:connections.ends(edge)});for(const [id,owner]of connections.joined)addRoadJunction(batch,b.vertices[id],color(owner),connections.junctions.get(id));}
-      if(!this.homeShowcase){const vertices=b.vertices.filter(v=>v.owner),loaded=this.models.buildings(vertices,color,this.pieces);for(const v of vertices)if(!loaded.has(v.id))addBuilding(batch,v,color(v.owner));}
+      this.connectedRoads=this.homeShowcase?this.demoParts.connections:addRoadNetwork(batch,b,color);
+      if(!this.homeShowcase)addBoardBuildings(batch,b.vertices.filter(v=>v.owner),color,this.models,this.pieces);
       delete this.renderer.domElement.dataset.robber;
       if(state.robber!==null&&state.robber!==undefined) {
         const t=b.tiles[state.robber],pose=this.models.robber(b,t,this.pieces);

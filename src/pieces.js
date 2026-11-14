@@ -1,7 +1,29 @@
 import { Color } from 'three';
-import {roadFrame,createRoadJunctionGeometries,ROAD_JOIN_REACH} from './visuals/road-geometry.js';
+import {roadFrame,roadConnections,createRoadJunctionGeometries,ROAD_JOIN_REACH} from './visuals/road-geometry.js';
 
 const shade=(value,light)=>new Color(value).offsetHSL(0,0,light).getHex();
+
+// Home and matches use this same topology, ownership and geometry path. The
+// optional tags only let the home timeline reveal already-built instances.
+export function addRoadNetwork(batch,board,color,{tagPieces=false}={}) {
+  const connections=roadConnections(board);
+  for(const edge of board.edges.filter(e=>e.owner)) {
+    if(tagPieces)batch.piece={kind:'road',id:edge.id};
+    addRoad(batch,board.vertices[edge.a],board.vertices[edge.b],color(edge.owner),{ends:connections.ends(edge)});
+  }
+  for(const [id,owner]of connections.joined) {
+    if(tagPieces)batch.piece={kind:'junction',id,edges:board.vertices[id].edges.filter(edge=>board.edges[edge].owner===owner)};
+    addRoadJunction(batch,board.vertices[id],color(owner),connections.junctions.get(id));
+  }
+  batch.piece=null;
+  return connections;
+}
+
+export function addBoardBuildings(batch,vertices,color,models,layer) {
+  const loaded=models.buildings(vertices,color,layer);
+  for(const vertex of vertices)if(!loaded.has(vertex.id))addBuilding(batch,vertex,color(vertex.owner));
+}
+
 export function addRoad(batch,a,b,color,{ends=[null,null]}={}) {
   const f=roadFrame(a,b),baseGap=(f.length-Math.min(.79,f.length*.79))/2;
   if(a.x>b.x||a.x===b.x&&a.z>b.z)ends=[ends[1],ends[0]];
