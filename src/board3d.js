@@ -1,5 +1,5 @@
 import {roadConnections,roadSiteHeight} from './visuals/road-geometry.js';
-import {AnimationStutterMonitor,normalizeQuality} from './graphics-quality.js';
+import {AnimationStutterMonitor,normalizeQuality,boardPixelRatio} from './graphics-quality.js';
 import {SceneClock, HOME_DAY_MS} from './visuals/day-night.js';
 import {createNightLights} from './visuals/night-lights.js';
 import {createRoadLights} from './visuals/road-lights.js';
@@ -213,7 +213,7 @@ export class Board {
       const controlsChanged=this.controls.update();const renderStart=performance.now();this.renderer.render(this.scene,this.camera);this.metrics.renders++;
       this.metrics.renderMs=Number((performance.now()-renderStart).toFixed(2));
       const {calls,triangles}=this.renderer.info.render;
-      this.renderer.domElement.dataset.renderStats=JSON.stringify({...this.metrics,calls,triangles,...this.renderer.info.memory,programs:this.renderer.info.programs?.length||0,environment:this.environment.getState(),dpr:this.renderer.getPixelRatio(),shadows:this.renderer.shadowMap.enabled});
+      this.renderer.domElement.dataset.renderStats=JSON.stringify({...this.metrics,calls,triangles,...this.renderer.info.memory,programs:this.renderer.info.programs?.length||0,environment:this.environment.getState(),bufferWidth:this.renderer.domElement.width,bufferHeight:this.renderer.domElement.height,dpr:this.renderer.getPixelRatio(),shadows:this.renderer.shadowMap.enabled});
       this.renderer.domElement.dataset.camera=JSON.stringify(this.camera.position.toArray());
       this.renderer.domElement.dataset.cameraTarget=JSON.stringify(this.controls.target.toArray());
       this.renderer.domElement.dataset.cameraFocus=this.focusAnimation?'moving':this.viewMode||'overview';
@@ -235,11 +235,19 @@ export class Board {
   resize() {
     const w=this.container.clientWidth,h=this.container.clientHeight;if(!w||!h||this.disposed)return;
     const mobile=this.mobile=matchMedia('(pointer:coarse)').matches||Math.min(innerWidth,innerHeight)<=600;
-    const dpr=Math.min(devicePixelRatio||1,mobile?1.35:1.75,Math.sqrt((mobile?1200000:2000000)/(w*h)));
+    const dpr=boardPixelRatio(w,h,devicePixelRatio,{lowPower:this.lowPower,mobile});
     const changed=w!==this.width||h!==this.height;
-    this.width=w;this.height=h;this.renderer.setPixelRatio(dpr);this.renderer.setSize(w,h,false);
-    this.environment.setQuality({lowPower:this.lowPower});
-    this.nightLights.setNight(this.environment.getState().night,{lowPower:this.lowPower});
+    this.width=w;this.height=h;
+    // setPixelRatio also calls setSize: use the atomic API once, and avoid
+    // resetting the drawing buffer for duplicate ResizeObserver notifications.
+    if(changed||dpr!==this.renderer.getPixelRatio())this.renderer.setDrawingBufferSize(w,h,dpr);
+    // Resizing does not change lighting. Only an actual quality choice should
+    // invalidate the shadow map or reconfigure the shared sky and lanterns.
+    if(this.appliedLowPower!==this.lowPower){
+      this.environment.setQuality({lowPower:this.lowPower});
+      this.nightLights.setNight(this.environment.getState().night,{lowPower:this.lowPower});
+      this.appliedLowPower=this.lowPower;
+    }
     this.renderer.domElement.dataset.quality=this.quality;
     if(changed){this.stutter.suspend(performance.now());this.cancelFocus();this.updateProjection();if(this.board&&(!this.viewMode||this.viewMode==='overview'))this.fit(true);else this.invalidate();}
     else this.invalidate();
