@@ -1,3 +1,4 @@
+import {withStartingRolls} from './fixtures/starting-rolls.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createBoard,RESOURCES} from '../shared/board.js';
@@ -6,7 +7,7 @@ import {createGame,addPlayer,act,botAction,viewFor,points,ruleProfile,total} fro
 const options={playerExpansion:'five-six-2025'};
 const rng=(seed=42)=>()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};
 function lobby(n=6,rules=options){const g=createGame(rules);for(let i=0;i<n;i++)addPlayer(g,`p${i}`,`玩家${i}`,true);return g;}
-function setup(n=6,rules=options){let g=act(lobby(n,rules),'p0',{type:'start'},rng());while(g.phase.startsWith('setup')){const id=g.players[g.turn].id;g=act(g,id,botAction(g,id));}return g;}
+function setup(n=6,rules=options){let g=act(lobby(n,rules),'p0',{type:'start'},withStartingRolls(n,rng()));while(g.phase.startsWith('setup')){const id=g.players[g.turn].id;g=act(g,id,botAction(g,id));}return g;}
 function give(g,id,cards){const p=g.players.find(p=>p.id===id);for(const r of RESOURCES){g.bank[r]+=p.hand[r];p.hand[r]=cards[r]||0;g.bank[r]-=p.hand[r];}}
 function conserved(g){for(const r of RESOURCES)assert.equal(g.bank[r]+g.players.reduce((n,p)=>n+p.hand[r],0),24,r);}
 
@@ -35,7 +36,7 @@ test('waiting rooms accept six seats and choose the actual edition at start, pre
   assert.throws(()=>addPlayer(lobby(),'p6','第七'),/6/);
   assert.throws(()=>act(lobby(5),'p0',{type:'setOptions',options:{playerExpansion:'base'}}),/实际人数/);
   for(const n of [5,6]){
-    let g=act(lobby(n),'p0',{type:'start'},rng()),order=[];
+    let g=act(lobby(n),'p0',{type:'start'},withStartingRolls(n,rng())),order=[];
     while(g.phase.startsWith('setup')){const id=g.players[g.turn].id;if(g.phase==='setup-settlement')order.push(g.turn);g=act(g,id,botAction(g,id));}
     assert.deepEqual(order,[...Array(n).keys(),...Array(n).keys()].map((v,i)=>i<n?v:n-1-v));
     assert.equal(new Set(g.players.map(p=>p.color)).size,n);assert.equal(g.phase,'roll');assert.equal(g.pairStep,'primary');

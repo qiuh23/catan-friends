@@ -180,6 +180,15 @@ button .icon {
 .at-table .turn-description {
   font-size: 12px;
 }
+.at-table .turn-banner > .starting-player-copy {
+  display: block !important;
+  min-width: 0;
+}
+.at-table .turn-banner .starting-player-note {
+  display: block;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
 .at-table .dice-pair > b {
   font-size: 18px;
 }

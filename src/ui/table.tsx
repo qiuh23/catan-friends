@@ -243,7 +243,7 @@ export function Banner({ model: m }: { model: RoomModel }) {
       className={`turn-banner ${m.myTurn ? "your-turn" : ""} ${task ? "needs-attention" : ""}`}
     >
       <span className="turn-dot" style={{ background: p.color }} />
-      <div>
+      <div className={s.startingPlayer && s.phase.startsWith("setup-") ? "starting-player-copy" : undefined}>
         <strong>
           {s.room?.paused
             ? "对局已暂停"
@@ -267,6 +267,12 @@ export function Banner({ model: m }: { model: RoomModel }) {
                 ? "需要处理"
                 : descriptions[s.phase] || ""}
         </span>
+        {s.startingPlayer && s.phase.startsWith("setup-") && (
+          <span className="turn-description starting-player-note">
+            先手：{s.players[s.startingPlayer.index].name} · {s.startingPlayer.dice.join("+")}={totalDice(s.startingPlayer.dice)}
+            {s.startingPlayer.rounds > 1 ? `（加掷 ${s.startingPlayer.rounds - 1} 轮）` : ""}
+          </span>
+        )}
       </div>
       {s.room?.paused && m.isHost ? (
         <Button

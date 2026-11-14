@@ -1,3 +1,4 @@
+import {withStartingRolls} from './fixtures/starting-rolls.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { emptyHand, RESOURCES } from '../shared/board.js';
@@ -6,7 +7,7 @@ import { createGame, addPlayer, act, viewFor, legal, points, updateAwards, botAc
 const rng = (seed = 42) => () => { seed = (Math.imul(seed,1664525)+1013904223)>>>0; return seed/4294967296; };
 function lobby(options = {}, n = 3) { const g=createGame(options); for(let i=0;i<n;i++)addPlayer(g,`p${i}`,`玩家${i}`,true); return g; }
 function setup(options = {}, n = 3) {
-  let g=act(lobby(options,n),'p0',{type:'start'},rng());
+  let g=act(lobby(options,n),'p0',{type:'start'},withStartingRolls(n,rng()));
   while(g.phase.startsWith('setup')) { const id=g.players[g.turn].id; g=act(g,id,botAction(g,id)); }
   return g;
 }

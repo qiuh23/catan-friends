@@ -62,14 +62,14 @@ function fixture(n=3){
   room.presence(ids);return {room,ids};
 }
 function send(room,id,action,extra={}){return room.handle(id,{id:crypto.randomUUID(),revision:room.record.revision,action,...extra});}
-test('map retry limit explicitly fails atomically; expansion keeps its distinct number sequence and ordered first player',()=>{
+test('map retry limit explicitly fails atomically; expansion keeps its distinct number sequence and rolled first player',()=>{
   assert.throws(()=>createBoard(()=>0),/重试上限/);
   const {room,ids}=fixture(),before=structuredClone(room.record);
   // A depleted stream also fails without committing a partial terrain/deck.
   room.record.random.counter=0x100000000;room.record.random.words=Array(16).fill(0);room.record.random.offset=16;
   const depleted=structuredClone(room.record);assert.throws(()=>send(room,ids[0],{type:'start'}));assert.deepEqual(room.record,depleted);
   const g=createGame({playerExpansion:'five-six-2025'},seed);for(let i=0;i<5;i++)addPlayer(g,'p'+i,'玩家'+i,true);
-  const started=act(g,'p0',{type:'start'});assert.equal(started.turn,0);assert.equal(started.board.tiles.length,30);
+  const started=act(g,'p0',{type:'start'});assert.equal(started.turn,started.startingPlayer.index);assert.equal(started.board.tiles.length,30);
   assert.deepEqual(started.board.tiles.filter(t=>t.resource!=='desert').map(t=>t.number).sort((a,b)=>a-b),[2,5,4,6,3,9,8,11,11,10,6,3,8,4,8,10,11,12,10,5,4,9,5,9,12,3,2,6].sort((a,b)=>a-b));
   assert.equal(before.random.offset,0);
 });
@@ -78,10 +78,10 @@ test('illegal/stale/duplicate requests preserve the stream; restart and retry re
     const {room,ids}=fixture(n),id=crypto.randomUUID(),start={id,revision:room.record.revision,action:{type:'start'}};
     room.handle(ids[0],start);const afterStart=structuredClone(room.record);room.handle(ids[0],start);assert.deepEqual(room.record,afterStart);
     while(room.record.game.phase.startsWith('setup')){const g=room.record.game;send(room,g.players[g.turn].id,botAction(g,g.players[g.turn].id));}
-    const before=structuredClone(room.record);assert.throws(()=>send(room,ids[1],{type:'roll'}));assert.throws(()=>send(room,ids[0],{type:'roll'},{revision:0}));assert.deepEqual(room.record,before);
+    const before=structuredClone(room.record),active=room.record.game.players[room.record.game.turn].id,otherId=ids.find(id=>id!==active);assert.throws(()=>send(room,otherId,{type:'roll'}));assert.throws(()=>send(room,active,{type:'roll'},{revision:0}));assert.deepEqual(room.record,before);
     const restored=new Room(JSON.parse(JSON.stringify(before))),roll={id:crypto.randomUUID(),revision:before.revision,action:{type:'roll'}};
-    room.handle(ids[0],roll);restored.handle(ids[0],roll);assert.deepEqual(room.record.random,restored.record.random);assert.deepEqual(room.record.game.dice,restored.record.game.dice);
-    const afterRoll=structuredClone(room.record);room.handle(ids[0],roll);assert.deepEqual(room.record,afterRoll);
+    room.handle(active,roll);restored.handle(active,roll);assert.deepEqual(room.record.random,restored.record.random);assert.deepEqual(room.record.game.dice,restored.record.game.dice);
+    const afterRoll=structuredClone(room.record);room.handle(active,roll);assert.deepEqual(room.record,afterRoll);
     const g=room.record.game;g.phase='steal';g.turn=0;const victim=g.players[1];victim.hand={wood:2,brick:1,sheep:3,wheat:1,ore:0};g.board.vertices[g.board.tiles[g.robber].vertices[0]].owner=victim.id;
     const theftBefore=structuredClone(room.record),other=new Room(structuredClone(theftBefore)),theft={id:crypto.randomUUID(),revision:theftBefore.revision,action:{type:'steal',victim:victim.id}};
     room.handle(ids[0],theft);other.handle(ids[0],theft);assert.deepEqual(room.record.game.players,other.record.game.players);assert.deepEqual(room.record.random,other.record.random);

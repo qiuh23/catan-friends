@@ -67,6 +67,7 @@ export interface GameView {
   options: Options;
   board: BoardView | null;
   turn: number;
+  startingPlayer?: { index: number; dice: [number, number]; rounds: number };
   turnNo: number;
   pairStep: "primary" | "secondary";
   targetPoints: number;

@@ -1,3 +1,4 @@
+import {withStartingRolls} from './fixtures/starting-rolls.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createGame,addPlayer,act,botAction,legal,viewFor} from '../shared/game.js';
@@ -6,7 +7,7 @@ import {Room} from '../shared/room.js';
 import {ActionFeedbackCursor,mergeFeedbackEvents} from '../src/action-feedback.js';
 
 const rng=(seed=42)=>()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};
-function start(){let g=createGame();for(let i=0;i<3;i++)addPlayer(g,`p${i}`,`玩家${i}`,true);return act(g,'p0',{type:'start'},rng());}
+function start(){let g=createGame();for(let i=0;i<3;i++)addPlayer(g,`p${i}`,`玩家${i}`,true);return act(g,'p0',{type:'start'},withStartingRolls(3,rng()));}
 function setup(){let g=start();while(g.phase.startsWith('setup')){const id=g.players[g.turn].id;g=act(g,id,botAction(g,id));}return g;}
 function grant(g,id,hand){const p=g.players.find(p=>p.id===id);for(const r of RESOURCES){g.bank[r]+=p.hand[r];p.hand[r]=hand[r]||0;g.bank[r]-=p.hand[r];}}
 function roll(g,sum){let i=0;const a=Math.max(1,sum-6),b=sum-a;return act(g,g.players[g.turn].id,{type:'roll'},()=>[(a-1)/6+.01,(b-1)/6+.01][i++]);}

@@ -34,8 +34,10 @@ try {
     assert.equal(view.targetPoints, 11); assert.equal(view.random, undefined); assert.equal(view.deck, undefined);
     const list = await (await fetch(origin + '/api/rooms')).json(); assert.ok(!list.rooms.some(room => room.code === code));
     const foreign = await connect(code, crypto.randomUUID()); assert.equal(foreign.messages.at(-1).type, 'error');
-    await client.command({ type: 'buildSettlement', vertex: view.legal.settlement[0] });
-    await client.command({ type: 'buildRoad', edge: client.state.state.legal.road[0] });
+    while(client.state.state.phase.startsWith('setup-')&&client.state.state.players[client.state.state.turn].id===identity){
+      const current=client.state.state;
+      await client.command(current.phase==='setup-settlement'?{type:'buildSettlement',vertex:current.legal.settlement[0]}:{type:'buildRoad',edge:current.legal.road[0]});
+    }
     await client.command({ type: 'pause' }); const paused = structuredClone(client.state.state), pausedRevision = client.state.revision;
     await new Promise(resolve=>setTimeout(resolve,1200));
     assert.equal(client.state.state.room.paused,true);assert.equal(client.state.revision,pausedRevision);
