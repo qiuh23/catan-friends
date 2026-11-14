@@ -1,3 +1,4 @@
+import {withStartingRolls} from '../tests/fixtures/starting-rolls.js';
 import assert from 'node:assert/strict';
 import { createGame, addPlayer, act, botAction, legal, viewFor, RESOURCES } from '../shared/game.js';
 
@@ -7,7 +8,7 @@ export function fixture(count=6,{setup=false,turn=0}={}) {
   let seed=17+count;const random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};
   let game=createGame(count>4?{playerExpansion:'five-six-2025'}:{});
   for(let i=0;i<count;i++)addPlayer(game,`p${i}`,names[i],true);
-  game=act(game,'p0',{type:'start'},random);
+  game=act(game,'p0',{type:'start'},withStartingRolls(count,random));
   if(!setup){
     while(game.phase.startsWith('setup-')){const id=game.players[game.turn].id;game=act(game,id,botAction(game,id),random);}
     game.phase='action';game.turn=turn;game.primaryTurn=turn;game.turnNo=1;
@@ -41,7 +42,7 @@ export async function openFixture(browser,{count=6,viewport={width:1366,height:7
       try{
         if(envelope.action.type==='chat')chat=[...chat,{id:`chat-${revision}`,seq:chat.length+1,sentAt:Date.now(),name:names[0],text:envelope.action.text}];
         else if(envelope.action.type==='resume')paused=false;
-        else game=act(game,'p0',envelope.action,()=>.43);
+        else game=act(game,'p0',envelope.action,envelope.action.type==='start'?withStartingRolls(game.players.length,()=>.43):()=>.43);
         publish();ws.send(JSON.stringify({type:'ack',id:envelope.id}));
       }catch(error){ws.send(JSON.stringify({type:'error',id:envelope.id,message:error.message}));}
     });
@@ -51,7 +52,7 @@ export async function openFixture(browser,{count=6,viewport={width:1366,height:7
   await page.waitForFunction(()=>JSON.parse(document.querySelector('#board canvas').dataset.renderStats||'{}').pieceBuilds>0);
   await page.waitForTimeout(200);
   return {page,context,actions,get game(){return game;},publish,
-    action(actor,action,random=()=>.43,{send=true}={}){game=act(game,actor,action,random);if(send)publish();return game.presentation.events.at(-1);},
+    action(actor,action,random=()=>.43,{send=true}={}){game=act(game,actor,action,action.type==='start'?withStartingRolls(game.players.length,random):random);if(send)publish();return game.presentation.events.at(-1);},
     set(next,{send=true}={}){game=next;if(send)publish();},
     setPaused(value){paused=value;publish();},
     chat(text){chat=[...chat,{id:`peer-${revision}`,seq:chat.length+1,sentAt:Date.now(),name:names[1],text}];publish();},

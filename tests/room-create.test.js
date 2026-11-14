@@ -169,8 +169,10 @@ test('Node creates a six-seat human lobby without an edition hint and restores p
       assert.equal(client.state.state.options.harbormaster, true);
     }
     const room = await create({ practice: true, playerCount: 6 }), client = await join(room);
-    await client.act({ type: 'buildSettlement', vertex: client.state.state.legal.settlement[0] });
-    await client.act({ type: 'buildRoad', edge: client.state.state.legal.road[0] });
+    if (!app.rooms.get(room.code).nextBot()) {
+      await client.act({ type: 'buildSettlement', vertex: client.state.state.legal.settlement[0] });
+      await client.act({ type: 'buildRoad', edge: client.state.state.legal.road[0] });
+    }
     await client.act({ type: 'pause' }); const game = JSON.parse(JSON.stringify(app.rooms.get(room.code).record.game)), identity = client.state.state.me;
     assert.equal(app.rooms.get(room.code).nextBot(), null);
     for (const peer of clients) peer.close(); await app.close();
@@ -204,8 +206,10 @@ test('Worker creates automatic human editions for 3–6 seats and keeps paused p
   const fixture = await durableFixture(), token = crypto.randomUUID();
   assert.equal((await fixture.create({ token, options: variants, practice: true, playerCount: 6 })).status, 201);
   const socket = await fixture.hello(token); let view = socket.messages.at(-1).state;
-  await command(fixture, socket, { type: 'buildSettlement', vertex: view.legal.settlement[0] }); view = socket.messages.at(-1).state;
-  await command(fixture, socket, { type: 'buildRoad', edge: view.legal.road[0] });
+  if (!fixture.object.room.nextBot()) {
+    await command(fixture, socket, { type: 'buildSettlement', vertex: view.legal.settlement[0] }); view = socket.messages.at(-1).state;
+    await command(fixture, socket, { type: 'buildRoad', edge: view.legal.road[0] });
+  }
   assert.ok(fixture.object.room.nextBot()); await command(fixture, socket, { type: 'pause' });
   const before = structuredClone(fixture.object.room.record.game); await fixture.object.alarm();
   assert.deepEqual(fixture.object.room.record.game, before);

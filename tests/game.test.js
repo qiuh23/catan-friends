@@ -1,3 +1,4 @@
+import {withStartingRolls} from './fixtures/starting-rolls.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createBoard, emptyHand, RESOURCES, neighbors, longestRoad } from '../shared/board.js';
@@ -5,7 +6,7 @@ import { createGame, addPlayer, act, viewFor, legal, points, updateAwards, trade
 import { Room, fingerprint } from '../shared/room.js';
 const rng=(seed=42)=>()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};
 function lobby(n=3){const g=createGame();for(let i=0;i<n;i++)addPlayer(g,`p${i}`,`玩家${i}`,true);return g;}
-function setup(n=3){let g=act(lobby(n),'p0',{type:'start'},rng());while(g.phase.startsWith('setup')){const id=g.players[g.turn].id;g=act(g,id,botAction(g,id));}return g;}
+function setup(n=3){let g=act(lobby(n),'p0',{type:'start'},withStartingRolls(n,rng()));while(g.phase.startsWith('setup')){const id=g.players[g.turn].id;g=act(g,id,botAction(g,id));}return g;}
 function actionGame(){const g=setup();g.phase='action';return g;}
 function grant(g,id,hand){const p=g.players.find(p=>p.id===id);for(const r of RESOURCES){g.bank[r]+=p.hand[r];p.hand[r]=hand[r]||0;g.bank[r]-=p.hand[r];}}
 function conserved(g){for(const r of RESOURCES)assert.equal(g.bank[r]+g.players.reduce((sum,p)=>sum+p.hand[r],0),19,r);}
@@ -20,7 +21,7 @@ test('random board has 19 tiles, 54 vertices, 72 edges and nine non-overlapping 
 });
 test('3 and 4 player setup follows snake order and grants only second settlement resources',()=>{
   for(const n of [3,4]){
-    let g=act(lobby(n),'p0',{type:'start'},rng());const turns=[];
+    let g=act(lobby(n),'p0',{type:'start'},withStartingRolls(n,rng()));const turns=[];
     while(g.phase.startsWith('setup')){const id=g.players[g.turn].id;if(g.phase==='setup-settlement')turns.push(g.turn);g=act(g,id,botAction(g,id));if(g.setupIndex<n)assert.equal(g.players.reduce((sum,p)=>sum+total(p.hand),0),0);}
     assert.deepEqual(turns,[...Array(n).keys(),...Array(n).keys()].map((v,i)=>i<n?v:n-1-v));
     assert.equal(g.phase,'roll');assert.equal(g.turn,0);for(const p of g.players){assert.equal(points(g,p.id),2);assert.equal(g.board.edges.filter(e=>e.owner===p.id).length,2);}conserved(g);

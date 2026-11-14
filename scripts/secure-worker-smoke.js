@@ -39,16 +39,17 @@ try{
   prepared.game=act({...prepared.game,random:prepared.random},prepared.hostId,{type:'start'});
   while(prepared.game.phase.startsWith('setup')){const g=prepared.game;prepared.game=act(g,g.players[g.turn].id,botAction(g,g.players[g.turn].id));}
   prepared.random=prepared.game.random;delete prepared.game.random;await fixture('replace',prepared);
-  const baseline=(await read()).record,random=structuredClone(baseline.random),expected=act({...baseline.game,random:baseline.random},baseline.hostId,{type:'roll'});
-  await fixture('fail-next-command');const failed=await a.request({type:'roll'},{revision:baseline.revision});assert.equal(failed.result.type,'error');assert.equal(failed.result.message,'服务暂时不可用，请稍后重试。');assert.deepEqual((await read()).record.random,random);
+  const baseline=(await read()).record,random=structuredClone(baseline.random),activeId=baseline.game.players[baseline.game.turn].id,roller=players.find(p=>p.state.state.me===activeId),rollerToken=tokens[players.indexOf(roller)],expected=act({...baseline.game,random:baseline.random},activeId,{type:'roll'});
+  await fixture('fail-next-command');const failed=await roller.request({type:'roll'},{revision:baseline.revision});assert.equal(failed.result.type,'error');assert.equal(failed.result.message,'服务暂时不可用，请稍后重试。');assert.deepEqual((await read()).record.random,random);
   assert.ok(!JSON.stringify(failed.result).includes('injected-private-state'));
-  await a.act(failed.envelope.action,failed.envelope);assert.deepEqual((await read()).record.random,expected.random);assert.deepEqual((await read()).record.game.dice,expected.dice);
-  await a.act(failed.envelope.action,failed.envelope);const committed=(await read()).record;assert.deepEqual(committed.random,expected.random);
+  await roller.act(failed.envelope.action,failed.envelope);assert.deepEqual((await read()).record.random,expected.random);assert.deepEqual((await read()).record.game.dice,expected.dice);
+  await roller.act(failed.envelope.action,failed.envelope);const committed=(await read()).record;assert.deepEqual(committed.random,expected.random);
   for(let i=0;i<4;i++)await a.act({type:'chat',text:'限流消息'+i});assert.equal((await a.request({type:'chat',text:'超出额度'})).result.code,'CHAT_LIMITED');
   await stop();await start();
   const restored=await join(code,tokens[0]);assert.deepEqual((await read()).record.random,committed.random);assert.deepEqual(restored.state.state.dice,expected.dice);assert.ok(!restored.state.state.chat.some(message=>message.id===messageId));
   assert.equal((await restored.request({type:'chat',text:'重启仍限流'})).result.code,'CHAT_LIMITED');assert.equal((await join(code,tokens[1])).messages.at(-1).code,'IDENTITY_REVOKED');
-  await restored.act(failed.envelope.action,failed.envelope);assert.deepEqual((await read()).record.random,expected.random);
+  const restoredRoller=activeId===restored.state.state.me?restored:await join(code,rollerToken);
+  await restoredRoller.act(failed.envelope.action,failed.envelope);assert.deepEqual((await read()).record.random,expected.random);
   const old=(await read()).record;old.chat.push({id:messageId,seq:999,playerId:memberId,name:'旧昵称',text:'不得复活',sentAt:Date.now()});await fixture('replace',old);await stop();await start();
   const recovered=await join(code,tokens[0]);assert.ok(!recovered.state.state.chat.some(message=>message.id===messageId));
   for(const client of clients)for(const message of client.messages)for(const field of ['"random"','"nonce"','"words"','"key"'])assert.ok(!JSON.stringify(message).includes(field),field);

@@ -20,14 +20,15 @@ test('real WebSockets: three players, private state, rejoin, idempotency, restar
     const c=new Client(app.port,code,crypto.randomUUID(),'朋友丙');clients.push(c);await c.wait(m=>m.type==='state');await a.wait(m=>m.type==='state'&&m.state.players.length===3);
     assert.equal((await b.action({type:'addBot'})).type,'error');
     await b.action({type:'ready'});await new Promise(r=>setTimeout(r,25));await c.action({type:'ready'});await new Promise(r=>setTimeout(r,25));assert.equal((await a.action({type:'start'})).type,'ack');
-    const vertex=a.state.state.legal.settlement[0];assert.equal((await a.action({type:'buildSettlement',vertex})).type,'ack');
+    const firstTurn=a.state.state.turn,starter=[a,b,c].find(client=>client.state.state.me===a.state.state.players[firstTurn].id),nextTurn=(firstTurn+1)%3;await starter.wait(m=>m.type==='state'&&m.state.phase==='setup-settlement');
+    const vertex=starter.state.state.legal.settlement[0];assert.equal((await starter.action({type:'buildSettlement',vertex})).type,'ack');
     await b.wait(m=>m.type==='state'&&m.state.phase==='setup-road');assert.ok(b.state.state.players.find(p=>p.id!==b.state.state.me).hand===undefined);assert.equal(b.state.state.deck,undefined);
-    const actionId=crypto.randomUUID(),envelope={type:'action',id:actionId,revision:a.state.revision,action:{type:'buildRoad',edge:a.state.state.legal.road[0]}};const start=a.messages.length;a.ws.send(JSON.stringify(envelope));await a.wait(m=>m.type==='ack'&&m.id===actionId,start);await a.wait(m=>m.type==='state'&&m.state.turn===1,start);const revision=a.state.revision;
-    a.ws.send(JSON.stringify(envelope));await new Promise(r=>setTimeout(r,40));assert.equal(a.state.revision,revision);assert.equal(a.state.state.board.edges.filter(e=>e.owner===a.state.state.me).length,1);
+    const actionId=crypto.randomUUID(),envelope={type:'action',id:actionId,revision:starter.state.revision,action:{type:'buildRoad',edge:starter.state.state.legal.road[0]}};const start=starter.messages.length;starter.ws.send(JSON.stringify(envelope));await starter.wait(m=>m.type==='ack'&&m.id===actionId,start);await starter.wait(m=>m.type==='state'&&m.state.turn===nextTurn,start);const revision=starter.state.revision;
+    starter.ws.send(JSON.stringify(envelope));await new Promise(r=>setTimeout(r,40));assert.equal(starter.state.revision,revision);assert.equal(starter.state.state.board.edges.filter(e=>e.owner===starter.state.state.me).length,1);
     const firstId=a.state.state.me;a.close();const reconnect=new Client(app.port,code,token,'改名不应占新座位');clients.push(reconnect);await reconnect.wait(m=>m.type==='state');assert.equal(reconnect.state.state.me,firstId);assert.equal(reconnect.state.state.players.length,3);
     const outsider=new Client(app.port,'ZZZZZZ',crypto.randomUUID(),'误入');clients.push(outsider);await outsider.wait(m=>m.type==='error'&&m.fatal);
     const intruder=new Client(app.port,code,crypto.randomUUID(),'新玩家');clients.push(intruder);await intruder.wait(m=>m.type==='error'&&m.fatal);
     const savedState=reconnect.state.state;for(const client of clients)client.close();await app.close();app=await createServer({port:0,dataDir});
-    const restored=new Client(app.port,code,token,'房主');clients.push(restored);await restored.wait(m=>m.type==='state');assert.equal(restored.state.state.me,firstId);assert.deepEqual(restored.state.state.board,savedState.board);assert.equal(restored.state.state.turn,1);
+    const restored=new Client(app.port,code,token,'房主');clients.push(restored);await restored.wait(m=>m.type==='state');assert.equal(restored.state.state.me,firstId);assert.deepEqual(restored.state.state.board,savedState.board);assert.equal(restored.state.state.turn,nextTurn);assert.deepEqual(restored.state.state.startingPlayer,savedState.startingPlayer);
   }finally{for(const c of clients)c.close();await app.close();await rm(dataDir,{recursive:true,force:true});}
 });

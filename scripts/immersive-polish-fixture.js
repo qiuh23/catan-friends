@@ -1,3 +1,4 @@
+import {withStartingRolls} from '../tests/fixtures/starting-rolls.js';
 import assert from 'node:assert/strict';
 import {createGame,addPlayer,act,botAction,legal,viewFor,RESOURCES} from '../shared/game.js';
 
@@ -8,7 +9,7 @@ export function polishGame(count=6,{phase='action'}={}){
   for(let i=0;i<count;i++)addPlayer(game,`p${i}`,`海风玩家${i+1}`,i>0);
   for(const p of game.players)p.ready=true;
   if(phase==='lobby')return game;
-  game=act(game,'p0',{type:'start'},random);
+  game=act(game,'p0',{type:'start'},withStartingRolls(count,random));
   if(phase==='setup-settlement')return game;
   while(game.phase.startsWith('setup-')){const actor=game.players[game.turn].id;game=act(game,actor,botAction(game,actor),random);}
   game.phase=phase;game.turn=0;game.primaryTurn=0;game.turnNo=1;
@@ -42,7 +43,7 @@ export async function openPolishFixture(browser,{count=6,phase='action',viewport
         if(action.type==='chat')chat.push({id:`chat-${revision}`,seq:chat.length+1,sentAt:Date.now(),name:'海风玩家1',text:action.text});
         else if(action.type==='pause'||action.type==='resume'){assert.equal(me,'p0');paused=action.type==='pause';}
         else if(action.type==='rematch'){assert.equal(me,'p0');assert.equal(game.phase,'finished');const players=game.players;game=createGame(game.options);for(const p of players)addPlayer(game,p.id,p.name,p.bot);paused=false;}
-        else game=act(game,me,action,()=>.43);
+        else game=act(game,me,action,action.type==='start'?withStartingRolls(game.players.length,()=>.43):()=>.43);
         publish();ws.send(JSON.stringify({type:'ack',id:envelope.id}));
       }catch(error){ws.send(JSON.stringify({type:'error',id:envelope.id,message:error.message}));}
     });
@@ -51,7 +52,7 @@ export async function openPolishFixture(browser,{count=6,phase='action',viewport
   await page.locator('.in-room #board canvas[data-camera]').waitFor();await page.waitForTimeout(150);
   return {page,context,actions,publish,get game(){return game;},get paused(){return paused;},get state(){return project();},legal:(actor='p0')=>legal(game,actor),
     set(next){game=next;publish();},setPaused(value){paused=value;publish();},
-    action(actor,action){game=act(game,actor,action,()=>.43);publish();return game.presentation?.events.at(-1);},
+    action(actor,action){game=act(game,actor,action,action.type==='start'?withStartingRolls(game.players.length,()=>.43):()=>.43);publish();return game.presentation?.events.at(-1);},
     chat(text){chat.push({id:`peer-${revision}`,seq:chat.length+1,sentAt:Date.now(),name:'海风玩家2',text});publish();},
   };
 }

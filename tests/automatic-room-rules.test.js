@@ -55,9 +55,11 @@ test('practice pause freezes bot turns, rejects moves, permits chat and survives
   for (const count of [3, 6]) {
     const room = await createRoomFromInput({ token: crypto.randomUUID(), name: '练习', practice: true, playerCount: count, options: variants }, at), host = room.record.hostId;
     room.presence([host], at);
-    let view = room.snapshot(host).state;
-    send(room, host, { type: 'buildSettlement', vertex: view.legal.settlement[0] });
-    view = room.snapshot(host).state; send(room, host, { type: 'buildRoad', edge: view.legal.road[0] });
+    if (!room.nextBot()) {
+      let view = room.snapshot(host).state;
+      send(room, host, { type: 'buildSettlement', vertex: view.legal.settlement[0] });
+      view = room.snapshot(host).state; send(room, host, { type: 'buildRoad', edge: view.legal.road[0] });
+    }
     assert.ok(room.nextBot(), 'fixture must pause an actual pending bot turn');
     send(room, host, { type: 'pause' }); const game = structuredClone(room.record.game);
     assert.equal(room.nextBot(), null); assert.equal(room.tick(at + 100), false);

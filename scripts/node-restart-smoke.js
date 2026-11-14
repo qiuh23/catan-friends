@@ -36,8 +36,9 @@ try{
     await active.act(view.phase==='setup-settlement'?{type:'buildSettlement',vertex:active.state.state.legal.settlement[0]}:{type:'buildRoad',edge:active.state.state.legal.road[0]});
     await a.wait(message=>message.type==='state'&&message.revision>revision);
   }
-  const file=path.join(directory,code+'.json'),before=JSON.parse(await readFile(file,'utf8')),expected=act({...before.game,random:before.random},before.hostId,{type:'roll'});
-  await stop();await start();const recovered=await join(code,tokens[0]),restored=JSON.parse(await readFile(file,'utf8'));
+  const file=path.join(directory,code+'.json'),before=JSON.parse(await readFile(file,'utf8')),activeId=before.game.players[before.game.turn].id,activeToken=tokens[players.findIndex(player=>player.state.state.me===activeId)],expected=act({...before.game,random:before.random},activeId,{type:'roll'});
+  await stop();await start();const recovered=await join(code,activeToken),restored=JSON.parse(await readFile(file,'utf8'));
+  assert.deepEqual(restored.game.startingPlayer,before.game.startingPlayer);
   assert.deepEqual(restored.random,before.random);assert.deepEqual(restored.game.deck,before.game.deck);assert.deepEqual(restored.game.board,before.game.board);assert.deepEqual(restored.game.players,before.game.players);
   const envelope=await recovered.act({type:'roll'}),after=JSON.parse(await readFile(file,'utf8'));assert.deepEqual(after.game.dice,expected.dice);assert.deepEqual(after.random,expected.random);
   await recovered.act(envelope.action,envelope);const duplicate=JSON.parse(await readFile(file,'utf8'));assert.deepEqual(duplicate.random,after.random);

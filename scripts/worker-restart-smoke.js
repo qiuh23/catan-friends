@@ -58,9 +58,9 @@ try {
   }
   for(const player of players)await player.wait(message=>message.type==='state'&&message.state.phase==='roll');
   if(count>=5){
-    await a.act({type:'roll'});
-    while(['robber','steal'].includes(a.state.state.phase))await a.act(a.state.state.phase==='robber'?{type:'moveRobber',tile:a.state.state.legal.robber[0]}:{type:'steal',victim:a.state.state.legal.victims[0]});
-    await a.act({type:'endTurn'});
+    const first=players[a.state.state.turn];await first.act({type:'roll'});
+    while(['robber','steal'].includes(first.state.state.phase))await first.act(first.state.state.phase==='robber'?{type:'moveRobber',tile:first.state.state.legal.robber[0]}:{type:'steal',victim:first.state.state.legal.victims[0]});
+    await first.act({type:'endTurn'});
     for(const player of players)await player.wait(message=>message.type==='state'&&message.state.pairStep==='secondary');
   }
   // A legal coast/desert placement (or the first robber steal) can leave an
@@ -71,14 +71,17 @@ try {
   for(let i=0;i<count;i++){
     const restored=(await join(code,tokens[i],names[i])).state.state;
     assert.equal(restored.me,before[i].me);assert.equal(restored.phase,before[i].phase);assert.equal(restored.turn,before[i].turn);assert.equal(restored.pairStep,before[i].pairStep);assert.equal(restored.primaryTurn,before[i].primaryTurn);assert.deepEqual(restored.options,before[i].options);assert.deepEqual(restored.board,before[i].board);
+    assert.deepEqual(restored.startingPlayer,before[i].startingPlayer);
     const mine=restored.players.find(player=>player.id===restored.me),previous=before[i].players.find(player=>player.id===before[i].me);
     assert.deepEqual(mine.hand,previous.hand);assert.deepEqual(mine.dev,previous.dev);
     assert.ok(restored.players.filter(player=>player.id!==restored.me).every(player=>player.hand===undefined&&player.dev===undefined));assert.equal(restored.deck,undefined);
   }
   const practiceToken=crypto.randomUUID(),practiceResponse=await fetch(origin+'/api/rooms',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:practiceToken,name:'暂停恢复练习',practice:true,playerCount:count,options:{friendlyRobber:true,harbormaster:true}})});
   assert.equal(practiceResponse.status,201);const {code:practiceCode}=await practiceResponse.json(),practice=await join(practiceCode,practiceToken,'暂停恢复练习');
-  await practice.act({type:'buildSettlement',vertex:practice.state.state.legal.settlement[0]});
-  await practice.act({type:'buildRoad',edge:practice.state.state.legal.road[0]});
+  while(practice.state.state.phase.startsWith('setup-')&&practice.state.state.players[practice.state.state.turn].id===practice.state.state.me){
+    const current=practice.state.state;
+    await practice.act(current.phase==='setup-settlement'?{type:'buildSettlement',vertex:current.legal.settlement[0]}:{type:'buildRoad',edge:current.legal.road[0]});
+  }
   await practice.act({type:'pause'});const paused=structuredClone(practice.state);
   await stop();await start();
   const returning=await join(practiceCode,practiceToken,'暂停恢复练习');

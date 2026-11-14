@@ -1,3 +1,4 @@
+import {withStartingRolls} from '../tests/fixtures/starting-rolls.js';
 import { chromium } from 'playwright';
 import assert from 'node:assert/strict';
 import { mkdir, writeFile } from 'node:fs/promises';
@@ -13,7 +14,7 @@ function fixture(count){
   let seed=31,random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};
   let game=createGame(count>4?{playerExpansion:'five-six-2025'}:{});
   for(let i=0;i<count;i++)addPlayer(game,`p${i}`,`玩家${i+1}`,true);
-  game=act(game,'p0',{type:'start'},random);
+  game=act(game,'p0',{type:'start'},withStartingRolls(count,random));
   while(game.phase.startsWith('setup-'))game=act(game,game.players[game.turn].id,botAction(game,game.players[game.turn].id),random);
   game.phase='action';game.turn=0;
   for(const p of game.players)game.board.vertices.find(v=>v.owner===p.id).level=2;

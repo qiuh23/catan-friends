@@ -35,9 +35,9 @@ try{
     assert.equal(clients[0].state.state.board.tiles.length,count>=5?30:19);assert.equal(clients[0].state.state.board.ports.length,count>=5?11:9);
     for(const c of clients){assert.equal(c.state.state.deck,undefined);assert.ok(c.state.state.players.filter(p=>p.id!==c.state.state.me).every(p=>p.hand===undefined&&p.dev===undefined));}
     if(count>=5){
-      rev=await clients[0].action({type:'roll'});await settled(clients,rev);
-      while(['robber','steal'].includes(clients[0].state.state.phase)){const s=clients[0].state.state;rev=await clients[0].action(s.phase==='robber'?{type:'moveRobber',tile:s.legal.robber[0]}:{type:'steal',victim:s.legal.victims[0]});await settled(clients,rev);}
-      rev=await clients[0].action({type:'endTurn'});await settled(clients,rev);assert.equal(clients[0].state.state.pairStep,'secondary');
+      const first=clients[clients[0].state.state.turn];rev=await first.action({type:'roll'});await settled(clients,rev);
+      while(['robber','steal'].includes(first.state.state.phase)){const s=first.state.state;rev=await first.action(s.phase==='robber'?{type:'moveRobber',tile:s.legal.robber[0]}:{type:'steal',victim:s.legal.victims[0]});await settled(clients,rev);}
+      rev=await first.action({type:'endTurn'});await settled(clients,rev);assert.equal(clients[0].state.state.pairStep,'secondary');
     }
     if(app){
       const before=clients.map(c=>structuredClone(c.state.state)),tokens=clients.map(c=>c.token);for(const c of clients)await c.close();await app.close();app=await createServer({host:'127.0.0.1',port:0,dataDir});origin=`http://127.0.0.1:${app.port}`;

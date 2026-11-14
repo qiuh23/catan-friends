@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {CatanRoom} from '../worker/index.js';
+import {act} from '../shared/game.js';
 
 globalThis.WebSocketRequestResponsePair ||= class {};
 async function fixture() {
@@ -27,6 +28,20 @@ test('Worker failed alarm write rolls back a human command and receipt, allowing
   assert.deepEqual(f.object.room.record,before);assert.deepEqual(f.saved.get('room'),before);assert.equal(f.object.room.record.receipts.some(r=>r.id===id),false);
   f.fault.alarm=false;assert.equal((await f.command({type:'addBot'},{id,revision})).type,'ack');assert.equal(f.object.room.record.game.players.length,2);
   assert.equal((await f.command({type:'addBot'},{id,revision})).type,'ack');assert.equal(f.object.room.record.game.players.length,2);
+});
+
+test('Worker start transaction rolls back all opening dice and retries the identical winner exactly once',async()=>{
+  const f=await fixture();await f.command({type:'addBot'});await f.command({type:'addBot'});
+  const before=structuredClone(f.object.room.record),revision=before.revision,id=crypto.randomUUID();
+  const expected=act({...before.game,random:before.random},before.hostId,{type:'start'});
+  f.fault.alarm=true;assert.equal((await f.command({type:'start'},{id,revision})).type,'error');
+  assert.deepEqual(f.object.room.record,before);assert.deepEqual(f.saved.get('room'),before);
+  f.fault.alarm=false;assert.equal((await f.command({type:'start'},{id,revision})).type,'ack');
+  const committed=structuredClone(f.object.room.record);
+  assert.deepEqual(committed.random,expected.random);assert.deepEqual(committed.game.startingPlayer,expected.startingPlayer);assert.deepEqual(committed.game.log,expected.log);
+  assert.equal((await f.command({type:'start'},{id,revision})).type,'ack');
+  assert.deepEqual(f.object.room.record.game,committed.game);assert.deepEqual(f.object.room.record.random,committed.random);
+  assert.deepEqual(f.object.room.record.receipts,committed.receipts);assert.equal(f.object.room.record.revision,committed.revision);
 });
 
 test('Worker failed bot alarm persistence restores the pre-turn state and retry applies exactly one bot action',async()=>{

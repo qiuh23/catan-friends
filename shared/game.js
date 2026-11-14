@@ -38,6 +38,24 @@ export function addPlayer(g, id, name, bot = false) {
   g.players.push({ id, name: name.trim(), color: COLORS.find(c => !g.players.some(p => p.color === c)), bot, ready: bot, hand: emptyHand(), dev: [], knights: 0, roadLength: 0 });
 }
 function log(g, text) { g.log.push({ id: (g.log.at(-1)?.id || 0)+1, text }); g.log = g.log.slice(-80); }
+function chooseStartingPlayer(g, random) {
+  let candidates = g.players.map((_, index) => index);
+  // A broken fixture/source must fail atomically, never hang or silently favor
+  // a seat. Real authority uses the room's persisted, unbiased random stream.
+  for (let rounds = 1; rounds <= 128; rounds++) {
+    const rolls = candidates.map(index => ({ index, dice: [randomIndex(6,random)+1, randomIndex(6,random)+1] }));
+    const highest = Math.max(...rolls.map(({dice}) => dice[0]+dice[1]));
+    const leaders = rolls.filter(({dice}) => dice[0]+dice[1] === highest);
+    log(g, `${rounds === 1 ? '先手掷骰' : '同分加掷'}：${rolls.map(({index,dice}) => `${g.players[index].name} ${dice[0]}+${dice[1]}=${dice[0]+dice[1]}`).join('；')}。`);
+    if (leaders.length === 1) {
+      const winner = {...leaders[0], rounds};
+      log(g, `${g.players[winner.index].name} 获得先手；按座次顺序放置第一组，逆序放置第二组。`);
+      return winner;
+    }
+    candidates = leaders.map(({index}) => index);
+  }
+  throw new Error('先手掷骰达到重试上限。');
+}
 // Presentation is an append-only public stream. Never copy commands, hands,
 // development-card objects, or trade bundles into these records.
 function present(g, kind, actorId, text, targets = []) {
@@ -161,10 +179,11 @@ export function act(source, actorId, action, fixtureRandom) {
     g.options = optionsForPlayers(g.options,g.players.length);
     const profile=ruleProfile(g), expanded=profile.turnRule==='paired';
     requireRule(g.players.length >= 3 && g.players.length<=6 && g.players.every(v => v.id === actorId || v.ready),'需要 3–6 位玩家，且其他玩家均已准备。');
+    g.startingPlayer = chooseStartingPlayer(g,random);
     g.bank = emptyHand(profile.resourceCount);
     g.board = createBoard(random,g.options); g.robber = g.board.tiles.find(t => t.resource === 'desert').id;
     g.deck = shuffle([...Array(expanded?20:14).fill('knight'), ...Array(5).fill('victory'), ...Array(expanded?3:2).fill('roadBuilding'), ...Array(expanded?3:2).fill('plenty'), ...Array(expanded?3:2).fill('monopoly')],random);
-    g.primaryTurn=0;g.pairStep='primary';
+    g.turn=g.startingPlayer.index;g.primaryTurn=g.turn;g.pairStep='primary';
     g.presentation = { epoch: crypto.randomUUID(), sequence: 0, events: [] };
     g.phase = 'setup-settlement'; log(g, '新的岛屿已展开。按顺序放置第一座村庄和道路，再逆序放置第二组。'); return g;
   }
@@ -202,8 +221,11 @@ export function act(source, actorId, action, fixtureRandom) {
     if (setup) {
       g.setupIndex++; g.setupVertex = null;
       const n = g.players.length;
-      if (g.setupIndex === n*2) { g.turn = 0; g.turnNo = 1; g.phase = 'roll'; }
-      else { g.turn = g.setupIndex < n ? g.setupIndex : n*2-1-g.setupIndex; g.phase = 'setup-settlement'; }
+      // Missing metadata identifies an already-started legacy game: preserve
+      // its original seat-zero snake and first turn without drawing again.
+      const first = g.startingPlayer?.index ?? 0;
+      if (g.setupIndex === n*2) { g.turn = first; g.primaryTurn = first; g.turnNo = 1; g.phase = 'roll'; }
+      else { g.turn = (first + (g.setupIndex < n ? g.setupIndex : n*2-1-g.setupIndex)) % n; g.phase = 'setup-settlement'; }
     } else if (free) {
       g.freeRoads--; if (!g.freeRoads || !roadSites(g,actorId).length) { g.phase = g.resumePhase; g.resumePhase = null; g.freeRoads = 0; }
     }
@@ -291,6 +313,11 @@ export function viewFor(g, id) {
   }
   // An explicit projection keeps future internal metadata out of public views.
   const publicPresentation = presentation ? {epoch:presentation.epoch,sequence:presentation.sequence,events:presentation.events.map(({id,kind,actorId,text,targets})=>({id,kind,actorId,text,targets:targets.map(({kind,id})=>({kind,id}))}))} : undefined;
+  // Publish only the already-rolled result, never a stream or future metadata.
+  if (g.startingPlayer) {
+    const {index,dice,rounds} = g.startingPlayer;
+    rest.startingPlayer = {index,dice:[dice[0],dice[1]],rounds};
+  }
   const profile=ruleProfile(g);
   return { ...rest, ...(publicPresentation?{presentation:publicPresentation}:{}), options:g.phase==='lobby'?optionsForPlayers(g.options,g.players.length):normalizeOptions(g.options), profile,minPlayers:g.phase==='lobby'?3:profile.minPlayers,maxPlayers:g.phase==='lobby'?6:profile.maxPlayers,primaryTurn:g.primaryTurn??g.turn,pairStep:g.pairStep||'primary',targetPoints:targetPoints(g), harbormaster:g.harbormaster || null, deckCount:deck.length, me:id, legal:legal(g,id), players:players.map(p => {
     const {hand,dev} = p, publicPlayer={};
