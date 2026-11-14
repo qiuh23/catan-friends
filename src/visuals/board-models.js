@@ -93,7 +93,9 @@ export class BoardModels {
     const groups=this.choices(board).sort((a,b)=>b.instances.length-a.instances.length);
     const urls=groups.map(g=>g.url);
     if(board.ports.length)urls.push(PIER_URL);
-    if(homeDemo){const v=board.vertices[homeDemo.vertex];vertices=[{...v,level:1},{...v,level:2}];}
+    if(homeDemo)vertices=homeDemo.buildings.flatMap(({vertex,upgradeAt})=>{
+      const v=board.vertices[vertex];return upgradeAt===undefined?[{...v,level:1}]:[{...v,level:1},{...v,level:2}];
+    });
     for(const vertex of vertices)urls.push(`${ARCHITECTURE_URL}${buildingAsset(vertex)}.glb`);
     if(robber)urls.push(ROBBER_URL);
     return [...new Set(urls)];

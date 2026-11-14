@@ -2,6 +2,8 @@ import { createBoard } from '../shared/board.js';
 
 export const SHOWCASE_SECONDS=30;
 export const ORBIT_SECONDS=300;
+export const SHOWCASE_SETTLED_SECONDS=24;
+const BUILDING_TIMES=[{buildAt:1.2,upgradeAt:16},{buildAt:7},{buildAt:11,upgradeAt:19.5},{buildAt:15}];
 const smooth=value=>{const t=Math.max(0,Math.min(1,value));return t*t*(3-2*t);};
 
 // Local illustration data only: no Room, Connection, game reducer or legal moves.
@@ -9,23 +11,28 @@ const smooth=value=>{const t=Math.max(0,Math.min(1,value));return t*t*(3-2*t);};
 export function createHomeExample() {
   let seed=17;
   const board=createBoard(()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;});
-  const vertex=board.vertices.filter(v=>v.tiles.length===3).sort((a,b)=>Math.hypot(a.x,a.z-1.3)-Math.hypot(b.x,b.z-1.3))[0];
+  const vertex=board.vertices.filter(v=>v.tiles.length===3).sort((a,b)=>Math.hypot(a.x+2.6,a.z-1.3)-Math.hypot(b.x+2.6,b.z-1.3))[0];
   const roads=[],visited=new Set([vertex.id]);let current=vertex.id;
-  for(let i=0;i<4;i++) {
+  const buildingVertices=[vertex.id];
+  for(let i=0;i<6;i++) {
     const edge=board.vertices[current].edges.map(id=>board.edges[id]).filter(e=>!visited.has(e.a===current?e.b:e.a))
-      .sort((a,b)=>Math.hypot(board.vertices[a.a===current?a.b:a.a].x,board.vertices[a.a===current?a.b:a.a].z)-Math.hypot(board.vertices[b.a===current?b.b:b.a].x,board.vertices[b.a===current?b.b:b.a].z))[0];
+      .sort((a,b)=>Math.hypot(board.vertices[a.a===current?a.b:a.a].x-2.6,board.vertices[a.a===current?a.b:a.a].z+.5)-Math.hypot(board.vertices[b.a===current?b.b:b.a].x-2.6,board.vertices[b.a===current?b.b:b.a].z+.5))[0];
     if(!edge)break;
     const next=edge.a===current?edge.b:edge.a;roads.push({edge:edge.id,from:current,to:next});edge.owner='illustration';visited.add(next);current=next;
+    if(i%2===1)buildingVertices.push(current);
   }
-  vertex.owner='illustration';vertex.level=2;
-  return {board,players:[{id:'illustration',color:'#b65c35'}],robber:null,legal:{},homeDemo:{vertex:vertex.id,roads}};
+  const buildings=buildingVertices.map((id,i)=>({vertex:id,...BUILDING_TIMES[i]}));
+  for(const building of buildings){const v=board.vertices[building.vertex];v.owner='illustration';v.level=building.upgradeAt===undefined?1:2;}
+  return {board,players:[{id:'illustration',color:'#b65c35'}],robber:null,legal:{},homeDemo:{buildings,roads}};
 }
 
-export function showcasePose(seconds) {
+export function showcasePose(seconds,{buildings=BUILDING_TIMES,roads=Array(6)}={}) {
   const t=((seconds%SHOWCASE_SECONDS)+SHOWCASE_SECONDS)%SHOWCASE_SECONDS;
-  const end=1-smooth((t-26)/1.6);
-  return {village:smooth((t-1.5)/1.3)*(1-smooth((t-14.5)/1)),
-    city:smooth((t-15.5)/1.4)*end,roads:Array.from({length:4},(_,i)=>smooth((t-4-i*2.5)/1.4)*end)};
+  const end=1-smooth((t-26.5)/1.6);
+  return {buildings:buildings.map(({buildAt,upgradeAt})=>({
+    village:smooth((t-buildAt)/1.3)*(upgradeAt===undefined?1:1-smooth((t-upgradeAt)/.8))*end,
+    city:upgradeAt===undefined?0:smooth((t-upgradeAt-.65)/1.4)*end,
+  })),roads:Array.from({length:roads.length},(_,i)=>smooth((t-3.4-i*1.8)/1.4)*end)};
 }
 
 // A rotationally symmetric envelope covers scenery, roofs, docks AND billboard
