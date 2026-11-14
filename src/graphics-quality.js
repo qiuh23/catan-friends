@@ -33,3 +33,14 @@ export class AnimationStutterMonitor {
     this.suspend(now);return true;
   }
 }
+
+// High quality uses the same sampling budget on phones and desktops. This is
+// a bounded drawing-buffer budget, not an automatic appearance downgrade.
+// Keep the player's explicit low setting's existing economical limits.
+export function boardPixelRatio(width,height,deviceRatio=1,{lowPower=false,mobile=false}={}){
+  if(!Number.isFinite(width)||!Number.isFinite(height)||width<=0||height<=0)return 1;
+  const native=Number.isFinite(deviceRatio)&&deviceRatio>0?deviceRatio:1;
+  const cap=lowPower?(mobile?1.35:1.75):2;
+  const pixels=lowPower&&mobile?1200000:2000000;
+  return Math.min(native,cap,Math.sqrt(pixels/(width*height)));
+}
