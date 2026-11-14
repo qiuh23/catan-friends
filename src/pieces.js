@@ -1,20 +1,25 @@
 import { Color } from 'three';
-import {roadFrame} from './visuals/road-geometry.js';
+import {roadFrame,createRoadJunctionGeometries,ROAD_JOIN_REACH} from './visuals/road-geometry.js';
 
 const shade=(value,light)=>new Color(value).offsetHSL(0,0,light).getHex();
-export function addRoad(batch,a,b,color) {
-  const f=roadFrame(a,b),length=Math.min(.79,f.length*.79);
+export function addRoad(batch,a,b,color,{ends=[null,null]}={}) {
+  const f=roadFrame(a,b),baseGap=(f.length-Math.min(.79,f.length*.79))/2;
+  if(a.x>b.x||a.x===b.x&&a.z>b.z)ends=[ends[1],ends[0]];
+  const start=ends[0]??baseGap,end=ends[1]??baseGap,length=f.length-start-end,center=(start-end)/2;
+  f.x+=f.dx*center;f.z+=f.dz*center;
   const add=(shape,c,along,side,y,sx,sy,sz)=>batch.add(shape,c,f.x+f.dx*along-f.dz*side,y,f.z+f.dz*along+f.dx*side,sx,sy,sz,f.rotation,'pieces');
   // The shared edge is level at .2675. Set the bedding into that surface and
   // leave both junctions free for buildings and legal-move targets.
   add('paving',0x48534c,0,0,.284,length+.035,.034,.196);
   add('paving',0xc4b59b,0,0,.306,length,.022,.180);
   // Owner-colour curbs remain continuous and readable from the full map.
+  const connected=ends.map(value=>value===ROAD_JOIN_REACH);
   for(const side of [-.078,.078]){
-    add('paving',shade(color,-.07),0,side,.329,length-.018,.038,.033);
-    add('box',shade(color,.12),0,side,.350,length-.045,.008,.012);
+    const trims=connected.map(value=>value?0:.009),rims=connected.map(value=>value?0:.0225);
+    add(connected.some(Boolean)?'box':'paving',shade(color,-.07),(trims[0]-trims[1])/2,side,.329,length-trims[0]-trims[1],.038,.033);
+    add('box',shade(color,.12),(rims[0]-rims[1])/2,side,.350,length-rims[0]-rims[1],.008,.012);
   }
-  const count=6,step=(length-.032)/count;
+  const count=Math.max(3,Math.round(length/.13)),step=(length-.032)/count;
   for(let row=0;row<2;row++)for(let i=0;i<count;i++){
     const along=(i-(count-1)/2)*step,side=(row-.5)*.058;
     const tint=[0xa6a18f,0xbcb49f,0xcfc3a8,0xaaa797][(i+row*3)%4];
@@ -37,4 +42,15 @@ export function addBuilding(batch,v,owner) {
     add('box',dark,v.x,.585,v.z,.35,.025,.31);add('roof',shade(owner,-.07),v.x,.665,v.z,.33,.17,.29);
     add('box',ivory,v.x,.56,v.z+.132,.27,.025,.012);add('box',dark,v.x,.415,v.z+.132,.065,.12,.014);
   }
+}
+
+// Mitered pavement continues the road's exact width, levels and owner curbs.
+// The two/three-arm shapes are cached and instanced, never a circular end cap.
+export function addRoadJunction(batch,vertex,color,{arms,rotation}){
+  const {x,z}=vertex,prefix=`road-join-${arms}`;
+  if(!batch.assets.geometries[prefix+'-bed'])for(const [part,geometry]of Object.entries(createRoadJunctionGeometries(arms)))batch.assets.geometries[prefix+'-'+part]=geometry;
+  const add=(part,c,y,sy)=>batch.add(prefix+'-'+part,c,x,y,z,1,sy,1,rotation,'pieces');
+  add('bed',0x48534c,.284,.034);add('base',0xc4b59b,.306,.022);
+  add('curb',shade(color,-.07),.329,.038);add('rim',shade(color,.12),.350,.008);
+  add('paving',0xbcb49f,.328,.032);add('grout',0x918a78,.3444,.0008);
 }

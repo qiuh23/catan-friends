@@ -1,10 +1,12 @@
+import {roadConnections,roadSiteHeight} from './visuals/road-geometry.js';
 import {AnimationStutterMonitor,normalizeQuality} from './graphics-quality.js';
 import {SceneClock, HOME_DAY_MS} from './visuals/day-night.js';
 import {createNightLights} from './visuals/night-lights.js';
 import {createRoadLights} from './visuals/road-lights.js';
 import {portGeometry} from './ports.js';
-import {createRobberHighlight} from './visuals/robber.js';
+import {ROBBER_SCALE,createRobberHighlight} from './visuals/robber.js';
 import {BoardModels, TERRAIN_URL} from './visuals/board-models.js';
+import {terrainFitPoints} from './visuals/terrain-readability.js';
 import {ProgressiveTerrain} from './visuals/progressive-terrain.js';
 import {createBoardEnvironment} from './visuals/board-environment.js';
 import * as THREE from 'three';
@@ -15,7 +17,7 @@ import { BoardAssets, Batches, buildTerrain, clearLayer } from './terrain.js';
 import { boardFrame } from './board-frame.js';
 import { feedbackPoints, planActionCamera } from './action-camera.js';
 import { feedbackAnchor, mapViewKey } from './map-feedback.js';
-import { addRoad, addBuilding } from './pieces.js';
+import { addRoad, addRoadJunction, addBuilding } from './pieces.js';
 import { ORBIT_SECONDS, showcasePose, showcaseEnvelope } from './home-showcase.js';
 
 function gableRoof(){
@@ -579,7 +581,7 @@ export class Board {
       // A newly created map uses the play canvas's current orientation. The
       // narrow home preview can otherwise carry its low landscape pitch into a
       // portrait game and leave most of the available play area empty.
-      this.fitPoints=[...b.vertices.map(v=>({x:v.x,y:.4,z:v.z})),...b.tiles.map(t=>({x:t.x,y:1,z:t.z}))];if(mapChanged)this.reset({defaultOrientation:true});
+      this.fitPoints=terrainFitPoints(b);if(mapChanged)this.reset({defaultOrientation:true});
     }
     if(sceneChanged){if(this.homeShowcase)this.buildDemo(state);this.reset({defaultOrientation:true});changed=true;}
     const colors=state.players.map(p=>[p.id,p.color]);
@@ -589,19 +591,20 @@ export class Board {
       this.pieceKey=pieceKey;this.models.releaseLayer(this.pieces);clearLayer(this.pieces);this.metrics.pieceBuilds++;changed=true;
       const batch=new Batches(this.assets),color=id=>state.players.find(p=>p.id===id)?.color||'#e57c54';
       const add=(shape,c,x,y,z,sx,sy,sz,r=0)=>batch.add(shape,c,x,y,z,sx,sy,sz,r,'pieces');
-      if(!this.homeShowcase)for(const edge of b.edges.filter(e=>e.owner))addRoad(batch,b.vertices[edge.a],b.vertices[edge.b],color(edge.owner));
+      this.connectedRoads=roadConnections(b);
+      if(!this.homeShowcase){const connections=this.connectedRoads;for(const edge of b.edges.filter(e=>e.owner))addRoad(batch,b.vertices[edge.a],b.vertices[edge.b],color(edge.owner),{ends:connections.ends(edge)});for(const [id,owner]of connections.joined)addRoadJunction(batch,b.vertices[id],color(owner),connections.junctions.get(id));}
       if(!this.homeShowcase){const vertices=b.vertices.filter(v=>v.owner),loaded=this.models.buildings(vertices,color,this.pieces);for(const v of vertices)if(!loaded.has(v.id))addBuilding(batch,v,color(v.owner));}
       delete this.renderer.domElement.dataset.robber;
       if(state.robber!==null&&state.robber!==undefined) {
         const t=b.tiles[state.robber],pose=this.models.robber(b,t,this.pieces);
-        if(!pose.loaded){add('cone',0x283e38,t.x+pose.x,pose.y+.2,t.z+pose.z,.14,.4,.14);add('wool',0x283e38,t.x+pose.x,pose.y+.47,t.z+pose.z,.09,.10,.09);}
+        if(!pose.loaded){const s=ROBBER_SCALE;this.assets.material('robber').emissive.set(0x685532);this.assets.material('robber').emissiveIntensity=.55;batch.add('cone',0x283e38,t.x+pose.x,pose.y+.2*s,t.z+pose.z,.14*s,.4*s,.14*s,0,'robber');batch.add('wool',0x283e38,t.x+pose.x,pose.y+.47*s,t.z+pose.z,.09*s,.10*s,.09*s,0,'robber');}
         this.pieces.add(createRobberHighlight(this.assets,pose,t));
         this.renderer.domElement.dataset.robber=JSON.stringify({tile:t.id,model:pose.loaded?'hooded':'fallback',x:t.x+pose.x,y:pose.y,z:t.z+pose.z});
       }
       for(const port of b.ports)for(const arm of portGeometry(b,port).arms)if(arm.owner){const a=arm.from,c=arm.to;add('box',color(arm.owner),(a.x+c.x)/2,.225,(a.z+c.z)/2,Math.hypot(c.x-a.x,c.z-a.z),.025,.07,-Math.atan2(c.z-a.z,c.x-a.x));}
       batch.finish(this.pieces);
     }
-    const markerKey=JSON.stringify([mode,state.legal?.[mode]||[]]);
+    const markerKey=JSON.stringify([mode,state.legal?.[mode]||[],[...(this.connectedRoads?.joined||[])]]);
     if(markerKey!==this.markerKey) {
       this.markerKey=markerKey;this.selectSite(null);clearLayer(this.markers);this.metrics.markerBuilds++;this.markerTargets=[];changed=true;
       for(const tile of this.tiles)tile.userData={tile:tile.userData.tile,...(mode==='robber'&&state.legal?.robber.includes(tile.userData.tile)?{kind:'tile',id:tile.userData.tile}:{})};
@@ -611,7 +614,7 @@ export class Board {
       const transform=new THREE.Object3D();
       for(const [index,id] of sites.entries()) {
         let x,z,rotation=0;if(mode==='road'){const e=b.edges[id],a=b.vertices[e.a],v=b.vertices[e.b];x=(a.x+v.x)/2;z=(a.z+v.z)/2;rotation=-Math.atan2(v.z-a.z,v.x-a.x);}else({x,z}=b.vertices[id]);
-        const marker=new THREE.Object3D();marker.position.set(x,.298,z);
+        const marker=new THREE.Object3D();marker.position.set(x,roadSiteHeight(mode,id,this.connectedRoads?.joined),z);
         marker.rotation.y=rotation;
         marker.userData={kind:mode==='road'?'edge':'vertex',id};this.markerTargets.push(marker);
         for(const {mesh,factor} of layers){transform.position.copy(marker.position);if(mode==='road'){transform.rotation.set(0,rotation,0);transform.scale.set(.52*factor,.009,.025*factor);}else{transform.rotation.set(-Math.PI/2,0,0);transform.scale.setScalar(factor);}transform.updateMatrix();mesh.setMatrixAt(index,transform.matrix);}

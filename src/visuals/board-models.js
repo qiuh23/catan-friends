@@ -3,7 +3,8 @@ import {CachedModelLoader} from './model-byte-cache.js';
 import {createAssetLibrary, createInstancedParts} from './vendor/asset-library.mjs';
 import {deriveTerrainAppearanceSeed, groupTerrainVariants, hashAppearance} from './vendor/terrain-variants.mjs';
 import {ROBBER_SUPPORT} from './robber-support-data.js';
-import {ROBBER_URL, robberSupport} from './robber.js';
+import {ROBBER_URL, ROBBER_SCALE, ROBBER_HIGHLIGHT, robberSupport, createRobberOutline} from './robber.js';
+import {enhanceTerrainReadability} from './terrain-readability.js';
 import {portGeometry} from '../ports.js';
 
 export const TERRAIN_URL='/assets/v9/catan/variants/models/';
@@ -13,8 +14,8 @@ export function buildingAsset(vertex) {
   const variant=hashAppearance(vertex.id)%2;
   return vertex.level===2?['city_citadel','city_clockhall'][variant]:['village_timber','village_dormer'][variant];
 }
-export function instanceMatrix({x=0,y=0,z=0,rotationY=0,scaleX=1}) {
-  return new THREE.Matrix4().compose(new THREE.Vector3(x,y,z),new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0),rotationY),new THREE.Vector3(scaleX,1,1));
+export function instanceMatrix({x=0,y=0,z=0,rotationY=0,scaleX=1,scaleY=1,scaleZ=1}) {
+  return new THREE.Matrix4().compose(new THREE.Vector3(x,y,z),new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0),rotationY),new THREE.Vector3(scaleX,scaleY,scaleZ));
 }
 
 // Each Board owns a URL cache. A disposed board never frees another board's
@@ -30,6 +31,7 @@ export class BoardModels {
     if(this.disposed)return Promise.reject(new Error('Board models disposed'));
     if(!this.requests.has(url))this.requests.set(url,new Promise((resolve,reject)=>{this.pending.push({url,resolve,reject});this.pump();}).then(gltf=>{
       if(!this.disposed){
+        if(url.startsWith(TERRAIN_URL))enhanceTerrainReadability(gltf.scene,url.match(/catan_terrain_([a-z]+)_/)?.[1]);
         if(url.startsWith(ARCHITECTURE_URL)&&!url.endsWith('pier_detailed.glb'))gltf.scene.traverse(object=>{
           const original=object.material;
           if(!object.isMesh||Array.isArray(original)||!original.vertexColors||original.name==='OwnerTint')return;
@@ -52,15 +54,15 @@ export class BoardModels {
         if(url===ROBBER_URL)gltf.scene.traverse(object=>{
           if(!object.isMesh)return;
           const material=object.material.clone();
-          material.emissive.set(0x253d31);material.emissiveIntensity=.25;
+          material.emissive.set(0x544531);material.emissiveIntensity=.38;
           material.onBeforeCompile=shader=>{
             shader.uniforms.uRobberNight=this.nightUniform;
             shader.fragmentShader='uniform float uRobberNight;\n'+shader.fragmentShader;
             shader.fragmentShader=shader.fragmentShader.replace('#include <emissivemap_fragment>',`#include <emissivemap_fragment>
-              float robberRim=pow(1.-abs(dot(normalize(normal),normalize(vViewPosition))),3.);
-              totalEmissiveRadiance+=vec3(1.,.69,.30)*robberRim*(.18+.12*uRobberNight);`);
+              float robberRim=pow(1.-abs(dot(normalize(normal),normalize(vViewPosition))),${ROBBER_HIGHLIGHT.rimPower}.);
+              totalEmissiveRadiance+=vec3(1.,.69,.30)*robberRim*(${ROBBER_HIGHLIGHT.dayRim}+${ROBBER_HIGHLIGHT.nightRim-ROBBER_HIGHLIGHT.dayRim}*uRobberNight);`);
           };
-          material.customProgramCacheKey=()=> 'catan-robber-rim-v1';
+          material.customProgramCacheKey=()=> 'catan-robber-rim-v3';
           object.material=material;this.robberMaterials.add(material);
         });
         this.ready.set(url,gltf.scene);
@@ -142,7 +144,11 @@ export class BoardModels {
       this.robberPlacements.set(key,baked||robberSupport(null));
     }
     const pose=this.robberPlacements.get(key);
-    const loaded=this.add(layer,ROBBER_URL,[{x:tile.x+pose.x,y:pose.y,z:tile.z+pose.z,rotationY:pose.rotationY}]);
+    const prior=layer.children.length;
+    const loaded=this.add(layer,ROBBER_URL,[{x:tile.x+pose.x,y:pose.y,z:tile.z+pose.z,rotationY:pose.rotationY,scaleX:ROBBER_SCALE,scaleY:ROBBER_SCALE,scaleZ:ROBBER_SCALE}]);
+    if(loaded)for(const body of layer.children.slice(prior)){
+      const outline=createRobberOutline(body);layer.add(outline.mesh);this.layers.get(layer).push(outline);
+    }
     return {...pose,loaded};
   }
   async dispose() {
