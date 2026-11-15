@@ -15,6 +15,15 @@ async function instrument(context) {
   });
   context.on('page',page=>page.on('pageerror',e=>errors.push(e.message)));
 }
+// Home no longer exposes pause/reset. Reload explicitly for independent gesture
+// scenarios instead of relying on a removed control to resume the showcase.
+async function restartHome(page) {
+  await page.reload();await page.locator('canvas[data-camera]').waitFor();
+  await page.waitForFunction(()=>document.querySelector('canvas')?.dataset.ambient==='running');
+  assert.equal(await page.locator('.board-controls button').count(),1);
+  assert.equal(await page.locator('#home-motion,.board-controls [data-action="reset"]').count(),0);
+  assert.equal(await page.locator('.board-controls #flat-toggle').count(),1);
+}
 const stats=page=>page.evaluate(()=>({memory:{...qaBoard.renderer.info.memory},landBuilds:qaBoard.metrics.landBuilds,pieceBuilds:qaBoard.metrics.pieceBuilds,
   assets:qaBoard.assets.materials.size,textures:qaBoard.assets.textures.size,children:qaBoard.scene.children.length,time:qaBoard.homeTime,angle:qaBoard.homeAngle,renders:qaBoard.metrics.renders}));
 async function snapshot(page,angle,time) {
@@ -75,39 +84,39 @@ for(const [engine,type] of [['chromium',chromium],['webkit',webkit]]) {
       const page=await context.newPage();await page.goto(base);await page.locator('canvas[data-camera]').waitFor();await page.waitForTimeout(200);
       const report=await auditOrbit(page);checkUI(report,width,height);
       if(engine==='chromium'&&['desktop','portrait','short-landscape'].includes(name))for(const [angle,time] of [[0,3],[90,11],[180,21],[270,26]]){await snapshot(page,angle,time);await page.screenshot({path:`${output}/${name}-${angle}.png`,scale:'css'});}
-      await page.locator('#home-motion').click();await page.locator('#home-motion').click();
+      await restartHome(page);
       const first=await stats(page);await page.waitForTimeout(600);const second=await stats(page);assert.ok(second.angle>first.angle+.005,'orbit does not advance continuously');
       // A plain map click, a drag, a wheel/pinch and keyboard input all interrupt.
       if(name==='desktop'||name==='laptop')await page.mouse.click(width/2,height/2);else await page.touchscreen.tap(width/2,height/2);
-      await page.waitForTimeout(120);const clicked=await stats(page);await page.waitForTimeout(160);assert.equal((await stats(page)).angle,clicked.angle);assert.match(await page.locator('#home-motion').getAttribute('aria-label'),/恢复展示/);
-      await page.locator('#home-motion').click();await page.mouse.move(width/2,height/2);await page.mouse.down();await page.mouse.move(width/2+45,height/2+12,{steps:4});await page.mouse.up();await page.waitForTimeout(160);assert.equal(await page.locator('canvas').getAttribute('data-ambient'),'stopped');
-      await page.locator('#home-motion').click();await page.mouse.move(width/2,height/2);
+      await page.waitForTimeout(120);const clicked=await stats(page);await page.waitForTimeout(160);assert.equal((await stats(page)).angle,clicked.angle);assert.equal(await page.locator('canvas').getAttribute('data-ambient'),'stopped');
+      await restartHome(page);await page.mouse.move(width/2,height/2);await page.mouse.down();await page.mouse.move(width/2+45,height/2+12,{steps:4});await page.mouse.up();await page.waitForTimeout(160);assert.equal(await page.locator('canvas').getAttribute('data-ambient'),'stopped');
+      await restartHome(page);await page.mouse.move(width/2,height/2);
       if(engine==='webkit'&&name!=='desktop'&&name!=='laptop')await page.locator('canvas').dispatchEvent('wheel',{clientX:width/2,clientY:height/2,deltaY:-60,bubbles:true,cancelable:true});
       else await page.mouse.wheel(0,-60);
-      await page.waitForTimeout(100);assert.match(await page.locator('#home-motion').getAttribute('aria-label'),/恢复展示/);
-      await page.locator('#home-motion').click();await page.locator('canvas').focus();await page.keyboard.press('+');assert.match(await page.locator('#home-motion').getAttribute('aria-label'),/恢复展示/);
-      await page.locator('[data-action="reset"]').click();await page.locator('#home-motion').click();
+      await page.waitForTimeout(100);assert.equal(await page.locator('canvas').getAttribute('data-ambient'),'stopped');
+      await restartHome(page);await page.locator('canvas').focus();await page.keyboard.press('+');assert.equal(await page.locator('canvas').getAttribute('data-ambient'),'stopped');
+      await restartHome(page);
       await page.locator('[data-action="rules"]').click();await page.waitForTimeout(90);const modal=await stats(page);await page.waitForTimeout(200);assert.equal((await stats(page)).time,modal.time);await page.keyboard.press('Escape');await page.waitForTimeout(160);assert.ok((await stats(page)).time>modal.time);
       // Simulate Page Visibility explicitly; unlike physical app switching this
       // is a browser document override, and is identified as such in the report.
       await page.evaluate(()=>{Object.defineProperty(document,'hidden',{configurable:true,get:()=>true});document.dispatchEvent(new Event('visibilitychange'));});const hidden=await stats(page);await page.waitForTimeout(180);assert.equal((await stats(page)).time,hidden.time);
       await page.evaluate(()=>{delete document.hidden;document.dispatchEvent(new Event('visibilitychange'));});
-      await page.emulateMedia({reducedMotion:'reduce'});await page.waitForTimeout(160);assert.equal(await page.locator('canvas').getAttribute('data-ambient'),'stopped');assert.ok(await page.locator('#home-motion').isDisabled());assert.equal(JSON.parse(await page.locator('canvas').getAttribute('data-demo')).pose.buildings.filter(b=>b.city===1).length,2);
+      await page.emulateMedia({reducedMotion:'reduce'});await page.waitForTimeout(160);assert.equal(await page.locator('canvas').getAttribute('data-ambient'),'stopped');assert.equal(await page.locator('#home-motion').count(),0);assert.equal(JSON.parse(await page.locator('canvas').getAttribute('data-demo')).pose.buildings.filter(b=>b.city===1).length,2);
       if(engine==='chromium'&&name==='portrait')await page.screenshot({path:`${output}/portrait-reduced-motion.png`});
-      await page.emulateMedia({reducedMotion:'no-preference'});await page.locator('#flat-toggle').click();await page.locator('#board>svg').waitFor();assert.equal(await page.locator('[data-building="city"]').count(),2);assert.equal(await page.evaluate(()=>qaBoard.disposed&&qaBoard.demoLayer===null&&qaBoard.ambientTimer===0),true);assert.ok(await page.locator('#home-motion').isDisabled());
+      await page.emulateMedia({reducedMotion:'no-preference'});await page.locator('#flat-toggle').click();await page.locator('#board>svg').waitFor();assert.equal(await page.locator('[data-building="city"]').count(),2);assert.equal(await page.evaluate(()=>qaBoard.disposed&&qaBoard.demoLayer===null&&qaBoard.ambientTimer===0),true);assert.equal(await page.locator('#home-motion').count(),0);
       if(engine==='chromium'&&name==='portrait')await page.screenshot({path:`${output}/portrait-2d.png`});
-      await page.locator('#flat-toggle').click();await page.locator('canvas[data-camera]').waitFor();assert.ok(await page.locator('#home-motion').isEnabled());
+      await page.locator('#flat-toggle').click();await page.locator('canvas[data-camera]').waitFor();assert.equal(await page.locator('#home-motion').count(),0);
       if(engine==='chromium'&&name==='portrait') {
         const cdp=await context.newCDPSession(page);
         await cdp.send('Emulation.setSafeAreaInsetsOverride',{insets:{top:44,bottom:34,left:0,right:0}});await page.waitForTimeout(130);checkUI(await auditOrbit(page),width,height);
         await page.setViewportSize({width:844,height:390});await cdp.send('Emulation.setSafeAreaInsetsOverride',{insets:{top:0,bottom:21,left:44,right:44}});await page.waitForTimeout(130);checkUI(await auditOrbit(page),844,390);
         await page.screenshot({path:`${output}/landscape-safe-area.png`});
         await cdp.send('Emulation.setSafeAreaInsetsOverride',{insets:{top:0,bottom:0,left:0,right:0}});
-        await page.locator('#home-motion').click();await page.locator('#home-motion').click();
+        await restartHome(page);
         await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:390,y:180,id:1},{x:450,y:180,id:2}]});
         await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:365,y:180,id:1},{x:475,y:180,id:2}]});
         await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
-        assert.match(await page.locator('#home-motion').getAttribute('aria-label'),/恢复展示/);
+        assert.equal(await page.locator('canvas').getAttribute('data-ambient'),'stopped');
       }
       if(name==='portrait'||name==='short-landscape')for(const backendId of ['aliyun','cloudflare']){
         await page.route('**/api/deployment',route=>route.fulfill({json:{game:'catan-friends',backendId,publicOrigin:new URL(base).origin}}));
