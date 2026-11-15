@@ -129,9 +129,13 @@ button .icon {
   gap: var(--ui-space);
 }
 .at-table .resource-card > strong {
-  font-size: 20px;
-  font-weight: 600;
+  font-size: 18px;
+  font-weight: 700;
+  min-width: 2ch;
+  flex-shrink: 0;
 }
+.at-table .resource-card.unavailable { filter: saturate(.4); }
+.at-table .resource-card.unavailable > strong { color: var(--muted); }
 .at-table .resource-hand {
   gap: 6px;
 }
@@ -306,7 +310,7 @@ button .icon {
     gap: 5px;
   }
   .at-table .resource-card {
-    width: 48px;
+    width: 52px;
     height: 42px;
   }
   .at-table #camera-toolbar button > span:not(.icon-fragment) {
@@ -334,7 +338,7 @@ button .icon {
     gap: 3px;
   }
   .at-table .resource-card {
-    width: 43px;
+    width: 52px;
   }
   .at-table .resource-art,
   .at-table .resource-art .resource-illustration {
@@ -348,7 +352,7 @@ button .icon {
     gap: 3px;
   }
   .exchange-stepper button {
-    min-width: 0;
+    min-width: var(--ui-touch-size);
   }
 }
 
@@ -521,7 +525,7 @@ button .icon {
   .at-table #play-dock { left: auto; right: max(8px, env(safe-area-inset-right)); margin: 0; }
   .at-table .hand-tray { bottom: max(15px, env(safe-area-inset-bottom)); }
   .at-table .resource-hand { gap: var(--ui-space); }
-  .at-table .resource-card { width: 43px; }
+  .at-table .resource-card { width: 52px; }
   .at-table .resource-card > strong { font-size: 18px; }
   .at-table .resource-art,
   .at-table .resource-art .resource-illustration { width: 24px; height: 24px; }
@@ -540,10 +544,10 @@ button .icon {
     .at-table .player-circle { width: 44px; height: 44px; min-height: 44px; }
     .at-table #player-orbit { left: max(156px, calc(env(safe-area-inset-left) + 148px)); right: auto; transform: none; gap: 4px; }
     .at-table .stage-utilities button { padding: 8px; }
-    .at-table .playing.compact-hud .resource-card { width: 36px; }
+    .at-table .playing.compact-hud .resource-card { width: 44px; }
     .at-table .playing.compact-hud .resource-art,
   .at-table .playing.compact-hud .resource-art .resource-illustration { width: 16px; height: 20px; }
-    .at-table .playing.compact-hud .resource-card > strong { font-size: 14px; }
+    .at-table .playing.compact-hud .resource-card > strong { font-size: 18px; }
     .at-table .playing.stacked-hud #play-dock { left: 8px; right: 8px; margin: auto; }
     .at-table .playing.stacked-hud .hand-tray { bottom: calc(75px + max(8px, env(safe-area-inset-bottom))); }
   }

@@ -1,7 +1,7 @@
 .exchange { display:flex; flex-direction:column; gap:12px; }
 .exchange-tabs { display:flex; gap:4px; padding:4px; border-radius:10px; background:var(--surface-alt); flex-shrink:0; }
 .exchange-tabs button { flex:1; min-height:44px; padding:6px; border:0; background:transparent; color:var(--muted); font-size:14px; }
-.exchange-tabs button[aria-pressed=true] { background:var(--paper); color:var(--ink); box-shadow:0 2px 7px color-mix(in srgb, var(--ink) 8.235%, transparent); font-weight:700; }
+.exchange-tabs button[aria-pressed=true] { background:var(--paper); color:var(--ink); box-shadow:inset 0 -2px var(--accent); font-weight:700; }
 .exchange h3 { display:flex; align-items:center; justify-content:space-between; margin:6px 0 8px; font-size:14px; }
 .exchange-body { min-height:0; }
 .exchange-resources { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:6px; margin-bottom:12px; }
@@ -12,11 +12,14 @@
 .resource-pick { display:flex; flex-direction:column; align-items:center; width:100%; min-height:86px; gap:1px; }
 .exchange-card span { font-size:12px; }
 .exchange-card small { font-size:11px; color:var(--muted); }
-.exchange-stepper { display:flex; align-items:center; border-top:1px solid var(--line); }
-.exchange-stepper button { flex:1; min-width:0; min-height:44px; font-size:20px; }
+.exchange-stepper { display:grid; justify-items:center; border-top:1px solid var(--line); }
+/* A 32px disc inside a real 44px hit area. Stacking prevents overlapping
+   targets in all five resource columns, including short landscape. */
+.exchange-card .exchange-stepper button { width:var(--touch-size); min-width:var(--touch-size); height:var(--touch-size); min-height:var(--touch-size); padding:0; border-radius:50%; font-size:20px; background:radial-gradient(circle, var(--surface-alt) 70%, transparent 72%) center / 32px 32px no-repeat; }
+.exchange-card .exchange-stepper button:hover:not(:disabled) { background:radial-gradient(circle, var(--ui-control-hover) 70%, transparent 72%) center / 32px 32px no-repeat; }
 .exchange-stepper output { min-width:16px; font-size:16px; font-weight:700; }
 .exchange button:disabled { opacity:.4; cursor:default; }
-.exchange-footer { display:flex; flex-direction:column; gap:8px; position:sticky; bottom:-1px; background:var(--paper); padding-top:8px; z-index:2; }
+.exchange-footer { display:flex; flex-direction:column; gap:8px; position:static; background:var(--paper); padding-top:8px; }
 .exchange-preview { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px; background:var(--surface-alt); border-radius:8px; }
 .exchange-preview>div { display:flex; flex-wrap:wrap; gap:5px; align-items:center; flex:1; }
 .exchange-preview small { width:100%; color:var(--muted); font-size:11px; }
@@ -24,6 +27,9 @@
 .exchange-resource svg { width:24px; height:24px; }
 .exchange-resource>span { font-size:11px; }
 .exchange-reason { font-size:12px; color:var(--muted); margin:0; min-height:18px; }
+.trade-ready > :is(.exchange-preview, .exchange-reason) { color:var(--wood); background:color-mix(in srgb, var(--wood) 10%, transparent); }
+.trade-unavailable > :is(.exchange-preview, .exchange-reason) { color:var(--brick); background:color-mix(in srgb, var(--brick) 10%, transparent); }
+:is(.trade-ready, .trade-unavailable) > .exchange-reason { padding:8px; border-radius:var(--radius-control); }
 .exchange-empty { padding:36px; text-align:center; color:var(--muted); }
 .bank-choices>button { display:flex; flex-direction:column; align-items:center; gap:2px; padding:6px 0; min-height:86px; color:inherit; }
 .rate-source { display:inline-flex; gap:4px; align-items:center; font-weight:500; }

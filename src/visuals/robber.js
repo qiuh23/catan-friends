@@ -34,7 +34,7 @@ export function robberSupport(source,terrainRotation=0) {
 
 export function createRobberHighlight(assets,pose,tile) {
   if(!assets.geometries['robber-halo'])assets.geometries['robber-halo']=new THREE.RingGeometry(.64,1,48);
-  if(!assets.materials.has('robber-halo'))assets.materials.set('robber-halo',new THREE.MeshBasicMaterial({color:0xffd56a,transparent:true,opacity:.95,depthTest:true,depthWrite:false,toneMapped:false,side:THREE.DoubleSide}));
+  if(!assets.materials.has('robber-halo'))assets.materials.set('robber-halo',new THREE.MeshBasicMaterial({color:0x493e57,transparent:true,opacity:.95,depthTest:true,depthWrite:false,toneMapped:false,side:THREE.DoubleSide}));
   const mesh=new THREE.Mesh(assets.geometries['robber-halo'],assets.materials.get('robber-halo'));
   const offset=turn(-.035*ROBBER_SCALE,.02*ROBBER_SCALE,pose.rotationY);
   mesh.position.set(tile.x+pose.x+offset.x,pose.y+.012,tile.z+pose.z+offset.z);

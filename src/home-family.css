@@ -3,11 +3,11 @@
 #home-welcome h1 { font-family:var(--font-display); font-size:32px; font-weight:600; line-height:1.45; letter-spacing:.03em; }
 #home-welcome p { margin-top:8px; font-size:14px; line-height:1.7; color:var(--muted); }
 body:not(.at-home) #home-welcome { display:none; }
-#home-dock { gap:8px; padding:6px; border:1px solid var(--paper); border-radius:18px; background:var(--paper); box-shadow:0 6px 24px color-mix(in srgb, var(--ink) 10%, transparent); }
-#home-dock button { min-height:48px; padding:12px 18px; border-radius:12px; font-size:14px; font-weight:600; background:var(--surface-alt); color:var(--ink); }
-#home-dock .primary { background:var(--ink); color:var(--paper); }
+#home-dock { gap:8px; padding:8px; border:1px solid var(--line); border-radius:var(--radius-panel); background:color-mix(in srgb, var(--paper) 95%, transparent); box-shadow:var(--shadow-2); }
+#home-dock button { min-height:48px; padding:12px 16px; border-radius:var(--radius-control); font-size:14px; font-weight:600; background:var(--surface-alt); color:var(--ink); }
+#home-dock .primary { background:var(--accent); color:white; }
 #home-dock button:hover:not(:disabled) { background:var(--ui-control-hover); color:var(--ink); }
-#home-dock .primary:hover:not(:disabled) { background:var(--ink); color:var(--paper); }
+#home-dock .primary:hover:not(:disabled) { background:var(--focus); color:white; }
 .at-home .board-controls { background:var(--paper); border-radius:12px; }
 .at-home .board-controls button { border-radius:10px; }
 .at-home :is(button,a,input,select):focus-visible { outline:3px solid var(--focus); outline-offset:3px; }
@@ -48,14 +48,14 @@ body:not(.at-home) #home-welcome { display:none; }
   #home-welcome { top:113px; }
   #home-welcome h1 { font-size:24px; }
   #home-welcome p { font-size:12px; margin-top:6px; }
-  #home-dock { gap:5px; border-radius:16px; padding:5px; }
-  #home-dock button { font-size:13px; padding:11px 12px; gap:6px; }
+  #home-dock { gap:4px; padding:4px; }
+  #home-dock button { font-size:13px; padding:12px; gap:4px; }
   .at-home :is(#entry-content,#rooms-content) { padding:16px 18px 22px; }
   .at-home :is(#entry-dialog,#rooms-dialog)>.dialog-heading { padding:12px 16px; }
   .at-home .home-bottom { flex-wrap:wrap; }
 }
 @media(max-width: 640px) {
-  #home-dock button { width:87px; padding:8px 6px; font-size:12px; }
+  #home-dock button { width:87px; padding:8px; font-size:12px; }
 }
 @media(prefers-reduced-motion:reduce) { .at-home :is(button,input,select,a) { transition:none; } }
 /* Short landscape keeps both existing expansion cards in view beside joining. */

@@ -65,9 +65,10 @@ export class Board {
     this.modelStatusText=document.createElement('span');this.modelRetry=document.createElement('button');this.modelRetry.type='button';this.modelRetry.textContent='重试';
     this.modelStatus.append(this.modelStatusText,this.modelRetry);container.append(this.modelStatus);
     this.modelRetry.addEventListener('click',()=>{this.models.retryFailed();this.requestedModelsKey=null;this.set(this.latestState,this.mode);});
+    // Ground feedback mirrors tokens.css: select/gain #c99b3f, robber #493e57.
     // These are small ground inlays. Depth remains enabled so a nearby roof,
     // tree or rock naturally hides an inlay instead of being crossed by it.
-    for(const [key,color,opacity] of [['marker',0xd4bb79,.88],['outline',0x49695e,.7],['selected',0xf0db9e,1],['feedback',0xe3bd69,1],['robber-feedback',0x685074,1]])
+    for(const [key,color,opacity] of [['marker',0xc99b3f,.88],['outline',0xc99b3f,.7],['selected',0xc99b3f,1],['feedback',0xc99b3f,1],['robber-feedback',0x493e57,1]])
       this.assets.materials.set(key,new THREE.MeshBasicMaterial({color,opacity,transparent:opacity<1,depthTest:true,depthWrite:false,toneMapped:false,side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-1}));
     // Painted pieces use depth so their pale plinth cannot draw over a roof or
     // tower. They keep one shared material and do not add mobile shadow passes.

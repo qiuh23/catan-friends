@@ -27,7 +27,7 @@ body.at-table { position:fixed; inset:0; overflow:hidden; overscroll-behavior:no
 .playing .resource-hand { display:flex; gap:5px; justify-content:center; }
 .playing .resource-card { display:flex; flex-direction:row; align-items:center; justify-content:center; gap:4px; width:61px; height:42px; padding:4px; border-radius:8px; border-top-width:2px; }
 .playing .resource-art, .playing .resource-art .resource-illustration { width:29px; height:29px; margin:0; }
-.playing .resource-card>strong { font-size:18px; margin:0; }
+.playing .resource-card>strong { font-size: 18px; margin:0; }
 .playing .hand-entry { min-height:44px; height:44px; min-width:57px; padding:7px; background:var(--paper); border:1px solid var(--line); pointer-events:auto; }
 dialog { max-height:calc(var(--visual-height) - 24px); overscroll-behavior:contain; }
 #stage-dialog { position:fixed; top:calc(var(--visual-top) + var(--visual-height)/2); bottom:auto; left:0; right:0; transform:translateY(-50%); width:min(520px,calc(100vw - 24px)); max-width:none; max-height:calc(var(--visual-height) - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); padding:0; margin:0 auto; overflow:hidden; border:1px solid var(--line); border-radius:var(--radius-panel); box-shadow:0 14px 70px color-mix(in srgb, var(--ink) 27.059%, transparent); background:var(--paper); }
@@ -81,7 +81,7 @@ dialog { max-height:calc(var(--visual-height) - 24px); overscroll-behavior:conta
   .playing .hand-tray { bottom:calc(69px + max(8px,env(safe-area-inset-bottom))); left:8px; right:8px; }
   .playing .resource-card { width:49px; height:39px; gap:2px; padding:2px; }
   .playing .resource-art, .playing .resource-art .resource-illustration { width:26px; height:26px; }
-  .playing .resource-card>strong { font-size:16px; }
+  .playing .resource-card>strong { font-size: 18px; }
   .playing .hand-entry { min-width:44px; height:44px; min-height:44px; padding:5px; gap:3px; }
   #stage-dialog-content { padding:14px; }
   #stage-dialog-content .resource-input { font-size:12px; }
@@ -199,7 +199,7 @@ dialog { max-height:calc(var(--visual-height) - 24px); overscroll-behavior:conta
 .room-code { font-weight: 600; letter-spacing: .06em; }
 #room-meta { display: flex; align-items: center; gap: 20px; }
 .board-top { position: absolute; top: 24px; left: 24px; right: 118px; pointer-events: none; }
-.turn-banner { padding: 12px 16px; background: var(--paper); display: flex; align-items: center; gap: 12px; border-radius: 12px; max-width: 520px; margin: auto; box-shadow: 0 7px 24px color-mix(in srgb, var(--ink) 7.059%, transparent); }
+.turn-banner { padding: 12px 16px; background: var(--paper); display: flex; align-items: center; gap: 12px; border-radius: 12px; max-width: 520px; margin: auto; box-shadow: var(--shadow-2); }
 .turn-banner>div:not(.dice-pair) { flex: 1; min-width: 0; }
 .turn-banner strong { display: block; font-size: 14px; }
 .turn-banner span:not(.turn-dot) { display: block; font-size: 12px; color: var(--muted); }
@@ -259,7 +259,7 @@ dialog { max-height:calc(var(--visual-height) - 24px); overscroll-behavior:conta
 .playing .turn-banner span:not(.turn-dot) { font-size: 11px; line-height: 1.5; }
 .playing .dice-pair span { width: 27px; height: 27px; }
 .task-shortcut { min-height: 44px; padding: 8px 10px; background: color-mix(in srgb, var(--wheat) 20%, var(--paper)); pointer-events: auto; white-space: nowrap; }
-.needs-attention { border: 2px solid var(--accent)!important; }
+.needs-attention { border-color: var(--accent); }
 .needs-attention strong { color: var(--accent); }
 @media (max-width: 640px) {
 .playing .turn-banner { min-height: 46px; padding: 4px 10px; }
@@ -340,8 +340,10 @@ dialog { max-height:calc(var(--visual-height) - 24px); overscroll-behavior:conta
 .at-home .entry-server { top: calc(72px + env(safe-area-inset-top)); }
 }
 .at-home .topbar nav button > .icon-fragment { display: contents; }
-.at-table :is(.stage-utilities, #camera-toolbar, .turn-banner, #play-dock) { border-color: color-mix(in srgb, var(--paper) 80%, transparent); box-shadow: 0 6px 20px color-mix(in srgb, var(--ink) 9%, transparent); }
-.at-table .turn-banner { width: max-content; min-width: 230px; max-width: calc(100vw - 24px); padding: 6px 12px; border-radius: var(--ui-radius); }
+.at-table :is(.stage-utilities, #camera-toolbar, #play-dock) { border-color: color-mix(in srgb, var(--paper) 80%, transparent); box-shadow: 0 6px 20px color-mix(in srgb, var(--ink) 9%, transparent); }
+.at-table .turn-banner { border-left: 3px solid var(--muted); box-shadow: var(--shadow-2); width: max-content; min-width: 230px; max-width: calc(100vw - 24px); padding: 6px 12px; border-radius: var(--ui-radius); }
+.at-table .turn-banner.your-turn { border-left-color: var(--player); }
+.at-table .turn-banner:not(.your-turn) strong { color: var(--muted); }
 .at-table .turn-banner strong { font-size: 14px; }
 .at-table .turn-description { font-size: 12px; }
 .at-table .turn-banner > .starting-player-copy { display: block !important; min-width: 0; }
@@ -363,14 +365,14 @@ dialog { max-height:calc(var(--visual-height) - 24px); overscroll-behavior:conta
   .playing .resource-hand { gap: 3px; }
   .playing .resource-card { width: 45px; height: 39px; padding: 2px; gap: 2px; }
   .playing .resource-art, .playing .resource-art .resource-illustration { width: 24px; height: 24px; }
-  .playing .resource-card>strong { font-size: 16px; }
+  .playing .resource-card>strong { font-size: 18px; }
   .playing .hand-entry { min-width: 44px; min-height: 44px; padding: 4px; gap: 2px; }
   #stage-dialog-content .chat-log { max-height: calc(var(--visual-height) - 190px); }
   /* table.css: compact layout */
   .table.playing.compact-hud .resource-hand { gap: 3px; }
   .table.playing.compact-hud .resource-card { width: 36px; gap: 1px; padding: 2px; }
   .table.playing.compact-hud .resource-art, .table.playing.compact-hud .resource-art .resource-illustration { width: 16px; height: 20px; }
-  .table.playing.compact-hud .resource-card>strong { font-size: 13px; }
+  .table.playing.compact-hud .resource-card>strong { font-size: 18px; }
   .table.playing.stacked-hud { --board-pad-bottom: 128px; }
   .playing.stacked-hud #play-dock { left: max(8px,env(safe-area-inset-left)); right: max(8px,env(safe-area-inset-right)); margin: auto; }
   .playing.stacked-hud .hand-tray { bottom: calc(69px + max(8px,env(safe-area-inset-bottom))); left: 8px; right: 8px; }
