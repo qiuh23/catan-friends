@@ -1,5 +1,45 @@
 import {portGeometry} from '../ports.js';
 import {DECORATION_LAYOUT} from './terrain-decoration-layout.js';
+import {Color,SRGBColorSpace} from 'three';
+import {terrain} from '../terrain.js';
+
+// V9 stores linear-space vertex colors: calibrate those actual rendered colors,
+// not the shared material (which would also tint wool, trunks and earth rims).
+// This is a display-only transform; source GLB bytes and geometry are untouched.
+export function alignTerrainPalette(scene,resource){
+  const key=({forest:'wood',clay:'brick',sheep:'sheep',wheat:'wheat',ore:'ore'})[resource];
+  if(!key||scene.userData.terrainPalette)return;
+  const color=new Color(),target=new Color(terrain[key]).getHSL({},SRGBColorSpace),hsl={};
+  let count=0,lightness=0,saturation=0;
+  scene.traverse(mesh=>{
+    if(!mesh.isMesh||!mesh.name.endsWith('_ground'))return;
+    const {color:colors,position}=mesh.geometry.attributes;if(!colors)return;
+    for(let i=0;i<colors.count;i++)if(position.getY(i)>=TERRAIN_SURFACE-1e-5){
+      color.fromBufferAttribute(colors,i).getHSL(hsl,SRGBColorSpace);
+      lightness+=hsl.l;saturation+=hsl.s;count++;
+    }
+  });
+  if(!count)return;
+  lightness/=count;saturation/=count;
+  scene.traverse(mesh=>{
+    if(!mesh.isMesh||!/_ground$|_decoration$/.test(mesh.name))return;
+    const {color:colors,position}=mesh.geometry.attributes;if(!colors)return;
+    const ground=mesh.name.endsWith('_ground');
+    // Wool, faces and legs are recognizable neutral accents, not green terrain.
+    if(!ground&&resource==='sheep')return;
+    for(let i=0;i<colors.count;i++){
+      if(ground&&position.getY(i)<TERRAIN_SURFACE-1e-5)continue;
+      color.fromBufferAttribute(colors,i).getHSL(hsl,SRGBColorSpace);
+      // Forest trunks retain their warm brown; only foliage follows wood green.
+      if(!ground&&resource==='forest'&&(hsl.h<.20||hsl.h>.48))continue;
+      color.setHSL(target.h,Math.max(0,Math.min(1,target.s+(hsl.s-saturation)*.35)),
+        Math.max(.05,Math.min(.95,target.l+hsl.l-lightness)),SRGBColorSpace);
+      colors.setXYZ(i,color.r,color.g,color.b);
+    }
+    colors.needsUpdate=true;
+  });
+  scene.userData.terrainPalette=key;
+}
 // Lift each resource's recognizable silhouette without spreading into the number
 // clearing, road lanes or building sites. Source GLB bytes and the hex footprint
 // stay unchanged. Relief and decoration share the same vertical mapping; baked

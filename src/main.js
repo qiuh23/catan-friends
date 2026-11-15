@@ -42,7 +42,7 @@ const chatPreview=DOMESTIC?null:new ChatPreview(()=>openStagePanel('chat'),chatM
 let roomList={status:'loading',rooms:[],error:'',nextCursor:null,moreStatus:'idle',moreError:''},listRequest=0,terminalMessage='',receivedAt=Date.now(),confirmation=null;
 let previewSeed=17;const preview={board:createBoard(()=>{previewSeed=(previewSeed*1664525+1013904223)>>>0;return previewSeed/4294967296;}),players:[],robber:null,legal:{}};
 const largePreview={...preview,board:createBoard(undefined,{playerExpansion:'five-six-2025'})};
-const homeExample=createHomeExample();
+const homeExample=createHomeExample(getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || undefined);
 const sceneState=()=>state?.board?state:state?state.players.length>4?largePreview:preview:code?preview:homeExample;
 let showcaseInterrupted=false,pageAway=false;
 let stagePanel='', focusedPlayer='';

@@ -4,7 +4,7 @@ import {createAssetLibrary, createInstancedParts} from './vendor/asset-library.m
 import {deriveTerrainAppearanceSeed, groupTerrainVariants, hashAppearance} from './vendor/terrain-variants.mjs';
 import {ROBBER_SUPPORT} from './robber-support-data.js';
 import {ROBBER_URL, ROBBER_SCALE, ROBBER_HIGHLIGHT, robberSupport, createRobberOutline} from './robber.js';
-import {enhanceTerrainReadability} from './terrain-readability.js';
+import {enhanceTerrainReadability,alignTerrainPalette} from './terrain-readability.js';
 import {portGeometry} from '../ports.js';
 
 export const TERRAIN_URL='/assets/v9/catan/variants/models/';
@@ -31,7 +31,10 @@ export class BoardModels {
     if(this.disposed)return Promise.reject(new Error('Board models disposed'));
     if(!this.requests.has(url))this.requests.set(url,new Promise((resolve,reject)=>{this.pending.push({url,resolve,reject});this.pump();}).then(gltf=>{
       if(!this.disposed){
-        if(url.startsWith(TERRAIN_URL))enhanceTerrainReadability(gltf.scene,url.match(/catan_terrain_([a-z]+)_/)?.[1]);
+        if(url.startsWith(TERRAIN_URL)){
+          const resource=url.match(/catan_terrain_([a-z]+)_/)?.[1];
+          alignTerrainPalette(gltf.scene,resource);enhanceTerrainReadability(gltf.scene,resource);
+        }
         if(url.startsWith(ARCHITECTURE_URL)&&!url.endsWith('pier_detailed.glb'))gltf.scene.traverse(object=>{
           const original=object.material;
           if(!object.isMesh||Array.isArray(original)||!original.vertexColors||original.name==='OwnerTint')return;

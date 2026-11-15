@@ -108,7 +108,10 @@
       "--duration-2": "180ms",
       "--duration-3": "240ms",
       "--ease": "cubic-bezier(.2,.7,.3,1)",
-      "--touch-size": "44px"
+      "--touch-size": "44px",
+      "--feedback-gain": "#c99b3f",
+      "--feedback-robber": "#493e57",
+      "--feedback-select": "#c99b3f"
     },
     "reducedMotion": {
       "query": "(prefers-reduced-motion: reduce)",
@@ -117,6 +120,14 @@
         "--duration-2": "0ms",
         "--duration-3": "0ms"
       }
+    },
+    "terrainPalette": {
+      "wood": "#477e5f",
+      "brick": "#b97854",
+      "sheep": "#7d9c4f",
+      "wheat": "#b08f31",
+      "ore": "#6d8794",
+      "desert": "#dfc88d"
     }
   },
   "components": [],

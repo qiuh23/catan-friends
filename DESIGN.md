@@ -15,6 +15,9 @@ colors:
   surface-alt: "#e9ede3"
   focus: "#9a4c26"
   line: "#d6ded3"
+  feedback-gain: "#c99b3f"
+  feedback-robber: "#493e57"
+  feedback-select: "#c99b3f"
 typography:
   body:
     fontFamily: "Segoe UI, Microsoft YaHei, system-ui, sans-serif"
@@ -48,6 +51,10 @@ components:
 
 界面颜色的独立值只在 `src/tokens.css` 声明，与 frontmatter 和 `.impeccable/design.json` 的 token 表一致；其他 CSS 可以声明指向这些 token 的语义别名，不再定义另一套颜色值。带透明度的表面使用 token 颜色与 alpha 混合。棋盘实体用相应地形颜色，其明暗由光照决定；数字 token 不受光照影响。海水底色与页面的 ocean 保持一致。
 
+资源身份色以五种 UI token 为准。二维地块与程序化 3D 回退共用 `terrain.js` 的亮色地形表：wood `#477e5f`、brick `#b97854`、sheep `#7d9c4f`、wheat `#b08f31`、ore `#6d8794`，desert `#dfc88d` 不变。当前实际显示的 V9 GLB 在实例化前也按此表校准顶面与资源装饰的色相，保留面间明暗、地层边缘、树干与白色羊毛，不改源资产或几何。资源插画的主色使用对应 UI token 或 ±10 个百分点的 HSL 明度变体，羊毛仍保留暖白主体与绿色脸部。资源名称、图形和颜色共同标识资源，玩家身份色不随资源调色改变。
+
+生产与港口选中共用金色 `--feedback-gain` / `--feedback-select: #c99b3f`；强盗反馈使用 `--feedback-robber: #493e57`。交易反馈描边、光晕从这些 token 派生。首页展示棋子的强调色从 CSS `--accent` 注入，无主港口端点使用 `--line`，真实玩家颜色保持不变。
+
 ## Typography
 
 操作界面统一使用 `--font`：Segoe UI、Microsoft YaHei、system-ui 字体栈。字号只使用 11 / 12 / 13 / 14 / 16 / 18 / 20 / 24 / 32px：最弱辅助标注 11px、次级文字 12px、紧凑正文 13px、正文 14px、强调 16px、小标题 18px、面板标题 20px、页面标题 24px、首页主标题 32px。真实信息文字不得小于 11px，字重只使用 400 / 500 / 600 / 700 / 800。首页主标题是唯一使用 `--font-display` 的场景，字体为 Noto Serif SC、Songti SC、SimSun 的衬线回退；响应式字号仍须落在上述字阶。
@@ -78,6 +85,7 @@ components:
 | 纸面、海面与次级表面 | `--paper` / `--ocean` / `--surface-alt` | `#f7f6f0` / `#b8d8d2` / `#e9ede3` |
 | 强调、焦点与分隔线 | `--accent` / `--focus` / `--line` | `#b65c35` / `#9a4c26` / `#d6ded3` |
 | 五资源 | `--wood` / `--brick` / `--sheep` / `--wheat` / `--ore` | `#397456` / `#ae674a` / `#66863e` / `#a28027` / `#637e8c` |
+| 行动反馈 | `--feedback-gain` / `--feedback-robber` / `--feedback-select` | `#c99b3f` / `#493e57` / `#c99b3f` |
 | 字阶 | `--font-size-{值}` | 11 / 12 / 13 / 14 / 16 / 18 / 20 / 24 / 32px |
 | 字重 | `--font-weight-{值}` | 400 / 500 / 600 / 700 / 800 |
 | 圆角 | `--radius-sm` / `--radius-md` / `--radius-lg` / `--radius-pill` / `--radius-circle` | 8px / 12px / 14px / 999px / 50% |
