@@ -747,7 +747,7 @@ function PortDetail({ model: m }: { model: RoomModel }) {
           const v = b.vertices[id],
             owner = s.players.find((p) => p.id === v.owner);
           return (
-            <span key={id} style={playerStyle(owner?.color || "#b7c4ad")}>
+            <span key={id} style={playerStyle(owner?.color || "var(--line)")}>
               <Icon name={v.level === 2 ? "city" : "settlement"} />
               落点 {id + 1}
               <br />

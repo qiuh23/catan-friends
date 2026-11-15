@@ -1,4 +1,4 @@
-import { createBoard } from '../shared/board.js';
+import { createBoard, COLORS } from '../shared/board.js';
 
 export const SHOWCASE_SECONDS=30;
 export const ORBIT_SECONDS=300;
@@ -8,7 +8,7 @@ const smooth=value=>{const t=Math.max(0,Math.min(1,value));return t*t*(3-2*t);};
 
 // Local illustration data only: no Room, Connection, game reducer or legal moves.
 // Its settled snapshot also serves the static 2D/reduced-motion illustration.
-export function createHomeExample() {
+export function createHomeExample(color=COLORS[0]) {
   let seed=17;
   const board=createBoard(()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;});
   const vertex=board.vertices.filter(v=>v.tiles.length===3).sort((a,b)=>Math.hypot(a.x+2.6,a.z-1.3)-Math.hypot(b.x+2.6,b.z-1.3))[0];
@@ -23,7 +23,7 @@ export function createHomeExample() {
   }
   const buildings=buildingVertices.map((id,i)=>({vertex:id,...BUILDING_TIMES[i]}));
   for(const building of buildings){const v=board.vertices[building.vertex];v.owner='illustration';v.level=building.upgradeAt===undefined?1:2;}
-  return {board,players:[{id:'illustration',color:'#b65c35'}],robber:null,legal:{},homeDemo:{buildings,roads}};
+  return {board,players:[{id:'illustration',color}],robber:null,legal:{},homeDemo:{buildings,roads}};
 }
 
 export function showcasePose(seconds,{buildings=BUILDING_TIMES,roads=Array(6)}={}) {

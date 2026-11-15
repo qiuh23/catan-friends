@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import {portGeometry} from './ports.js';
 import {createPavingGeometry} from './visuals/road-geometry.js';
 
-export const terrain = {wood:0x648c68,brick:0xc08459,sheep:0xa5be70,wheat:0xddbd61,ore:0x88989b,desert:0xdfc88d};
+export const terrain = {wood:0x477e5f,brick:0xb97854,sheep:0x7d9c4f,wheat:0xb08f31,ore:0x6d8794,desert:0xdfc88d};
 
 // Every board owns its pool. Rebuilding a layer releases instances, not shared assets.
 export class BoardAssets {

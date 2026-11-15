@@ -12,7 +12,7 @@ import {BoardModels,ARCHITECTURE_URL,buildingAsset} from '../src/visuals/board-m
 import {createHomeExample,showcasePose,SHOWCASE_SETTLED_SECONDS} from '../src/home-showcase.js';
 
 const fallback=()=>({buildings:()=>new Set(),releaseLayer(){}});
-const color=()=> '#b65c35';
+const color=()=> createHomeExample().players[0].color;
 function visibleInstances(layer,geometryKey=mesh=>mesh.geometry.uuid) {
   layer.updateMatrixWorld(true);const entries=[],local=new THREE.Matrix4(),world=new THREE.Matrix4();
   layer.traverseVisible(mesh=>{
