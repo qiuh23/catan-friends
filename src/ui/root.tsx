@@ -130,20 +130,24 @@ function Interface() {
             />
           </section>
           <div className="board-controls">
-            <Button
-              id="home-motion"
-              action="homeMotion"
-              hidden={m.homeMotion.hidden}
-              disabled={m.homeMotion.disabled}
-              aria-label={m.homeMotion.label}
-              title={m.homeMotion.label}
-              aria-pressed={m.homeMotion.playing}
-            >
-              <Icon name={m.homeMotion.glyph} />
-            </Button>
-            <Button action="reset" className="square" aria-label="复位棋盘视角">
-              <Icon name="reset" />
-            </Button>
+            {(s || m.code) && (
+              <>
+                <Button
+                  id="home-motion"
+                  action="homeMotion"
+                  hidden={m.homeMotion.hidden}
+                  disabled={m.homeMotion.disabled}
+                  aria-label={m.homeMotion.label}
+                  title={m.homeMotion.label}
+                  aria-pressed={m.homeMotion.playing}
+                >
+                  <Icon name={m.homeMotion.glyph} />
+                </Button>
+                <Button action="reset" className="square" aria-label="复位棋盘视角">
+                  <Icon name="reset" />
+                </Button>
+              </>
+            )}
             <button
               className="square"
               id="flat-toggle"
