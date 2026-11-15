@@ -8,4 +8,4 @@
 .quality-hint span { min-width:0; }
 .quality-hint button { padding:6px 8px; min-height:44px; flex-shrink:0; font-size:12px; }
 .quality-hint .square { width:36px; min-width:36px; }
-@media(max-width:380px) { .quality-hint { gap:2px; font-size:11px; padding:3px; } .quality-hint button { padding:6px; } }
+@media(max-width: 640px) { .quality-hint { gap:2px; font-size:11px; padding:3px; } .quality-hint button { padding:6px; } }

@@ -61,6 +61,8 @@ components:
 
 当前标题依赖系统字体，尚未引入独立自托管显示字体；这是首版资产状态，不作为未来必须使用系统显示字体的规范。
 
+次级文字使用 12px，最弱辅助标注也至少 11px，不再沿用 9/10px 或 rem 字号。图标仅使用 16px（行内）、20px（按钮）、24px（工具栏与主要标记）、40px（空状态）四档；线宽统一 1.65，空状态不另设细描边。尺寸由 `ui/theme.css` 统一选择 token，资源插画、骰面和二维棋盘几何不属于 `.icon` 尺度。
+
 ## Layout
 桌面版顶部为品牌与房间信息，左侧优先建造和回合操作，玩家与房间信息可滚动查看，中央为岛屿与手牌，右侧为当前任务、记录与交流。手机竖屏以棋盘为中心，搭配紧凑状态条和两行操作；低高度横屏使用左侧棋盘与右侧操作轨道。可折叠玩家、记录与聊天，弃牌、交易报价等当前任务独立显示并保留提醒。适配安全区和键盘视口，不强制旋转；主要按钮触控高度至少 44px。
 
@@ -88,6 +90,8 @@ components:
 | 行动反馈 | `--feedback-gain` / `--feedback-robber` / `--feedback-select` | `#c99b3f` / `#493e57` / `#c99b3f` |
 | 字阶 | `--font-size-{值}` | 11 / 12 / 13 / 14 / 16 / 18 / 20 / 24 / 32px |
 | 字重 | `--font-weight-{值}` | 400 / 500 / 600 / 700 / 800 |
+| 图标 | `--icon-inline` / `--icon-button` / `--icon-toolbar` / `--icon-empty` | 16 / 20 / 24 / 40px |
+| 图标描边 | `--icon-stroke` | 1.65；包括空状态 |
 | 圆角 | `--radius-sm` / `--radius-md` / `--radius-lg` / `--radius-pill` / `--radius-circle` | 8px / 12px / 14px / 999px / 50% |
 | 卡坦圆角别名 | `--radius-control` / `--radius-panel` | `var(--radius-sm)` / `var(--radius-md)`，即 8px / 12px |
 | 间距 | `--space-1` … `--space-6` | 4 / 8 / 12 / 16 / 24 / 32px |
@@ -100,6 +104,8 @@ components:
 | 触控目标 | `--touch-size` | 44px；宽高均至少 44px，紧凑控件用 padding 或伪元素扩展热区 |
 
 焦点环统一为 `2px solid var(--ui-focus)`，`outline-offset:2px`，其中 `--ui-focus` 是 `--focus` 的别名。`prefers-reduced-motion:reduce` 只在 tokens 中将三个时长 token 置为 `0ms`，使用这些 token 的界面动效随之关闭。布局宽度断点为 640 / 950 / 1190px，短横屏统一使用 `(max-height:600px)` 条件；棋盘与卡牌几何尺寸不受间距尺度限制。
+
+短横屏仅由 `table.css`（基础舞台、手牌与回合栏）和 `ui/theme.css`（首页、弹窗、交易、反馈与最终 HUD）各一段 `(orientation: landscape) and (max-height: 600px)` 管理。横屏段内可复用 640px 宽度分档；竖屏不触发双栏交易/开桌布局。1190px 以上的宽屏增强使用严格大于，避免与 1190px 以下规则同时命中。
 
 ## Components
 

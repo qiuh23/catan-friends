@@ -69,7 +69,10 @@ function declarations(root, selector) {
 }
 test('shared viewport components have one stylesheet owner and retain responsive conditions',()=>{
   for(const {file,root} of stylesheets()) root.walkRules(rule=>{
-    if(/#action-feedback(?:\b|-)/.test(rule.selector)) assert.equal(file,'src/notices.css',`${rule.selector} belongs to notices`);
+    if(/#action-feedback(?:\b|-)/.test(rule.selector)) {
+      const shortLandscape = file === 'src/ui/theme.css' && conditions(rule).some(c => c.includes('max-height: 600px'));
+      assert.ok(file === 'src/notices.css' || shortLandscape, `${rule.selector} keeps its base owner or consolidated landscape variant`);
+    }
     if(/\.(?:topbar|turn-banner)\b|#turn-banner\b/.test(rule.selector)) {
       const responsiveTheme=file==='src/ui/theme.css'&&conditions(rule).some(c=>c.startsWith('@media '));
       assert.ok(file==='src/table.css'||responsiveTheme,`${rule.selector} in ${file} must move to table`);
@@ -96,9 +99,9 @@ test('dialog roots use the twelve-pixel panel token and the retired columns stay
       rule.walkDecls('display',d=>assert.ok(!['grid','flex'].includes(d.value),`retired main layout in ${file}`));
     }
   });
-  const map=stylesheets().find(s=>s.file==='src/map-first.css').root;
+  const map=stylesheets().find(s=>s.file==='src/ui/theme.css').root;
   let landscapeWidth=false;
-  map.walkRules(rule=>{if(rule.selector==='#entry-dialog'&&conditions(rule).some(c=>c.includes('orientation:landscape'))){
+  map.walkRules(rule=>{if(rule.selector==='#entry-dialog'&&conditions(rule).some(c=>c.includes('orientation: landscape'))){
     const d=Object.fromEntries(rule.nodes.filter(n=>n.type==='decl').map(n=>[n.prop,n.value]));
     assert.equal(d['max-width'],'none','the retired generic dialog cap must not clip the two-column entry form');
     assert.ok(d.width.includes('100vw'),'the landscape dialog still fits the viewport');landscapeWidth=true;
