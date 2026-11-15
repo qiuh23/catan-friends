@@ -241,6 +241,7 @@ export function Banner({ model: m }: { model: RoomModel }) {
   return (
     <div
       className={`turn-banner ${m.myTurn ? "your-turn" : ""} ${task ? "needs-attention" : ""}`}
+      style={playerStyle(p.color)}
     >
       <span className="turn-dot" style={{ background: p.color }} />
       <div className={s.startingPlayer && s.phase.startsWith("setup-") ? "starting-player-copy" : undefined}>
@@ -311,13 +312,15 @@ const totalDice = (dice: number[]) => dice.reduce((a, b) => a + b, 0);
 export function Hand({ model: m }: { model: RoomModel }) {
   if (!m.state.board) return null;
   const me = ownPlayer(m.state);
+  const build = m.inspectedBuild || m.selectedBuild;
+  const cost = build ? buildAvailability(m.state, build).cost : {};
   return (
     <div className="hand-tray" aria-label="你的资源与手牌">
       <div className="resource-hand">
         {resources.map((r) => (
           <div
             key={r}
-            className={`resource-card ${r}`}
+            className={`resource-card ${r}${me.hand[r] < (cost[r] || 1) ? " unavailable" : ""}`}
             role="img"
             aria-label={`${LABELS[r]} ${me.hand[r]} 张`}
             title={`${LABELS[r]}：${me.hand[r]} 张，银行剩余 ${m.state.bank[r]} 张`}

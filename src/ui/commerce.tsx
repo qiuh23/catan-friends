@@ -256,7 +256,7 @@ export function TradePanel({ model }: { model: RoomModel }) {
           <h3>你获得</h3>
           <BankPicker side="want" selected={to} state={state} />
         </div>
-        <div className="exchange-footer">
+        <div className={`exchange-footer ${reason || offline ? "trade-unavailable" : "trade-ready"}`}>
           <ExchangePreview give={{ [from]: ratio }} want={{ [to]: 1 }} />
           {reason && (
             <p className="exchange-reason" role="status">
@@ -304,7 +304,7 @@ export function TradePanel({ model }: { model: RoomModel }) {
               state={state}
             />
           </div>
-          <div className="exchange-footer">
+          <div className={`exchange-footer ${reason || offline ? "trade-unavailable" : "trade-ready"}`}>
             <ExchangePreview give={give} want={want} />
             {reason && (
               <p className="exchange-reason" role="status">
@@ -327,7 +327,7 @@ export function TradePanel({ model }: { model: RoomModel }) {
         (!isMine && !afford(me.hand, offer.want) ? "你的付款资源不足" : "");
       content = (
         <>
-          <div className="exchange-body current-offer">
+          <div className={`exchange-body current-offer ${isMine ? "trade-pending" : reason || offline ? "trade-unavailable" : "trade-ready"}`}>
             <h3>
               {isMine
                 ? "你发出的报价"
@@ -340,7 +340,7 @@ export function TradePanel({ model }: { model: RoomModel }) {
             />
             <p>{isMine ? "等待其他玩家接受" : "接受后立即成交"}</p>
           </div>
-          <div className="exchange-footer">
+          <div className={`exchange-footer ${isMine ? "trade-pending" : reason || offline ? "trade-unavailable" : "trade-ready"}`}>
             <p className="exchange-reason" role="status">
               {reason || "资源未锁定，成交以最新状态为准"}
             </p>

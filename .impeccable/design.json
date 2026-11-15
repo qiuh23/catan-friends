@@ -149,7 +149,61 @@
       ]
     }
   },
-  "components": [],
+  "components": [
+    {
+      "name": "home-dock",
+      "surface": "paper 95% alpha",
+      "shadow": "shadow-2",
+      "radius": "radius-panel",
+      "primary": {
+        "background": "accent",
+        "text": "white",
+        "hover": "focus"
+      },
+      "secondary": "surface-alt"
+    },
+    {
+      "name": "turn-banner",
+      "shadow": "shadow-2",
+      "currentPlayerMarker": "3px var(--player)",
+      "waitingMarker": "muted"
+    },
+    {
+      "name": "resource-hand",
+      "surface": "paper",
+      "quantity": "18px/700",
+      "unavailable": {
+        "filter": "saturate(.4)",
+        "quantityColor": "muted"
+      },
+      "availability": "zero stock or current inspected/selected build cost, without changing game actions"
+    },
+    {
+      "name": "trade",
+      "selectedTab": "2px accent underline",
+      "stepper": {
+        "target": "44px",
+        "disc": "32px",
+        "radius": "50%",
+        "layout": "vertical"
+      },
+      "validity": {
+        "ready": "wood text / 10% alpha background",
+        "unavailable": "brick text / 10% alpha background",
+        "ownOffer": "neutral pending"
+      },
+      "footer": "normal flow inside scrollable dialog"
+    },
+    {
+      "name": "scene-feedback",
+      "legal": "#c99b3f",
+      "selected": "#c99b3f",
+      "production": "#c99b3f",
+      "robberGround": "#493e57",
+      "ocean": "#b8d8d2",
+      "preserve": "depth, picking, geometry, model readability silhouette"
+    }
+  ],
   "narrative": {
     "northStar": "海岸桌面",
     "overview": "海水与低多边形实体棋盘构成主视野，暖白色侧栏承载房间、玩家和操作。",
