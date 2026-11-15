@@ -1,13 +1,7 @@
 /* Entry and play share the existing viewport stage, never a page of columns. */
 body.at-home { position:fixed; inset:0; overflow:hidden; overscroll-behavior:none; }
 .at-home #app { height:100%; min-height:0; overflow:hidden; }
-.at-home .topbar { position:fixed; z-index:4; inset:0 0 auto; height:76px; min-height:0; display:flex; padding:12px max(16px,env(safe-area-inset-right)) 12px max(16px,env(safe-area-inset-left)); background:transparent; border:0; }
-.at-home .topbar .brand { padding:5px 10px 5px 5px; border-radius:14px; background:color-mix(in srgb, var(--paper) 92.157%, transparent); font-size:21px; }
-.at-home .topbar nav { display:flex; gap:5px; padding:3px; border-radius:12px; background:color-mix(in srgb, var(--paper) 92.941%, transparent); }
-.at-home .topbar nav button,.at-home .topbar nav a { min-width:44px; min-height:44px; padding:10px; margin:0; }
-.at-home .topbar nav button>span,.at-home #room-meta { display:none; }
 .table.home { position:fixed; inset:0; display:block; width:100%; height:100dvh; min-height:0; overflow:hidden; background:var(--ocean); }
-.table.home>#left-panel,.table.home>#right-panel { display:none; }
 .home .board-area { position:absolute; inset:0; display:block; width:100%; height:100%; min-height:0; max-height:none; padding:0; }
 .home #board { position:absolute; inset:0; width:100%; height:100%; min-height:0; }
 .home #island-caption,.home .tile-hint { display:none; }
@@ -57,25 +51,13 @@ body.at-home { position:fixed; inset:0; overflow:hidden; overscroll-behavior:non
 .public-stats b { font-size:20px; }
 
 /* The existing public stream/highlights now drive one bounded map bubble. */
-#action-feedback { top:0; left:0; max-width:min(230px,70vw); min-height:0; width:max-content; padding:7px 11px; gap:0; transform:translate(-50%,calc(-100% - 14px)); pointer-events:none; border:1px solid color-mix(in srgb, var(--paper) 60%, transparent); border-radius:10px; background:color-mix(in srgb, var(--ink) 94.902%, transparent); color:var(--paper); box-shadow:0 3px 14px color-mix(in srgb, var(--ink) 18.824%, transparent); }
-#action-feedback::after { content:''; position:absolute; left:50%; bottom:-7px; transform:translateX(-50%); border:7px solid transparent; border-top-color:var(--ink); border-bottom:0; }
-#action-feedback p { font-size:12px; line-height:1.45; -webkit-line-clamp:2; }
-#action-feedback button { display:none; }
-.playing.has-action-feedback .tile-hint { visibility:visible; }
 .playing .tile-hint { display:none; }
 
 @media(max-width:700px) {
-  .at-home .topbar { height:calc(66px + env(safe-area-inset-top)); padding:max(8px,env(safe-area-inset-top)) max(8px,env(safe-area-inset-right)) 8px max(8px,env(safe-area-inset-left)); }
-  .at-home .topbar .brand { font-size:18px; gap:6px; }
-  .at-home .topbar .brand small { display:none; }
-  .at-home .topbar nav { gap:0; }
-  .at-home .topbar nav a { font-size:11px; max-width:88px; padding:6px; }
   #home-dock { bottom:max(12px,env(safe-area-inset-bottom)); gap:3px; padding:4px; }
   #home-dock button { font-size:12px; padding:8px 10px; gap:5px; }
   .home .board-controls { top:calc(76px + env(safe-area-inset-top)); bottom:auto; right:max(8px,env(safe-area-inset-right)); flex-direction:column; gap:0; padding:1px; }
   #player-orbit { top:calc(66px + env(safe-area-inset-top)); right:0; left:0; justify-content:center; gap:8px; }
-  .playing .board-top { top:calc(128px + env(safe-area-inset-top)); left:8px; right:8px; }
-  .playing .turn-banner { max-width:390px; margin:auto; }
   .table.playing { --board-pad-top:186px; }
   #entry-content,#rooms-content { padding:14px 18px; }
 }
@@ -84,25 +66,12 @@ body.at-home { position:fixed; inset:0; overflow:hidden; overscroll-behavior:non
   .player-circle { width:40px; height:40px; min-height:40px; }
   .playing #camera-toolbar { display:none; }
   .playing .stage-utilities { gap:0; }
-  .playing .board-top { top:calc(8px + env(safe-area-inset-top)); left:60px; right:auto; width:132px; }
-  .playing .turn-banner { min-height:44px; max-width:132px; padding:4px 6px; gap:4px; }
-  .playing .turn-banner>div:not(.dice-pair) { display:flex; flex-direction:column; align-items:flex-start; min-width:0; gap:1px; }
-  .playing .turn-banner strong { max-width:72px; font-size:11px; }
-  .playing .turn-banner .turn-description { max-width:72px; font-size:9px; }
-  .playing .turn-dot { display:none; }
-  .playing .turn-banner .dice-pair { gap:2px; margin-left:auto; }
-  .playing .dice-pair span { width:18px; height:18px; }
-  .playing .dice-pair>b { font-size:11px; margin:0; }
-  .playing .turn-banner .task-shortcut { padding:4px; min-width:40px; font-size:10px; }
   .table.playing { --board-pad-top:78px; }
   .playing.compact-hud .stage-brand { display:none; }
-  .playing.compact-hud .board-top { left:max(8px,env(safe-area-inset-left)); width:106px; }
   .playing.compact-hud #player-orbit { left:calc(max(8px,env(safe-area-inset-left)) + 112px); transform:none; padding-left:0; padding-right:0; }
   .playing.compact-hud .stage-utilities button { width:40px; min-width:40px; padding:8px; }
   .home .board-controls { top:8px; bottom:auto; right:8px; flex-direction:row; }
-  .at-home .topbar { right:112px; }
-  .at-home .topbar nav a { max-width:78px; }
-  #entry-dialog { width:min(600px,calc(100vw - 24px)); }
+  #entry-dialog { width:min(600px,calc(100vw - 24px)); max-width:none; }
   #entry-content #entry-form { display:grid; grid-template-columns:1fr 1fr; gap:8px 18px; align-items:start; }
   #entry-content #entry-form>label { grid-column:1; }
   #entry-content #entry-form>#nickname { grid-column:1; }
@@ -115,5 +84,4 @@ body.at-home { position:fixed; inset:0; overflow:hidden; overscroll-behavior:non
   #home-dock button { width:86px; padding:6px; font-size:11px; flex-direction:column; gap:2px; }
   #home-dock .icon { width:18px; height:18px; }
   #player-orbit { gap:6px; }
-  .at-home .topbar .brand { font-size:16px; }
 }

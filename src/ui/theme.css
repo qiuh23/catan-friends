@@ -48,24 +48,19 @@ button:active:not(:disabled) {
 dialog {
   max-width: min(440px, calc(100vw - var(--ui-space-3) * 2));
   max-height: calc(var(--visual-height) - var(--ui-space-3) * 2);
-  border-radius: var(--ui-radius);
+  border-radius: var(--radius-panel);
   box-shadow: var(--ui-shadow);
   overscroll-behavior: contain;
 }
 #stage-dialog {
   border-color: var(--ui-border);
-  border-radius: var(--ui-radius);
+  border-radius: var(--radius-panel);
   box-shadow: var(--ui-shadow);
 }
 
 /* Static SVG bridges do not add flex/grid cells. The explicit child selectors
    also override old compact rules which used to hide textual span elements. */
-.icon-fragment,
-.art-fragment,
-.at-home .topbar nav button > .icon-fragment,
-.home .board-controls #home-motion > .icon-fragment,
-.exchange .resource-pick > .art-fragment,
-.exchange .exchange-resource > .art-fragment {
+.icon-fragment, .art-fragment, .home .board-controls #home-motion > .icon-fragment, .exchange .resource-pick > .art-fragment, .exchange .exchange-resource > .art-fragment {
   display: contents;
 }
 button .icon {
@@ -135,10 +130,6 @@ button .icon {
 .at-table button {
   border-radius: 12px;
 }
-.at-table :is(.stage-utilities, #camera-toolbar, .turn-banner, #play-dock) {
-  border-color: color-mix(in srgb, var(--paper) 80%, transparent);
-  box-shadow: 0 6px 20px color-mix(in srgb, var(--ink) 9%, transparent);
-}
 .at-table .stage-utilities button {
   width: var(--ui-touch-size);
   min-width: var(--ui-touch-size);
@@ -162,31 +153,6 @@ button .icon {
 }
 .at-table:not(.domestic-site) .circle-face {
   font-size: 20px;
-}
-.at-table .turn-banner {
-  width: max-content;
-  min-width: 230px;
-  max-width: calc(100vw - 24px);
-  padding: 6px 12px;
-  border-radius: var(--ui-radius);
-}
-.at-table .turn-banner strong {
-  font-size: 14px;
-}
-.at-table .turn-description {
-  font-size: 12px;
-}
-.at-table .turn-banner > .starting-player-copy {
-  display: block !important;
-  min-width: 0;
-}
-.at-table .turn-banner .starting-player-note {
-  display: block;
-  white-space: normal;
-  overflow-wrap: anywhere;
-}
-.at-table .dice-pair > b {
-  font-size: 18px;
 }
 .at-table #play-dock {
   border-radius: 16px;
@@ -228,9 +194,6 @@ button .icon {
 }
 #stage-dialog-content .player-management > .remove-bot {
   min-width: var(--ui-touch-size);
-}
-#action-feedback p {
-  font-size: 14px;
 }
 .cost-resources b {
   font-size: 14px;
