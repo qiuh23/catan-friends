@@ -1,29 +1,25 @@
 /* The same semantic vocabulary as Wizard, with Catan's sea-glass palette.
    Tokens style the interface; the existing map and camera own the scene. */
 :root {
-  --ui-font:
-    -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei",
-    system-ui, sans-serif;
-  --ui-text: #173b3d;
-  --ui-text-muted: #536b5e;
-  --ui-surface: rgba(248, 247, 239, 0.95);
-  --ui-control: #e4ece4;
-  --ui-control-hover: #d0dfd3;
-  --ui-control-active: #dce8d5;
-  --ui-border: #d1d9c6;
-  --ui-control-border: #b8c9bf;
-  --ui-accent: #397456;
-  --ui-gold: #a28027;
-  --ui-focus: #9a4c26;
-  --ui-radius: 14px;
-  --ui-space: 4px;
-  --ui-space-2: calc(var(--ui-space) * 2);
-  --ui-space-3: calc(var(--ui-space) * 3);
-  --ui-touch-size: 44px;
-  --ui-shadow: 0 8px 24px rgba(23, 59, 61, 0.18);
-  --ui-duration: 150ms;
-  --font: var(--ui-font);
-  font-family: var(--ui-font);
+  --ui-font: var(--font);
+  --ui-text: var(--ink);
+  --ui-text-muted: var(--muted);
+  --ui-surface: color-mix(in srgb, var(--paper) 95%, transparent);
+  --ui-control: var(--surface-alt);
+  --ui-control-hover: color-mix(in srgb, var(--ink) 10%, var(--surface-alt));
+  --ui-control-active: color-mix(in srgb, var(--wood) 10%, var(--paper));
+  --ui-border: var(--line);
+  --ui-control-border: var(--line);
+  --ui-accent: var(--accent);
+  --ui-focus: var(--focus);
+  --ui-radius: var(--radius-lg);
+  --ui-space: var(--space-1);
+  --ui-space-2: var(--space-2);
+  --ui-space-3: var(--space-3);
+  --ui-touch-size: var(--touch-size);
+  --ui-shadow: var(--shadow-2);
+  --ui-duration: var(--duration-2);
+  font-family: var(--font);
   font-variant-numeric: tabular-nums;
   -webkit-font-smoothing: antialiased;
 }
@@ -31,16 +27,16 @@
 button,
 input,
 select {
-  font-family: var(--ui-font);
+  font-family: var(--font);
   font-variant-numeric: tabular-nums;
 }
 button {
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
   transition:
-    background-color var(--ui-duration) ease,
-    border-color var(--ui-duration) ease,
-    box-shadow var(--ui-duration) ease;
+    background-color var(--ui-duration) var(--ease),
+    border-color var(--ui-duration) var(--ease),
+    box-shadow var(--ui-duration) var(--ease);
 }
 :is(button, a, input, select, summary):focus-visible {
   outline: 3px solid var(--ui-focus);
@@ -107,21 +103,21 @@ button .icon {
 .variant-card > .icon-fragment:first-of-type > .icon {
   width: 25px;
   height: 25px;
-  color: #426d63;
+  color: var(--muted);
 }
 .variant-card > .icon-fragment:last-child > .icon {
   width: 18px;
   height: 18px;
   margin-left: auto;
-  border: 1px solid #c4cfc1;
+  border: 1px solid var(--line);
   border-radius: 5px;
   padding: 2px;
   color: transparent;
 }
 .variant-card:has(input:checked) > .icon-fragment:last-child > .icon {
-  color: #fff;
-  background: #386d60;
-  border-color: #386d60;
+  color: var(--paper);
+  background: var(--wood);
+  border-color: var(--wood);
 }
 .at-home :is(#entry-dialog, #practice-dialog) .variant-card > .icon-fragment {
   flex-basis: auto;
@@ -140,8 +136,8 @@ button .icon {
   border-radius: 12px;
 }
 .at-table :is(.stage-utilities, #camera-toolbar, .turn-banner, #play-dock) {
-  border-color: #fdfbf1cc;
-  box-shadow: 0 6px 20px #294c4618;
+  border-color: color-mix(in srgb, var(--paper) 80%, transparent);
+  box-shadow: 0 6px 20px color-mix(in srgb, var(--ink) 9%, transparent);
 }
 .at-table .stage-utilities button {
   width: var(--ui-touch-size);
@@ -327,7 +323,7 @@ button .icon {
   padding: 8px 10px;
   border-left: 4px solid var(--player);
   border-radius: 8px;
-  background: #f9faf0b3;
+  background: color-mix(in srgb, var(--paper) 70%, transparent);
 }
 .result-ranking li::before {
   content: counter(result-rank);
@@ -573,12 +569,6 @@ button .icon {
     font-size: 12px;
   }
 }
-@media (prefers-reduced-motion: reduce) {
-  :root {
-    --ui-duration: 0ms;
-  }
-}
-
 /* Keep camera state legible on phones; pause/play belongs to match controls. */
 .at-table #camera-toolbar #camera-follow {
   display:flex;flex-direction:row;align-items:center;justify-content:center;gap:4px;
@@ -588,7 +578,7 @@ button .icon {
   display:inline;min-width:2em;font-size:12px;line-height:1;white-space:nowrap;
 }
 .at-table #camera-follow .camera-state-icon { flex:none;width:20px;height:20px; }
-.at-table #camera-toolbar[data-follow-state="following"] #camera-follow { color:#205c4b;background:#e4f2e7; }
+.at-table #camera-toolbar[data-follow-state="following"] #camera-follow { color:var(--wood);background:color-mix(in srgb, var(--wood) 10%, var(--paper)); }
 
 @media (orientation:landscape) and (max-height:600px) {
   .at-table .playing #camera-toolbar {
