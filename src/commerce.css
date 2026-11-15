@@ -13,7 +13,7 @@
 .exchange-card span { font-size:12px; }
 .exchange-card small { font-size:11px; color:var(--muted); }
 .exchange-stepper { display:flex; align-items:center; border-top:1px solid var(--line); }
-.exchange-stepper button { flex:1; min-width:0; min-height:44px; font-size:21px; }
+.exchange-stepper button { flex:1; min-width:0; min-height:44px; font-size:20px; }
 .exchange-stepper output { min-width:16px; font-size:16px; font-weight:700; }
 .exchange button:disabled { opacity:.4; cursor:default; }
 .exchange-footer { display:flex; flex-direction:column; gap:8px; position:sticky; bottom:-1px; background:var(--paper); padding-top:8px; z-index:2; }
@@ -25,10 +25,8 @@
 .exchange-resource>span { font-size:11px; }
 .exchange-reason { font-size:12px; color:var(--muted); margin:0; min-height:18px; }
 .exchange-empty { padding:36px; text-align:center; color:var(--muted); }
-.exchange-empty>svg { width:32px; height:32px; }
 .bank-choices>button { display:flex; flex-direction:column; align-items:center; gap:2px; padding:6px 0; min-height:86px; color:inherit; }
 .rate-source { display:inline-flex; gap:4px; align-items:center; font-weight:500; }
-.rate-source svg { width:17px; height:17px; }
 #stage-dialog.commerce-dialog { width:min(480px,calc(100vw - 24px)); }
 #stage-dialog.commerce-dialog #stage-dialog-content { overscroll-behavior:contain; }
 .offer-notice { display:flex; align-items:center; gap:5px; font-size:12px; color:var(--ink); background:var(--paper); padding:5px 10px; border:1px solid var(--wheat); border-radius:8px; }
@@ -37,7 +35,6 @@
 .cost-summary,.cost-summary>strong,.cost-resources { display:flex; align-items:center; gap:6px; min-width:0; }
 .cost-summary { grid-column:1; grid-row:1; }
 .cost-summary>strong { flex:none; font-size:13px; }
-.cost-summary>strong .icon { width:18px; height:18px; }
 .cost-resources { flex:1; justify-content:center; gap:8px; }
 .cost-resources>span { position:relative; display:inline-flex; align-items:center; gap:1px; white-space:nowrap; }
 #play-dock .cost-resources svg { width:20px; height:20px; }
@@ -50,7 +47,7 @@
 #play-dock .cost-dismiss { background:transparent; color:var(--ink); }
 #play-dock .build-cost:has(.cost-buy) { grid-template-columns:minmax(0,1fr) 44px 44px; column-gap:4px; }
 #play-dock .cost-buy + .cost-dismiss { grid-column:3; }
-@media(max-width:700px), (orientation:landscape) and (max-height:600px) {
+@media(max-width: 640px) {
   #play-dock .build-cost { width:278px; }
   .cost-summary,.cost-summary>strong { gap:3px; }
   .cost-summary>strong .icon { display:none; }
@@ -64,7 +61,6 @@
 .award-progress section>div>span { font-size:11px; border-left:3px solid var(--player); padding:4px 6px; background:var(--surface-alt); border-radius:4px; }
 .award-progress .award-holder { outline:1px solid var(--wheat); }
 .port-detail { text-align:center; }
-.port-detail>svg { width:44px; height:44px; }
 .port-endpoints { display:flex; gap:12px; justify-content:center; margin:16px 0; }
 .port-endpoints span { border:2px solid var(--player,var(--line)); border-radius:8px; padding:10px; font-size:12px; }
 [data-feedback-layer] .production-outline { stroke:var(--feedback-gain); stroke-width:4; filter:drop-shadow(0 0 2px color-mix(in srgb, var(--feedback-gain) 65%, transparent)); }
@@ -72,27 +68,4 @@
 [data-port][data-selected=true] { filter:drop-shadow(0 0 3px var(--feedback-select)); }
 body:not(.reduced-action-motion) [data-feedback-layer] .production-outline { animation:harvest-pulse 1.25s ease-out; }
 @keyframes harvest-pulse { 0%,100% { opacity:.65; } 35% { opacity:1; stroke-width:6; } }
-@media(max-width:480px) { .exchange-resource>span { display:none; } .exchange-resources { gap:4px; } .exchange-card svg { width:29px; height:29px; } }
-@media(max-height:480px) and (min-width:540px) {
-  #stage-dialog.commerce-dialog { width:min(600px,calc(100vw - 24px)); max-height:calc(100dvh - 12px); }
-  .exchange { display:grid; grid-template-columns:1fr 1fr; gap:4px; }
-  .exchange>.exchange-tabs:first-child { grid-column:1/-1; }
-  .exchange:has([data-trade-page])>.exchange-tabs:first-child { grid-column:1; }
-  .exchange>.exchange-body,.exchange>.exchange-footer { grid-column:1/-1; }
-  .exchange-body:not(.current-offer):not(.exchange-empty) { display:grid; grid-template-columns:1fr 1fr; column-gap:10px; }
-  .exchange-body>h3:first-child { grid-column:1; grid-row:1; }
-  .exchange-body>.exchange-resources:nth-child(2) { grid-column:1; grid-row:2; }
-  .exchange-body>h3:nth-child(3) { grid-column:2; grid-row:1; }
-  .exchange-body>.exchange-resources:nth-child(4) { grid-column:2; grid-row:2; }
-  #stage-dialog.commerce-dialog>.dialog-heading { padding:4px 14px; }
-  #stage-dialog.commerce-dialog #stage-dialog-content { padding:8px 14px; }
-  .exchange-tabs { padding:2px; }
-  .exchange-tabs button { font-size:12px; }
-  .exchange-resources { margin-bottom:6px; }
-  .exchange-card svg { width:24px; height:24px; }
-  .resource-pick { min-height:42px; }
-  .resource-pick>span { display:none; }
-  .exchange h3 { margin:2px 0 4px; font-size:12px; line-height:16px; }
-  .exchange-footer { display:grid; grid-template-columns:1fr 1fr; align-items:center; }
-  .exchange-footer .exchange-preview { grid-row:span 2; }
-}
+@media(max-width: 640px) { .exchange-resource>span { display:none; } .exchange-resources { gap:4px; } .exchange-card svg { width:29px; height:29px; } }

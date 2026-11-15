@@ -34,7 +34,7 @@ dialog, #stage-dialog {
 }
 dialog::backdrop { background: color-mix(in srgb, var(--ink) 34.902%, transparent); }
 dialog .dialog-heading { border-bottom-color: color-mix(in srgb, var(--ink) 9.412%, transparent); }
-dialog .dialog-heading h2 { font-weight: 650; letter-spacing: .02em; }
+dialog .dialog-heading h2 { font-weight: 600; letter-spacing: .02em; }
 dialog .dialog-heading .square {
   border: 1px solid color-mix(in srgb, var(--ink) 7.843%, transparent);
   border-radius: 12px;
@@ -43,11 +43,8 @@ dialog .dialog-heading .square {
 }
 dialog .dialog-heading .square:hover { background: var(--surface-alt); }
 #stage-dialog-content { scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
-@media (max-width: 700px) {
+@media (max-width: 640px) {
   dialog, #stage-dialog { border-radius: var(--radius-panel); }
-}
-@media (orientation: landscape) and (max-height: 600px) {
-  #toast, .at-table #toast { bottom: max(12px, env(safe-area-inset-bottom)); max-width: min(340px, calc(100vw - 32px)); }
 }
 .build-cost, .chat-preview button {
   border-color: var(--line);
@@ -63,15 +60,11 @@ dialog .dialog-heading .square:hover { background: var(--surface-alt); }
 #action-feedback-leader { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; overflow: hidden; }
 #action-feedback-leader[hidden] { display: none; }
 #action-feedback-leader path { fill: none; stroke-linecap: round; stroke: var(--ink); stroke-width: 1.4; opacity: .65; }
-@media (max-width:700px) {
+@media (max-width: 640px) {
 .has-action-feedback .tile-hint { visibility: hidden; }
 }
 .playing.has-action-feedback .tile-hint { visibility: visible; }
-@media (max-width: 700px) {
+@media (max-width: 640px) {
 #action-feedback { width: min(230px, calc(100vw - 32px)); max-width: min(230px, calc(100vw - 32px)); padding: 10px 12px; }
 #action-feedback p { font-size: 12px; }
-}
-@media (orientation: landscape) and (max-height: 600px) {
-#action-feedback { width: 214px; max-width: min(214px, calc(100vw - 32px)); min-height: 0; padding: 8px 11px; }
-#action-feedback p { -webkit-line-clamp: 2; }
 }

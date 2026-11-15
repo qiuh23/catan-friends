@@ -64,45 +64,15 @@ dialog {
   display: contents;
 }
 button .icon {
-  stroke-width: 1.7;
   stroke-linecap: round;
   stroke-linejoin: round;
-}
-.player-circle .circle-face .icon {
-  width: 24px;
-  height: 24px;
-}
-.waiting .circle-score .icon {
-  width: 13px;
-  height: 13px;
-}
-.circle-turn .icon {
-  width: 17px;
-  height: 17px;
-}
-.settings-grid button .icon {
-  width: 20px;
-  height: 20px;
-}
-.exchange-empty .icon {
-  width: 32px;
-  height: 32px;
-}
-.port-detail > .art-fragment > svg,
-.port-detail > .icon-fragment > .icon {
-  width: 44px;
-  height: 44px;
 }
 
 /* A label and a check retain the original two-column option cards. */
 .variant-card > .icon-fragment:first-of-type > .icon {
-  width: 25px;
-  height: 25px;
   color: var(--muted);
 }
 .variant-card > .icon-fragment:last-child > .icon {
-  width: 18px;
-  height: 18px;
   margin-left: auto;
   border: 1px solid var(--line);
   border-radius: 5px;
@@ -116,14 +86,6 @@ button .icon {
 }
 .at-home :is(#entry-dialog, #practice-dialog) .variant-card > .icon-fragment {
   flex-basis: auto;
-}
-.at-home
-  :is(#entry-dialog, #practice-dialog)
-  .variant-card
-  > .icon-fragment:first-of-type
-  > .icon {
-  width: 24px;
-  height: 24px;
 }
 
 /* Compact floating controls keep the map as the largest surface. */
@@ -149,7 +111,7 @@ button .icon {
   min-width: 22px;
   height: 22px;
   font-size: 16px;
-  font-weight: 650;
+  font-weight: 600;
 }
 .at-table:not(.domestic-site) .circle-face {
   font-size: 20px;
@@ -167,8 +129,8 @@ button .icon {
   gap: var(--ui-space);
 }
 .at-table .resource-card > strong {
-  font-size: 19px;
-  font-weight: 650;
+  font-size: 20px;
+  font-weight: 600;
 }
 .at-table .resource-hand {
   gap: 6px;
@@ -310,7 +272,7 @@ button .icon {
   font-size: 12px;
 }
 
-@media (max-width: 700px) {
+@media (max-width: 640px) {
   .at-table #player-orbit {
     gap: var(--ui-space-2);
   }
@@ -356,7 +318,7 @@ button .icon {
   }
 }
 
-@media (max-width: 359px) {
+@media (max-width: 640px) {
   .at-table .player-circle {
     width: 44px;
     height: 44px;
@@ -390,146 +352,13 @@ button .icon {
   }
 }
 
-@media (orientation: landscape) and (max-height: 600px) {
-  .at-table .board-top {
-    left: 64px;
-    width: max-content;
-    right: auto;
-  }
-  .at-table .turn-banner {
-    min-width: 170px;
-    max-width: 180px;
-    padding: 6px 8px;
-  }
-  .at-table .turn-description {
-    display: flex;
-  }
-  .at-table .turn-banner > div:not(.dice-pair) {
-    display: block;
-  }
-  .at-table #play-dock {
-    left: auto;
-    right: max(8px, env(safe-area-inset-right));
-    margin: 0;
-  }
-  .at-table .hand-tray {
-    bottom: max(15px, env(safe-area-inset-bottom));
-  }
-  .at-table .resource-hand {
-    gap: var(--ui-space);
-  }
-  .at-table .resource-card {
-    width: 43px;
-  }
-  .at-table .resource-card > strong {
-    font-size: 18px;
-  }
-  .at-table .resource-art,
-  .at-table .resource-art .resource-illustration {
-    width: 24px;
-    height: 24px;
-  }
-  .at-table #player-orbit {
-    gap: var(--ui-space);
-  }
-  .at-table .stage-utilities {
-    gap: 0;
-  }
-  .at-table .waiting-banner {
-    width: 170px;
-    max-width: 170px;
-  }
-  .at-table .waiting-banner > strong {
-    font-size: 13px;
-  }
-  .at-table .waiting-banner > span {
-    font-size: 12px;
-  }
-}
-
-@media (orientation: landscape) and (max-height: 600px) and (max-width: 740px) {
-  .at-table .stage-brand {
-    display: none;
-  }
-  .at-table .board-top,
-  .at-table .playing.waiting.compact-hud .board-top {
-    left: max(8px, env(safe-area-inset-left));
-    width: 140px;
-  }
-  .at-table .turn-banner {
-    min-width: 140px;
-    max-width: 140px;
-  }
-  .at-table .waiting-banner {
-    width: 140px;
-    max-width: 140px;
-  }
-  .at-table .player-circle {
-    width: 44px;
-    height: 44px;
-    min-height: 44px;
-  }
-  .at-table #player-orbit {
-    left: max(156px, calc(env(safe-area-inset-left) + 148px));
-    right: auto;
-    transform: none;
-    gap: 4px;
-  }
-  .at-table .stage-utilities button {
-    padding: 8px;
-  }
-  .at-table .playing.compact-hud .resource-card {
-    width: 36px;
-  }
-  .at-table .playing.compact-hud .resource-art,
-  .at-table .playing.compact-hud .resource-art .resource-illustration {
-    width: 16px;
-    height: 20px;
-  }
-  .at-table .playing.compact-hud .resource-card > strong {
-    font-size: 14px;
-  }
-  .at-table .playing.stacked-hud #play-dock {
-    left: 8px;
-    right: 8px;
-    margin: auto;
-  }
-  .at-table .playing.stacked-hud .hand-tray {
-    bottom: calc(75px + max(8px, env(safe-area-inset-bottom)));
-  }
-}
-
-@media (max-width: 480px) {
+@media (max-width: 640px) {
   .exchange .exchange-resource > .resource-label {
     display: none;
   }
   .exchange .resource-pick > .art-fragment,
   .exchange .exchange-resource > .art-fragment {
     display: contents;
-  }
-}
-@media (max-height: 480px) and (min-width: 540px) {
-  .exchange .resource-pick {
-    min-height: 44px;
-  }
-  .exchange .resource-pick > .resource-label {
-    display: none;
-  }
-  .exchange .resource-pick > .art-fragment,
-  .exchange .exchange-resource > .art-fragment {
-    display: contents;
-  }
-  .exchange-preview {
-    padding: 6px 8px;
-  }
-  .exchange-preview .resource-label {
-    display: none;
-  }
-  .exchange-footer {
-    column-gap: 10px;
-  }
-  #stage-dialog-content .exchange-reason {
-    font-size: 12px;
   }
 }
 /* Keep camera state legible on phones; pause/play belongs to match controls. */
@@ -542,9 +371,193 @@ button .icon {
 }
 .at-table #camera-follow .camera-state-icon { flex:none;width:20px;height:20px; }
 .at-table #camera-toolbar[data-follow-state="following"] #camera-follow { color:var(--wood);background:color-mix(in srgb, var(--wood) 10%, var(--paper)); }
+/* Pictograms have one size owner. Resource illustrations and board geometry
+   retain their own dimensions; icon size never changes the button hit area. */
+.icon {
+  --icon-size: var(--icon-button);
+  width: var(--icon-size);
+  height: var(--icon-size);
+  flex: none;
+  stroke-width: var(--icon-stroke);
+}
+:is(.awards, .mini-resource, .resource-input, .player-stat-legend, .player-stats,
+    .chat-footer, .chat-report, .action-preferences, .turn-description,
+    .room-facts, .room-variants, .circle-score, .circle-turn, .circle-offline,
+    .rate-source, .rules-costs) .icon { --icon-size: var(--icon-inline); }
+:is(.brand-mark, .stage-brand, .circle-face, .detail-avatar, .public-stats,
+    .piece-stock, .resource-art, .resource-card, .game-goal, .development-hand,
+    .port-detail) .icon,
+.winner > span .icon,
+#play-dock .build-button .icon,
+.variant-card > .icon:first-of-type,
+.variant-card > .icon-fragment:first-of-type > .icon { --icon-size: var(--icon-toolbar); }
+:is(.chat-empty, .hand-empty, .exchange-empty) .icon { --icon-size: var(--icon-empty); }
+.variant-card > .icon-fragment:last-child > .icon,
+.variant-card > .icon:last-child { --icon-size: var(--icon-inline); }
+.port-detail > .art-fragment > svg { width:44px; height:44px; }
 
-@media (orientation:landscape) and (max-height:600px) {
-  .at-table .playing #camera-toolbar {
-    display:flex;position:absolute;top:calc(100% + 8px);right:0;
+/* Shared short-landscape layout. Keep component overrides in this block. */
+@media (orientation: landscape) and (max-height: 600px) {
+  /* entry.css: compact layout */
+  #practice-dialog { padding: 14px 18px; }
+  #practice-dialog .variant-card { min-height: 44px; padding: 5px 10px; }
+  #practice-dialog .practice-seats { margin-top: 10px; padding: 7px; }
+  /* entry.css: compact layout */
+  @media (min-width: 640px) {
+    #practice-dialog { width: min(720px,calc(100vw - 24px)); }
+    #practice-form { display: grid; grid-template-columns: 1fr 1fr; column-gap: 18px; align-items: center; }
+    #practice-options { grid-column: 1/-1; display: grid; grid-template-columns: 1fr 1fr; column-gap: 18px; align-items: start; }
+    #practice-options .count-options { grid-column: 1; grid-row: 1; margin-top: 0; }
+    #practice-options .rule-match { grid-column: 1; grid-row: 2; margin-bottom: 0; }
+    #practice-options .rules-options { grid-column: 2; grid-row: 1/3; }
+    #practice-options .rule-compatibility { grid-column: 1/-1; }
+    #practice-dialog .practice-seats { margin-top: 10px; min-height: 44px; }
+    #practice-start { margin-top: 10px; min-height: 44px; }
+    #practice-feedback:empty { display: none; }
+    #practice-feedback:not(:empty) { grid-column: 1/-1; }
   }
+  /* map-first.css: compact layout */
+  #player-orbit { top: calc(10px + env(safe-area-inset-top)); left: 50%; right: auto; transform: translateX(-50%); gap: 4px; }
+  .player-circle { width: 40px; height: 40px; min-height: 40px; }
+  .playing #camera-toolbar { display: none; }
+  .playing .stage-utilities { gap: 0; }
+  .table.playing { --board-pad-top: 78px; }
+  .playing.compact-hud .stage-brand { display: none; }
+  .playing.compact-hud #player-orbit { left: calc(max(8px,env(safe-area-inset-left)) + 112px); transform: none; padding-left: 0; padding-right: 0; }
+  .playing.compact-hud .stage-utilities button { width: 40px; min-width: 40px; padding: 8px; }
+  .home .board-controls { top: 8px; bottom: auto; right: 8px; flex-direction: row; }
+  #entry-dialog { width: min(600px,calc(100vw - 24px)); max-width: none; }
+  #entry-content #entry-form { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 18px; align-items: start; }
+  #entry-content #entry-form>label { grid-column: 1; }
+  #entry-content #entry-form>#nickname { grid-column: 1; }
+  #entry-content #entry-form>.join-row { grid-column: 1; }
+  #entry-content #entry-form>.create-heading { grid-column: 2; grid-row: 1/3; margin: 0; }
+  #entry-content #entry-form>.create-options { grid-column: 2; grid-row: 3/6; margin: 0; }
+  #entry-content #create-room { grid-column: 1; }
+  /* immersive-polish.css: compact layout */
+  .table.waiting { --board-pad-top: 74px; --board-pad-bottom: 70px; }
+  .waiting #player-orbit { top: 10px; left: 50%; right: auto; transform: translateX(-50%); gap: 6px; }
+  .waiting #play-dock { left: 50%; right: auto; transform: translateX(-50%); bottom: max(8px,env(safe-area-inset-bottom)); }
+  .waiting-actions button { min-height: 44px; padding: 7px 12px; }
+  /* home-family.css: compact home composition */
+  #home-welcome { display: none; }
+  /* home-family.css: compact home composition */
+  .at-home #entry-content #entry-form { gap: 8px 20px; }
+  .at-home #entry-content .create-heading { margin-top: 0; }
+  .at-home #entry-content .variant-card { padding: 8px 10px; min-height: 54px; }
+  .at-home #entry-content #create-room { margin-top: 4px; }
+  .at-home #entry-content .rule-match { margin-top: 0; margin-bottom: 10px; }
+  /* home-family.css: compact home composition */
+  .at-home #entry-content #entry-form>.create-heading { grid-row: 1; }
+  .at-home #entry-content #entry-form>.create-options { grid-row: 2/6; }
+  .at-home #entry-content .create-options .variant-card { min-height: 48px; padding: 6px 10px; }
+  .at-home #entry-content .create-options .variant-card b { font-size: 13px; }
+  .at-home #entry-content .create-options .variant-card small { font-size: 11px; }
+  /* home-showcase.css: compact home composition */
+  .at-home #home-welcome p { display: none; }
+  .at-home #home-welcome h1 { font-size: 24px; }
+  /* home-showcase.css: compact home composition */
+  .at-home #home-welcome { top: calc(105px + env(safe-area-inset-top)); left: max(14px,env(safe-area-inset-left)); transform: none; width: 150px; max-width: none; text-align: left; }
+  .at-home #home-welcome h1 { font-size: 20px; line-height: 1.6; }
+  .at-home #home-welcome h1 span { display: block; white-space: nowrap; }
+  .home #home-dock { left: auto; right: max(14px,env(safe-area-inset-right)); transform: none; flex-direction: column; width: 158px; }
+  .home #home-dock button { min-height: 44px; justify-content: flex-start; padding: 8px 10px; }
+  .home .board-controls { top: auto; bottom: max(14px,env(safe-area-inset-bottom)); right: auto; left: max(14px,env(safe-area-inset-left)); transform: none; flex-direction: row; }
+  .home .board-controls #home-motion { width: 44px; padding: 8px; }
+  .home .board-controls #home-motion span { display: none; }
+  /* visual-first.css: compact layout */
+  .at-home #home-welcome h1 { font-size: 24px; white-space: normal; }
+  .at-home :is(#entry-dialog,#practice-dialog) .variant-card { min-height: 76px; }
+  .waiting #player-orbit { gap: 4px; }
+  /* visual-first.css: compact layout */
+  .at-home #entry-dialog>.dialog-heading { padding: 8px 16px; }
+  .at-home #entry-content { padding: 12px 16px; }
+  .at-home #entry-content #entry-form { gap: 6px 14px; }
+  .at-home #entry-content #entry-form>label { margin-bottom: 0; }
+  .at-home #entry-content #entry-form>.create-heading { grid-row: 1/3; align-self: start; }
+  .at-home #entry-content #entry-form>.create-options { grid-row: 3/5; }
+  .at-home #entry-content .variant-card { min-height: 60px; padding: 8px 6px; }
+  .at-home #entry-content #create-room { margin: 0; min-height: 44px; }
+  .at-home #entry-dialog :is(input:not([type=checkbox]):not([type=radio]),select) { min-height: 44px; }
+  /* commerce.css: compact trade controls */
+  #play-dock .build-cost { width: 278px; }
+  .cost-summary,.cost-summary>strong { gap: 3px; }
+  .cost-summary>strong .icon { display: none; }
+  .cost-resources { gap: 5px; }
+  /* commerce.css: compact trade controls */
+  @media (min-width: 640px) {
+    #stage-dialog.commerce-dialog { width: min(600px,calc(100vw - 24px)); max-height: calc(100dvh - 12px); }
+    .exchange { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+    .exchange>.exchange-tabs:first-child { grid-column: 1/-1; }
+    .exchange:has([data-trade-page])>.exchange-tabs:first-child { grid-column: 1; }
+    .exchange>.exchange-body,.exchange>.exchange-footer { grid-column: 1/-1; }
+    .exchange-body:not(.current-offer):not(.exchange-empty) { display: grid; grid-template-columns: 1fr 1fr; column-gap: 10px; }
+    .exchange-body>h3:first-child { grid-column: 1; grid-row: 1; }
+    .exchange-body>.exchange-resources:nth-child(2) { grid-column: 1; grid-row: 2; }
+    .exchange-body>h3:nth-child(3) { grid-column: 2; grid-row: 1; }
+    .exchange-body>.exchange-resources:nth-child(4) { grid-column: 2; grid-row: 2; }
+    #stage-dialog.commerce-dialog>.dialog-heading { padding: 4px 14px; }
+    #stage-dialog.commerce-dialog #stage-dialog-content { padding: 8px 14px; }
+    .exchange-tabs { padding: 2px; }
+    .exchange-tabs button { font-size: 12px; }
+    .exchange-resources { margin-bottom: 6px; }
+    .exchange-card svg { width: 24px; height: 24px; }
+    .resource-pick { min-height: 42px; }
+    .resource-pick>span { display: none; }
+    .exchange h3 { margin: 2px 0 4px; font-size: 12px; line-height: 16px; }
+    .exchange-footer { display: grid; grid-template-columns: 1fr 1fr; align-items: center; }
+    .exchange-footer .exchange-preview { grid-row: span 2; }
+  }
+  /* notices.css: compact feedback */
+  #toast, .at-table #toast { bottom: max(12px, env(safe-area-inset-bottom)); max-width: min(340px, calc(100vw - 32px)); }
+  /* notices.css: compact feedback */
+  #action-feedback { width: 214px; max-width: min(214px, calc(100vw - 32px)); min-height: 0; padding: 8px 11px; }
+  #action-feedback p { -webkit-line-clamp: 2; }
+  /* ui/theme.css: compact layout */
+  .at-table .board-top { left: 64px; width: max-content; right: auto; }
+  .at-table .turn-banner { min-width: 170px; max-width: 180px; padding: 6px 8px; }
+  .at-table .turn-description { display: flex; }
+  .at-table .turn-banner > div:not(.dice-pair) { display: block; }
+  .at-table #play-dock { left: auto; right: max(8px, env(safe-area-inset-right)); margin: 0; }
+  .at-table .hand-tray { bottom: max(15px, env(safe-area-inset-bottom)); }
+  .at-table .resource-hand { gap: var(--ui-space); }
+  .at-table .resource-card { width: 43px; }
+  .at-table .resource-card > strong { font-size: 18px; }
+  .at-table .resource-art,
+  .at-table .resource-art .resource-illustration { width: 24px; height: 24px; }
+  .at-table #player-orbit { gap: var(--ui-space); }
+  .at-table .stage-utilities { gap: 0; }
+  .at-table .waiting-banner { width: 170px; max-width: 170px; }
+  .at-table .waiting-banner > strong { font-size: 13px; }
+  .at-table .waiting-banner > span { font-size: 12px; }
+  /* ui/theme.css: compact layout */
+  @media (max-width: 640px) {
+    .at-table .stage-brand { display: none; }
+    .at-table .board-top,
+  .at-table .playing.waiting.compact-hud .board-top { left: max(8px, env(safe-area-inset-left)); width: 140px; }
+    .at-table .turn-banner { min-width: 140px; max-width: 140px; }
+    .at-table .waiting-banner { width: 140px; max-width: 140px; }
+    .at-table .player-circle { width: 44px; height: 44px; min-height: 44px; }
+    .at-table #player-orbit { left: max(156px, calc(env(safe-area-inset-left) + 148px)); right: auto; transform: none; gap: 4px; }
+    .at-table .stage-utilities button { padding: 8px; }
+    .at-table .playing.compact-hud .resource-card { width: 36px; }
+    .at-table .playing.compact-hud .resource-art,
+  .at-table .playing.compact-hud .resource-art .resource-illustration { width: 16px; height: 20px; }
+    .at-table .playing.compact-hud .resource-card > strong { font-size: 14px; }
+    .at-table .playing.stacked-hud #play-dock { left: 8px; right: 8px; margin: auto; }
+    .at-table .playing.stacked-hud .hand-tray { bottom: calc(75px + max(8px, env(safe-area-inset-bottom))); }
+  }
+  /* ui/theme.css: compact layout */
+  @media (min-width: 640px) {
+    .exchange .resource-pick { min-height: 44px; }
+    .exchange .resource-pick > .resource-label { display: none; }
+    .exchange .resource-pick > .art-fragment,
+  .exchange .exchange-resource > .art-fragment { display: contents; }
+    .exchange-preview { padding: 6px 8px; }
+    .exchange-preview .resource-label { display: none; }
+    .exchange-footer { column-gap: 10px; }
+    #stage-dialog-content .exchange-reason { font-size: 12px; }
+  }
+  /* ui/theme.css: compact layout */
+  .at-table .playing #camera-toolbar { display:flex; position: absolute; top: calc(100% + 8px); right: 0; }
 }

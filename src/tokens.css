@@ -32,6 +32,11 @@
   --font-weight-600: 600;
   --font-weight-700: 700;
   --font-weight-800: 800;
+  --icon-inline: 16px;
+  --icon-button: 20px;
+  --icon-toolbar: 24px;
+  --icon-empty: 40px;
+  --icon-stroke: 1.65;
   --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 14px;

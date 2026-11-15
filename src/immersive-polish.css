@@ -1,7 +1,6 @@
 /* Waiting uses the same scene, map frame and floating tools as the game. */
 .table.waiting { --board-pad-top:172px; --board-pad-bottom:88px; }
 .waiting #player-orbit { top:112px; left:0; right:0; justify-content:center; }
-.waiting .circle-score>.icon { width:13px; height:13px; }
 .waiting .circle-turn { display:none; }
 .waiting-actions { display:flex; gap:6px; align-items:center; }
 .waiting-actions button { min-height:46px; padding:10px 16px; font-size:12px; white-space:nowrap; }
@@ -16,27 +15,20 @@
 #rules-dialog { overflow:hidden; padding:0; }
 #rules-dialog[open] { display:flex; flex-direction:column; }
 #rules-dialog .dialog-heading { flex:none; padding:14px 20px; margin:0; border-bottom:1px solid var(--line); }
-#rules-dialog .dialog-heading h2 { font-size:19px; }
+#rules-dialog .dialog-heading h2 { font-size:20px; }
 #rules-dialog .rules-copy { padding:0 20px 20px; }
 #practice-dialog,#report-dialog { overflow-y:auto; }
 #practice-dialog .dialog-heading,#report-dialog .dialog-heading { position:sticky; top:0; z-index:2; background:var(--paper); }
 /* SVG sites already show the selected double ring/rails on keyboard focus. */
 #board [data-id]:focus { outline:none; }
-@media(max-width:700px) {
+@media(max-width: 640px) {
   .waiting #player-orbit { top:calc(152px + env(safe-area-inset-top)); gap:8px; }
   .table.waiting { --board-pad-top:218px; --board-pad-bottom:84px; }
   .waiting-actions { gap:3px; }
   .waiting-actions button { padding:7px 10px; gap:4px; font-size:11px; }
   .waiting-actions .primary { min-width:110px; }
-  .waiting-actions button .icon { width:18px; height:18px; }
 }
-@media(orientation:landscape) and (max-height:600px) {
-  .table.waiting { --board-pad-top:74px; --board-pad-bottom:70px; }
-  .waiting #player-orbit { top:10px; left:50%; right:auto; transform:translateX(-50%); gap:6px; }
-  .waiting #play-dock { left:50%; right:auto; transform:translateX(-50%); bottom:max(8px,env(safe-area-inset-bottom)); }
-  .waiting-actions button { min-height:44px; padding:7px 12px; }
-}
-@media(max-width:359px) {
+@media(max-width: 640px) {
   .waiting-actions button { padding:6px; }
   .waiting-actions .primary { min-width:100px; }
   .waiting-actions button:not(.primary) { flex-direction:column; gap:1px; }
