@@ -83,59 +83,6 @@ export function OptionsFields({
   );
 }
 
-export function EntryNickname({ model, id = "nickname" }: { model: UIModel; id?: string }) {
-  const disabled = model.busy || Boolean(model.entryError);
-  return model.domestic ? <>
-    <label>你的随机昵称</label>
-    <div className="fixed-nickname">
-      <strong id={id === "nickname" ? "fixed-nickname" : `${id}-fixed`}>{model.nickname?.name}</strong>
-      <Button action="newNickname" disabled={Boolean(model.code) || disabled} className="secondary">换一个</Button>
-    </div>
-  </> : <>
-    <label htmlFor={id}>你的昵称</label>
-    <input id={id} data-persist="" data-entry-nickname="" autoComplete="nickname" maxLength={16}
-      placeholder="怎么称呼你" defaultValue={model.name} required />
-  </>;
-}
-
-export function HomeActions({ model }: { model: UIModel }) {
-  const disabled = model.busy || Boolean(model.entryError);
-  return <>
-    <div className="home-actions" aria-label="游戏入口">
-      <Button action="openEntry" className="primary" disabled={disabled}>
-        <Icon name="island" /><span>创建房间</span>
-      </Button>
-      <Button action="toggleJoin" aria-expanded={model.joinExpanded} aria-controls="join-form" disabled={disabled}>
-        <Icon name="users" /><span>加入房间</span>
-      </Button>
-      <form id="join-form" hidden={!model.joinExpanded}>
-        <EntryNickname model={model} id="join-nickname" />
-        <div className="join-row">
-          <input id="join-code" data-persist="" aria-label="6 位房间码或带本站前缀的邀请码"
-            autoComplete="off" maxLength={8} placeholder={model.backendId === "aliyun" ? "房间码 / A-前缀" : model.backendId === "cloudflare" ? "房间码 / C-前缀" : "6 位房间码"}
-            defaultValue={model.invite ? displayCode(model, model.invite) : ""} required />
-          <button type="submit" disabled={disabled}>加入</button>
-        </div>
-      </form>
-      <Button action="homePractice" disabled={disabled}><Icon name="bot" /><span>单人练习</span></Button>
-    </div>
-    <PublicRooms model={model} />
-  </>;
-}
-
-export function PregameHeader({ model }: { model: UIModel }) {
-  return <>
-    <Button action="copyRoomCode" className="room-code text-button" aria-label="复制房间码" title="复制房间码">
-      房间 {model.publicCode}
-    </Button>
-    <span className={`connection ${model.status}`}><i />{model.statusText}</span>
-    <div className="pregame-actions">
-      <Button action="invite" className="text-button"><Icon name="link" /><span>邀请朋友</span></Button>
-      <Button action="home" className="text-button"><Icon name="back" /><span>退出房间</span></Button>
-    </div>
-  </>;
-}
-
 export function HomePanel({ model }: { model: UIModel }) {
   const disabled = model.busy || Boolean(model.entryError);
   return (
@@ -155,7 +102,54 @@ export function HomePanel({ model }: { model: UIModel }) {
         <p>收获 · 交易 · 建设</p>
       </div>
       <form id="entry-form">
-        <EntryNickname model={model} />
+        {model.domestic ? (
+          <>
+            <label>你的随机昵称</label>
+            <div className="fixed-nickname">
+              <strong id="fixed-nickname">{model.nickname?.name}</strong>
+              <Button
+                action="newNickname"
+                disabled={Boolean(model.code) || disabled}
+                className="secondary"
+              >
+                换一个
+              </Button>
+            </div>
+          </>
+        ) : (
+          <>
+            <label htmlFor="nickname">你的昵称</label>
+            <input
+              id="nickname"
+              data-persist=""
+              autoComplete="nickname"
+              maxLength={16}
+              placeholder="怎么称呼你"
+              defaultValue={model.name}
+              required
+            />
+          </>
+        )}
+        <div className="join-row">
+          <input
+            id="join-code"
+            data-persist=""
+            aria-label="6 位房间码或带本站前缀的邀请码"
+            autoComplete="off"
+            maxLength={8}
+            placeholder={
+              model.backendId === "aliyun"
+                ? "房间码 / A-前缀"
+                : model.backendId === "cloudflare"
+                  ? "房间码 / C-前缀"
+                  : "6 位房间码"
+            }
+            defaultValue={model.invite ? displayCode(model, model.invite) : ""}
+          />
+          <button type="submit" disabled={disabled}>
+            加入房间
+          </button>
+        </div>
         <div className="create-heading">
           <h2>开一桌</h2>
           <select
@@ -177,10 +171,16 @@ export function HomePanel({ model }: { model: UIModel }) {
           className="primary large"
           disabled={disabled}
         >
-          {model.busy ? "正在准备岛屿…" : "创建房间"}
+          {model.busy ? "正在准备岛屿…" : "创建好友房间"}
           <Icon name="arrow" />
         </button>
       </form>
+      <div className="practice-entry">
+        <Button action="practice" disabled={disabled} className="secondary">
+          <Icon name="bot" />
+          人机练习
+        </Button>
+      </div>
       {model.last && (
         <Button action="resume" disabled={disabled} className="resume-button">
           原身份返回 {displayCode(model, model.last.code)} <Icon name="arrow" />
@@ -344,7 +344,7 @@ export function RoomSettings({ model }: { model: RoomModel }) {
         <h2>{model.isHost ? "房间设置" : "本桌规则"}</h2>
         <Button action="rules" className="text-button">
           <Icon name="book" />
-          {s.phase === "lobby" ? "玩法规则" : "规则"}
+          规则
         </Button>
       </div>
       {model.isHost ? (
@@ -504,7 +504,7 @@ export function LobbyControls({ model }: { model: RoomModel }) {
     <div className="waiting-actions">
       <Button action="invite" className="secondary">
         <Icon name="link" />
-        <span>邀请朋友</span>
+        <span>邀请</span>
       </Button>
       {model.isHost && (
         <Button
@@ -526,7 +526,7 @@ export function LobbyControls({ model }: { model: RoomModel }) {
           disabled={disabled || s.players.length < 3 || unready}
           className="primary"
         >
-          开始游戏 <Icon name="arrow" />
+          开始探索 <Icon name="arrow" />
         </Button>
       ) : (
         <Button action="ready" disabled={disabled} className="primary">
