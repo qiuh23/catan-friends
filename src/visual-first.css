@@ -34,8 +34,6 @@
   .at-home #home-welcome h1 { font-size:23px; white-space:normal; }
   .at-home :is(#entry-dialog,#practice-dialog) .variant-card { min-height:76px; }
   .waiting #player-orbit { gap:4px; }
-  .playing .board-top,.playing.waiting .board-top { width:128px; }
-  .waiting-banner { width:128px; max-width:128px; }
 }
 @media(orientation:landscape) and (max-height:360px) {
   .at-home #entry-dialog>.dialog-heading { padding:8px 16px; }

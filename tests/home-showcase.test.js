@@ -50,3 +50,61 @@ test('fixed home composition contains complete billboard ports and scenery throu
     }
   }
 });
+
+// Stage ownership protects the consolidated cascade without freezing its visuals.
+const { readFileSync, readdirSync } = await import('node:fs');
+const { default: postcss } = await import('postcss');
+const stylesheetFiles = readdirSync(new URL('../src/', import.meta.url))
+  .filter(name => name.endsWith('.css')).map(name => `src/${name}`)
+  .concat('src/ui/theme.css');
+function stylesheets() {
+  return stylesheetFiles.map(file => ({file, root:postcss.parse(readFileSync(new URL(`../${file}`, import.meta.url),'utf8'))}));
+}
+function conditions(node) {
+  const result=[]; for(let p=node.parent;p&&p.type!=='root';p=p.parent) if(p.type==='atrule')result.unshift(`@${p.name} ${p.params}`);
+  return result;
+}
+function declarations(root, selector) {
+  const result={}; root.walkRules(rule=>{if(rule.selector===selector&&!conditions(rule).length)rule.walkDecls(d=>{result[d.prop]=d.value;});});return result;
+}
+test('shared viewport components have one stylesheet owner and retain responsive conditions',()=>{
+  for(const {file,root} of stylesheets()) root.walkRules(rule=>{
+    if(/#action-feedback(?:\b|-)/.test(rule.selector)) assert.equal(file,'src/notices.css',`${rule.selector} belongs to notices`);
+    if(/\.(?:topbar|turn-banner)\b|#turn-banner\b/.test(rule.selector)) {
+      const responsiveTheme=file==='src/ui/theme.css'&&conditions(rule).some(c=>c.startsWith('@media '));
+      assert.ok(file==='src/table.css'||responsiveTheme,`${rule.selector} in ${file} must move to table`);
+    }
+  });
+  const table=stylesheets().find(s=>s.file==='src/table.css').root;
+  assert.ok(table.nodes.some(n=>n.type==='atrule'&&n.name==='media'),'table retains viewport variants');
+});
+test('sea-glass action feedback keeps visibility, positioning and bounded text behavior',()=>{
+  const root=stylesheets().find(s=>s.file==='src/notices.css').root;
+  const card=declarations(root,'#action-feedback'),copy=declarations(root,'#action-feedback p');
+  assert.equal(card.position,'absolute');assert.equal(card['pointer-events'],'none');assert.equal(card.transform,'none');
+  assert.equal(declarations(root,'#action-feedback[hidden]').display,'none');
+  assert.equal(copy.overflow,'hidden');assert.equal(copy['overflow-wrap'],'anywhere');assert.equal(copy['-webkit-box-orient'],'vertical');
+  assert.ok(card.background.includes('var(--ink)'),'the feedback retains its dark semantic surface');
+  let line=false;root.walkRules(rule=>{if(rule.selector.includes('#action-feedback-leader'))line=true;});assert.ok(line,'map feedback retains its leader');
+});
+test('dialog roots use the twelve-pixel panel token and the retired columns stay removed',()=>{
+  const roots=new Set(['dialog','#stage-dialog','dialog, #stage-dialog','.at-home :is(#entry-dialog,#rooms-dialog,#practice-dialog,#rules-dialog,#report-dialog)']);
+  for(const {file,root} of stylesheets()) root.walkRules(rule=>{
+    if(roots.has(rule.selector)) rule.walkDecls('border-radius',d=>assert.equal(d.value,'var(--radius-panel)',`${file}: ${rule.selector}`));
+    if(['.table','.home','.table.home','.table.playing','.table.in-room:not(.playing)'].includes(rule.selector)) {
+      rule.walkDecls('grid-template-columns',d=>assert.fail(`retired column layout in ${file}: ${d.value}`));
+      rule.walkDecls('display',d=>assert.ok(!['grid','flex'].includes(d.value),`retired main layout in ${file}`));
+    }
+  });
+  const map=stylesheets().find(s=>s.file==='src/map-first.css').root;
+  let landscapeWidth=false;
+  map.walkRules(rule=>{if(rule.selector==='#entry-dialog'&&conditions(rule).some(c=>c.includes('orientation:landscape'))){
+    const d=Object.fromEntries(rule.nodes.filter(n=>n.type==='decl').map(n=>[n.prop,n.value]));
+    assert.equal(d['max-width'],'none','the retired generic dialog cap must not clip the two-column entry form');
+    assert.ok(d.width.includes('100vw'),'the landscape dialog still fits the viewport');landscapeWidth=true;
+  }});assert.ok(landscapeWidth);
+  const tokens=stylesheets().find(s=>s.file==='src/tokens.css').root;
+  const values=declarations(tokens,':root');
+  const resolve=value=>value.replace(/var\((--[a-z-]+)\)/g,(_,name)=>resolve(values[name]));
+  assert.equal(resolve(values['--radius-panel']),'12px');
+});
