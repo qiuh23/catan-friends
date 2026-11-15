@@ -201,7 +201,7 @@ function Interface() {
         <section id="home-welcome" aria-label="欢迎来到卡坦岛">
           <h1>开拓这座岛</h1>
         </section>
-        <section id="home-dock" aria-label="开始游戏" hidden={Boolean(s || m.code)}>
+        <section id="home-dock" aria-label="开始游戏" hidden={Boolean(s)}>
           {m.entryError && <p className="entry-error" role="alert">{m.entryError}</p>}
           {m.terminalMessage && <p className="room-outcome" role="status">{m.terminalMessage}</p>}
           <HomeActions model={m} />
