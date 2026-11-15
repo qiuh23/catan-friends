@@ -401,28 +401,6 @@ button .icon {
 .port-detail > .art-fragment > svg { width:44px; height:44px; }
 
 /* Shared short-landscape layout. Keep component overrides in this block. */
-/* Entry alignment changes placement only; all existing paint and type stay owned by the theme. */
-.home #home-dock { display:flex; flex-direction:column; width:360px; max-height:calc(100dvh - 260px); overflow-y:auto; overscroll-behavior:contain; }
-.home #home-dock[hidden] { display:none; }
-#home-dock .home-actions { display:flex; flex-direction:column; gap:8px; }
-#home-dock .home-actions > button { width:100%; flex-direction:row; justify-content:center; }
-#home-dock #join-form[hidden] { display:none; }
-#home-dock .join-row { display:flex; gap:8px; margin-top:8px; }
-#home-dock .join-row input { min-width:0; flex:1; }
-#home-dock .join-row button { width:auto; flex-shrink:0; }
-#home-dock .public-rooms { margin-top:8px; }
-#home-dock .public-rooms button { width:auto; }
-#home-dock .public-room > button { width:100%; }
-#home-dock .list-message { padding:12px 0; }
-@media(max-width: 950px) {
-  .home .board-controls { bottom:auto; top:calc(155px + env(safe-area-inset-top)); }
-}
-@media(max-width: 640px) {
-  .pregame-topbar .connection { display:none; }
-  .pregame-actions { gap:4px; }
-  .pregame-topbar button { padding:8px; }
-}
-
 @media (orientation: landscape) and (max-height: 600px) {
   /* entry.css: compact layout */
   #practice-dialog { padding: 14px 18px; }
@@ -486,7 +464,7 @@ button .icon {
   .at-home #home-welcome { top: calc(105px + env(safe-area-inset-top)); left: max(14px,env(safe-area-inset-left)); transform: none; width: 150px; max-width: none; text-align: left; }
   .at-home #home-welcome h1 { font-size: 20px; line-height: 1.6; }
   .at-home #home-welcome h1 span { display: block; white-space: nowrap; }
-  .home #home-dock { left: auto; right: max(14px,env(safe-area-inset-right)); transform: none; flex-direction: column; width: 280px; max-height: calc(100dvh - 90px); }
+  .home #home-dock { left: auto; right: max(14px,env(safe-area-inset-right)); transform: none; flex-direction: column; width: 158px; }
   .home #home-dock button { min-height: 44px; justify-content: flex-start; padding: 8px 10px; }
   .home .board-controls { top: auto; bottom: max(14px,env(safe-area-inset-bottom)); right: auto; left: max(14px,env(safe-area-inset-left)); transform: none; flex-direction: row; }
   .home .board-controls #home-motion { width: 44px; padding: 8px; }
