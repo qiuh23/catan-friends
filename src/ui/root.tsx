@@ -6,7 +6,9 @@ import { LABELS } from "../../shared/board.js";
 import { Icon, Button } from "./primitives";
 import {
   HomePanel,
-  PublicRooms,
+  HomeActions,
+  EntryNickname,
+  PregameHeader,
   OptionsFields,
   PlayerOrbit,
   LobbyControls,
@@ -30,7 +32,8 @@ function Interface() {
     s = m.state;
   return (
     <>
-      <header className="topbar">
+      <header className={`topbar ${s?.phase === "lobby" ? "pregame-topbar" : ""}`}>
+        {s?.phase === "lobby" ? <PregameHeader model={m} /> : <>
         <a
           className="brand"
           data-home-link=""
@@ -92,9 +95,9 @@ function Interface() {
           <Button action="openQuality" className="text-button" aria-label="画质设置" title="画质设置">
             <Icon name="settings" />
           </Button>
-          <Button action="rules" className="text-button" aria-label="玩法指南">
+          <Button action="rules" className="text-button" aria-label={s ? "玩法指南" : "玩法规则"}>
             <Icon name="book" />
-            <span>玩法指南</span>
+            <span>{s ? "玩法指南" : "玩法规则"}</span>
           </Button>
           {!m.domestic && (
             <Button
@@ -107,6 +110,7 @@ function Interface() {
             </Button>
           )}
         </nav>
+        </>}
       </header>
       <main
         id="table"
@@ -197,20 +201,11 @@ function Interface() {
         <section id="home-welcome" aria-label="欢迎来到卡坦岛">
           <h1>开拓这座岛</h1>
         </section>
-        <nav id="home-dock" aria-label="开始游戏" hidden={Boolean(s)}>
-          <Button action="openEntry" className="primary">
-            <Icon name="island" />
-            <span>开桌 / 加入</span>
-          </Button>
-          <Button action="homePractice">
-            <Icon name="bot" />
-            <span>人机练习</span>
-          </Button>
-          <Button action="openRooms">
-            <Icon name="users" />
-            <span>在线房间</span>
-          </Button>
-        </nav>
+        <section id="home-dock" aria-label="开始游戏" hidden={Boolean(s || m.code)}>
+          {m.entryError && <p className="entry-error" role="alert">{m.entryError}</p>}
+          {m.terminalMessage && <p className="room-outcome" role="status">{m.terminalMessage}</p>}
+          <HomeActions model={m} />
+        </section>
         <div id="home-safe-area" aria-hidden="true" />
       </main>
       <section id="quality-hint" className="quality-hint" aria-label="画质建议" hidden={!m.qualityHint}>
@@ -290,7 +285,7 @@ function Interface() {
           <Button
             action="closeRules"
             className="square"
-            aria-label="关闭玩法指南"
+            aria-label="关闭玩法规则"
           >
             <Icon name="close" />
           </Button>
@@ -326,6 +321,7 @@ function Interface() {
           </Button>
         </div>
         <form id="practice-form">
+          <EntryNickname model={m} id="practice-nickname" />
           <div id="practice-options">
             <OptionsFields
               prefix="practice"
@@ -361,7 +357,7 @@ function Interface() {
       </dialog>
       <dialog id="entry-dialog" aria-labelledby="entry-title">
         <div className="dialog-heading">
-          <h2 id="entry-title">开桌 / 加入</h2>
+          <h2 id="entry-title">创建房间</h2>
           <Button
             action="closeEntry"
             className="square"
@@ -374,21 +370,7 @@ function Interface() {
           <HomePanel model={m} />
         </div>
       </dialog>
-      <dialog id="rooms-dialog" aria-label="在线房间">
-        <div className="dialog-heading">
-          <h2>在线房间</h2>
-          <Button
-            action="closeRooms"
-            className="square"
-            aria-label="关闭在线房间"
-          >
-            <Icon name="close" />
-          </Button>
-        </div>
-        <div id="rooms-content">
-          <PublicRooms model={m} />
-        </div>
-      </dialog>
+
     </>
   );
 }

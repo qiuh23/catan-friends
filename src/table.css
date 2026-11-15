@@ -410,3 +410,13 @@ dialog { max-height:calc(var(--visual-height) - 24px); overscroll-behavior:conta
   .playing.waiting .board-top { width: 128px; }
   .waiting-banner { width: 128px; max-width: 128px; }
 }
+
+/* Pregame room header alignment only; active-game HUD stays unchanged. */
+.at-home .topbar [data-action="rules"] > span { display:inline; }
+.at-table .topbar.pregame-topbar { display:flex; position:fixed; inset:0 0 auto; min-height:60px; height:auto; padding:8px max(12px,env(safe-area-inset-right)) 8px max(12px,env(safe-area-inset-left)); padding-top:max(8px,env(safe-area-inset-top)); gap:8px; }
+.pregame-topbar .room-code { flex-shrink:0; }
+.pregame-actions { display:flex; gap:8px; margin-left:auto; }
+.table.waiting #stage-tools { top:calc(76px + env(safe-area-inset-top)); }
+.table.waiting #turn-banner { top:calc(76px + env(safe-area-inset-top)); }
+.table.waiting #player-orbit { top:calc(150px + env(safe-area-inset-top)); }
+.table.waiting .board-controls { top:calc(76px + env(safe-area-inset-top)); }

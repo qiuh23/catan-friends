@@ -152,6 +152,7 @@ export interface UIModel {
   nickname: { id: string; name: string } | null;
   name: string;
   invite: string;
+  joinExpanded: boolean;
   last: { code: string } | null;
   returnableRooms: string[];
   lobbyURL: string | null;
