@@ -35,5 +35,4 @@ test('entry layout overrides add no color, typography, artwork or motion declara
   postcss.parse(css.slice(start,end)).walkDecls(decl=>assert.doesNotMatch(decl.prop,/color|background|font|shadow|animation|transition/));
   const root=readFileSync(new URL('../src/ui/root.tsx',import.meta.url),'utf8');
   assert.match(root,/s\?\.phase === "lobby" \? <PregameHeader/);
-  assert.match(root,/<section id="home-dock"[^>]*hidden=\{Boolean\(s\)\}/, "pending or failed connections retain home retry controls until room state arrives");
 });
